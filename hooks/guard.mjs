@@ -180,7 +180,10 @@ function checkGit(args) {
 
 const WRITERS = /^(rm|del|erase|rmdir|mv|move|cp|copy|tee|sed|truncate|remove-item|move-item|copy-item|set-content|add-content|out-file|clear-content|new-item)$/i;
 const REMOVERS = /^(rm|del|erase|rmdir|rd|mv|move|remove-item|move-item|ri|mi)$/i;
-const PERMISSION_MODES = ["default", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"];
+// The values `claude --permission-mode` accepts. Hooks can report the normal mode as "default",
+// which the CLI calls "manual".
+const PERMISSION_MODES = ["acceptEdits", "auto", "bypassPermissions", "manual", "dontAsk", "plan"];
+const cliMode = (m) => (m === "default" ? "manual" : m);
 
 function checkPaths(tokens, dir, removes = false) {
   const base = toplevel(dir) ?? root;
@@ -219,7 +222,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     }
     // Orca workers run in orca.workerPermissionMode, or else in this session's mode, never in Orca's
     // default arguments (harness.md, Launch).
-    const workerMode = config.orca?.workerPermissionMode || input.permission_mode;
+    const workerMode = cliMode(config.orca?.workerPermissionMode || input.permission_mode);
     if (/^orca(\.exe)?$/i.test(tokens[0]) && workerMode) {
       if (!PERMISSION_MODES.includes(workerMode)) block(`orca.workerPermissionMode "${workerMode}" is not a permission mode (${PERMISSION_MODES.join(", ")}). Fix .orquestador.json.`);
       const want = `--permission-mode ${workerMode}`;
