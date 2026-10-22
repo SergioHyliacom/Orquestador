@@ -82,8 +82,13 @@ function currentBranch(dir) {
 // ---------- SessionStart: load the procedure
 
 if (input.hook_event_name === "SessionStart") {
+  // Detected now, from this session's environment: a harness line in the ledger can be stale.
+  const orca = process.env.TERM_PROGRAM === "Orca" || Object.keys(process.env).some((k) => k.startsWith("ORCA_"));
+  const harness = orca
+    ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
+    : "Harness, detected now: plain Claude Code.";
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: "This project uses orquestador. Load the orquestador:orchestrate skill before any work and follow it." } }));
+    additionalContext: `This project uses orquestador. Load the orquestador:orchestrate skill before any work and follow it. ${harness}` } }));
   process.exit(0);
 }
 

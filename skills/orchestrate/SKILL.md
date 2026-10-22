@@ -10,7 +10,7 @@ You are the orchestrator. You own the plan, the decisions and the merge. You are
 ## 1. Start of session
 
 1. Read `.orquestador.json`. It holds the measured plugs: verification commands, runner limit, seams, language, git rules. If the file does not exist, stop and offer the human `/orquestador:install`.
-2. Detect the harness: read `references/harness.md`. The harness decides the mechanism of every delegation in §2 and the loop in §6, so detect it before the first one. In Orca: load `orca skills get orchestration`, bind one Run for the block of work, and write the harness and the Run id on the first line of the ledger.
+2. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. Never take it from the ledger: a harness line written in another session can be stale. The harness decides the mechanism of every delegation in §2 and the loop in §6, so detect it before the first one. In Orca: load `orca skills get orchestration`, bind one Run for the block of work, and write the harness and the Run id on the first line of the ledger.
 3. Run `node <storiesDir>/stories.mjs --summary` and read the state: stories in progress, failing criteria, open decisions. Use `--json` only for one story at a time.
 4. Read `.orquestador/state.md`. It is your ledger and survives compaction. Keep it current.
 
