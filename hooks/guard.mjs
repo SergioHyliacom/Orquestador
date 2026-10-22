@@ -211,6 +211,13 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       checkGit(tokens.slice(1));
       continue;
     }
+    // Orca workers run in this session's permission mode, not Orca's default arguments (harness.md, Launch).
+    if (/^orca(\.exe)?$/i.test(tokens[0]) && input.permission_mode) {
+      const want = `--permission-mode ${input.permission_mode}`;
+      if (tokens[1] === "orchestration" && tokens[2] === "worker-start" && tokens.includes("--agent")) block(`launch the worker's terminal yourself with \`orca terminal create --command "claude ${want}"\`, then \`worker-start --terminal <handle>\`. --agent uses Orca's default arguments.`);
+      const cmd = tokens[tokens.indexOf("--command") + 1] ?? "";
+      if (tokens[1] === "terminal" && tokens[2] === "create" && /^claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in this session's mode: --command "claude ${want}".`);
+    }
     if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "") && (inSubagent || git.allowPush === false)) block("gh pr merge is blocked here. The product owner merges, or asks the orchestrator to.");
     // Redirections write too: split "x>file" and "> file" into their own tokens.
     const split = tokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);

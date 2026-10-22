@@ -46,12 +46,12 @@ One Run per block of work, not one per story: the Run is your inbox and your nam
 
 ```
 orca orchestration run-create --objective "<the block of work>" --json     # or run-use --run <id>
-orca orchestration worker-start --spec "<the brief, inline>" --task-title "builder-ACC-002" ... --json
-orca orchestration worker-start --spec "<the brief, inline>" --task-title "researcher-pagos" ... --json
+orca orchestration worker-start --terminal <handle> --worktree <its worktree> --spec "<the brief, inline>" --task-title "builder-ACC-002" --json
+orca orchestration worker-start --terminal <handle> --worktree current --spec "<the brief, inline>" --task-title "researcher-pagos" --json
 orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json
 ```
 
-1. **Start the whole independent wave before the first wait.** `worker-start --spec` creates the Task and its attempt in one call. Use `task-create --deps` plus `worker-start --task <id>` only for real ordering, and prefer parallel waves to chains deeper than three or four steps.
+1. **Start the whole independent wave before the first wait.** Launch each terminal first (**Placement → Launch**). `worker-start --spec` creates the Task and its attempt in one call. Use `task-create --deps` plus `worker-start --task <id>` only for real ordering, and prefer parallel waves to chains deeper than three or four steps.
 2. **Process every message in a Delivery before `--ack`.** The batch replays until acknowledged and carries the whole FIFO queue whatever the type filter says. Reply to each question, validate each `worker_done` against the Task you expected and against the evidence rule of §5 of the skill, and decide each settled terminal's next owner.
 3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close`. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
 4. **An empty wait or a timeout is a checkpoint, not a failure.** Keep rolling waits until every expected Dispatch settles. After three consecutive empty waits, enumerate with `worker-list --run <id> --include-remote --json` and run each row's literal `projection.nextAction`; a `none` action means read `liveness.reason` and keep waiting.
@@ -74,11 +74,23 @@ A gate is for a decision **you** own that blocks one Task while the rest of the 
 
 A fresh worker means a fresh terminal, not a new Git worktree.
 
-- **Writers** never share your workspace: `--worktree new-child --name <role>-<scope> --setup run`. One worktree per writer, and the branch rules of `references/git.md` apply inside it.
+- **Writers** never share your workspace: create one with `orca worktree create --name <role>-<scope> --setup run --json` (no `--agent`). One worktree per writer, and the branch rules of `references/git.md` apply inside it.
 - **Read-only roles** (`reviewer`, `researcher`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout.
 - **Folder workspaces are first-class.** When the workspace is a folder, there is no worktree lineage and no branch: `git.md` does not apply, and the story's evidence is the verification commands alone. Say so in the close report.
-- **Name the work, do not rename terminals:** `--task-title "<role>-<scope>"` and `--display-name "<role>-<scope>"`. How the worker appears — chat or terminal — follows the human's own setting for new agent tabs. There is no flag for it and no reason to ask.
-- `--agent claude` unless the human named another agent. Pass `--model`/`--effort` only when the human named them, and compare `launch.requested` with `launch.effective` before claiming either took effect.
+- **Name the work:** the terminal's `--title` and the `--task-title` are both `<role>-<scope>`.
+- Pass a model only when the human named one: put `--model <id>` in the `claude` command.
+
+### Launch: your permission mode, not Orca's default
+
+`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs. That default can be `--dangerously-skip-permissions`, and then the worker stops at the Bypass Permissions warning and never runs. So launch the terminal yourself, in the permission mode your own session runs in, and dispatch into it. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names your mode:
+
+```
+orca terminal create --worktree <current | the writer's worktree> --title "<role>-<scope>" --command "claude --permission-mode <your mode>" --json
+orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 60000 --json
+orca orchestration worker-start --terminal <handle> --worktree <same selector> --spec "<the brief>" --task-title "<role>-<scope>" --json
+```
+
+If the wait reports a `blockedReason`, read the terminal. A folder-trust or permission prompt goes to the human (rule 6 of **The loop**). A new worktree is a new folder, so the first writer in it can meet the trust prompt. Verified on 2026-10-22: a worker launched this way in `auto` mode ran its turn and sent `worker_done`.
 - Role agents do not dispatch workers; their contracts say so. Nested workers obey `nested_worker_depth_exceeded`, and a new Run does not reset depth.
 
 ## The brief is the spec
