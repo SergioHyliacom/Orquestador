@@ -110,6 +110,8 @@ What a real run taught:
 - A click on an element outside the viewport does not register. Scroll it into view with `eval` first.
 - The snapshot can lag behind the page. Screenshots are the evidence.
 - Pick elements by the snapshot's ref, not by a regex over its text. A regex picked the wrong combobox twice.
+- Scope every query to the content region, with a container selector. A text match also hit the sidebar's user menu.
+- After a code change, run `orca reload` before checking. Hot reload missed a new component, and the tab stayed stale.
 - There is one tab. Never give the UI check to two agents at the same time.
 
 ## The guard
