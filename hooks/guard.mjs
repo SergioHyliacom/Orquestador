@@ -236,12 +236,17 @@ if (input.hook_event_name === "SubagentStop" || input.hook_event_name === "Stop"
   // Content, not command shape: whatever tool changed a locked file, the story files or the lock
   // list, the difference from HEAD shows it. This check ignores stop_hook_active: the builder
   // restores the files (git restore <file>) or stops for good only by reporting BLOCKED.
-  const watched = [...lockedPaths, ".orquestador/locked-tests.txt", ...(storiesRel ? [storiesRel, mapRel] : [])]
-    .map((p) => (WIN ? `:(icase)${p}` : p));
-  let changed = [];
-  try { changed = execFileSync("git", ["diff", "--name-only", "HEAD", "--", ...watched], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().split(/\r?\n/).filter(Boolean); }
-  catch { /* folder workspace or no commit yet: nothing to compare against */ }
+  const spec = (list) => list.map((p) => (WIN ? `:(icase)${p}` : p));
+  const lockSet = spec([...lockedPaths, ".orquestador/locked-tests.txt"]);
+  const run = (a) => { try { return execFileSync("git", a, { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { return ""; } };
+  const names = (a) => run(a).split(/\r?\n/).filter(Boolean);
+  const changed = names(["diff", "--name-only", "HEAD", "--", ...lockSet, ...spec(storiesRel ? [storiesRel, mapRel] : [])]);
   if (changed.length) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore them with \`git restore <file>\`, then report what you needed to change them for.`);
+  // A commit made through an interpreter leaves the tree equal to HEAD. The orchestrator commits each
+  // lock, so the last commit that touched the lock list is the base the locked files must still match.
+  const base = run(["log", "-1", "--format=%H", "--", ".orquestador/locked-tests.txt"]);
+  const committed = base ? names(["diff", "--name-only", base, "HEAD", "--", ...lockSet]) : [];
+  if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
   if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the builder reports honestly.
   const deadline = Date.now() + 1000 * 1000; // Stay inside the hook timeout in hooks.json.
   for (const c of config.verify?.onBuilderStop ?? []) {

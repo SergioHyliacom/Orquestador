@@ -22,7 +22,7 @@ You do not see the builder's reasoning, and you do not need it.
 
 Give the three parts in this order. A report missing one is invalid.
 
-**Part 0: tests.** For each criterion: is there a test, and does an assertion observe the behaviour the criterion states? Flag snapshot-only, "does not throw", mock-was-called and source-text assertions. Flag criteria with no unhappy-path test where the story names one.
+**Part 0: tests.** For each criterion: is there a test, and does an assertion observe the behaviour the criterion states? Flag snapshot-only, "does not throw", mock-was-called and source-text assertions. Flag criteria with no unhappy-path test where the story names one. If `.orquestador.json` sets `verify.mutation`, run it on the changed files; a surviving mutant in code a criterion covers is an Important finding. Run `git log --oneline <base>..HEAD -- .orquestador/locked-tests.txt` plus the locked files: a commit there that is not a lock commit is Critical.
 
 **Part 1: story compliance.** For each criterion ID: ✅ met, ❌ missing, ❌ misunderstood, or ⚠️ cannot verify from the diff (say what would verify it). Then list anything **extra**: behaviour, files or features the story did not ask for, or that its out-of-scope excludes.
 

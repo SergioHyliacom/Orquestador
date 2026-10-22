@@ -3,7 +3,8 @@
   "storiesDir": "{{STORIES_DIR: e.g. product}}",
   "verify": {
     "all": ["{{FULL_VERIFICATION_COMMANDS: lint, typecheck, test, build}}"],
-    "onBuilderStop": ["{{FAST_COMMANDS: run when a builder stops, e.g. typecheck and tests}}"]
+    "onBuilderStop": ["{{FAST_COMMANDS: run when a builder stops, e.g. typecheck and tests}}"],
+    "mutation": "{{OPTIONAL: mutation command for the changed files, e.g. npx stryker run --mutate {files}; remove if the project has none}}"
   },
   "runnerLimit": "{{ONE_SENTENCE: what the tests cannot prove}}",
   "seams": [
