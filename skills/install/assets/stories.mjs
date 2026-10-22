@@ -213,7 +213,8 @@ function loadResults() {
   const norm = (p) => path.relative(cwd, path.resolve(cwd, p)).split(path.sep).join("/");
   if ((T?.format ?? "jest-json") === "junit") {
     const cases = [];
-    for (const m of raw.matchAll(/<testcase\b([^>]*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
+    // Attribute values may hold a raw '>' (Node's reporter does not escape it): skip quoted strings whole.
+    for (const m of raw.matchAll(/<testcase\b((?:[^>"]|"[^"]*")*?)(\/>|>([\s\S]*?)<\/testcase>)/g)) {
       const xml = (v) => v.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
       const attr = (n) => xml(m[1].match(new RegExp(`(?:^|\\s)${n}="([^"]*)"`))?.[1] ?? "");
       const inner = m[3] ?? "";
