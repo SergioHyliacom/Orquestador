@@ -130,9 +130,21 @@ function classify(marker, file, id) {
   const starts = (m) => new RegExp(`^${escape(m)}(?![\\p{L}\\p{N}])`, "iu").test(marker);
   if (starts(M.test)) {
     const ref = marker.match(new RegExp(`^${escape(M.test)}:\\s*(.+?)\\s*›\\s*"(.+)"$`, "i"));
+    // A title made only of placeholders would match every test in the file.
+    if (ref && !ref[2].replace(/%[sdifjo#%]/g, "").replace(/[\s\p{P}]/gu, "")) {
+      errors.push(`${file}: criterion ${id} refers to a test title with no literal text ("${ref[2]}").`);
+      return { kind: "unverified" };
+    }
     return { kind: "test", ref: ref ? { file: ref[1].replace(/\\/g, "/"), title: ref[2] } : null };
   }
-  if (starts(M.manual)) return { kind: "manual" };
+  if (starts(M.manual)) {
+    // [manual YYYY-MM-DD, who]: a check by hand counts only with its date and the person who made it.
+    if (!new RegExp(`^${escape(M.manual)}\\s+\\d{4}-\\d{2}-\\d{2},\\s*\\S.*$`, "iu").test(marker)) {
+      errors.push(`${file}: criterion ${id} has [${marker}]. Write [${M.manual} YYYY-MM-DD, who].`);
+      return { kind: "unverified" };
+    }
+    return { kind: "manual" };
+  }
   if (new RegExp(`^${escape(M.unverified)}$`, "i").test(marker)) return { kind: "unverified" };
   if (new RegExp(`^${escape(M.unbuilt)}$`, "i").test(marker)) return { kind: "unbuilt" };
   if (starts(M.failing)) return { kind: "failing", reason: marker.replace(new RegExp(`^${escape(M.failing)}:\\s*`, "i"), "") };
@@ -195,6 +207,7 @@ for (const s of stories) for (const d of s.dependsOn) if (!storyIds.has(d)) erro
 // ---------- Test results
 
 const T = config.tests ?? null;
+let runnerCode = 0;
 if (flag("--tests")) {
   if (!T?.command) { console.error("stories.config.json: tests.command is not set."); process.exit(2); }
   const cwd = path.resolve(ROOT, T.cwd ?? ".");
@@ -202,7 +215,8 @@ if (flag("--tests")) {
   rmSync(RESULTS, { force: true });
   console.log(`Running: ${fill(T.command, { report: out })}`);
   try { execSync(fill(T.command, { report: out }), { cwd, stdio: ["ignore", "ignore", "inherit"] }); }
-  catch { /* A failing test exits non-zero; the report is still valid. */ }
+  // A failing test exits non-zero; the report is still valid, and the code is passed on at the end.
+  catch (e) { runnerCode = e.status || 1; }
   if (!existsSync(RESULTS)) { console.error("The test command wrote no report. Check tests.command and its {report} placeholder."); process.exit(2); }
 }
 
@@ -394,14 +408,26 @@ if (decisions.size) {
 out.push(`## ${X.legend}`, "", ...STATUS_ORDER.map((e) => `- ${L.statuses[e]}`), "");
 const md = out.join("\n");
 
+if (flag("--check")) {
+  // The main release must be green: a failing or skipped criterion fails the check, not only a stale map.
+  for (const s of main) for (const c of s.criteria) {
+    if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);
+    else if (c.result === "fail") errors.push(`${s.file}: the test for ${c.id} fails.`);
+    else if (c.result === "skipped") errors.push(`${s.file}: the test for ${c.id} is skipped.`);
+  }
+}
+
 if (errors.length) { console.error(`\n${errors.length} problem(s):`); for (const e of errors) console.error("  - " + e); }
+if (runnerCode) console.error(`\nThe test command exited with code ${runnerCode}.`);
 
 if (flag("--check")) {
   const current = existsSync(MAP) ? lf(readFileSync(MAP, "utf8")) : "";
   if (current !== md) { console.error(`\nmap.md is stale: run \`node ${SCRIPT}\`.`); process.exit(1); }
-  if (errors.length) process.exit(1);
+  if (errors.length || runnerCode) process.exit(1);
   console.log("map.md is up to date.");
 } else {
   writeFileSync(MAP, md);
   console.log(`map.md written: ${stories.length} stories, ${MAIN_RELEASE} ${ok}/${main.length} (${pct} %).`);
+  if (errors.length) process.exit(1);
+  if (runnerCode) process.exit(runnerCode);
 }

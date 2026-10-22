@@ -65,9 +65,12 @@ const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, "");
 const relTo = (base, p) => key(path.relative(base, path.resolve(base, p)));
 const LOCK_REL = key(".orquestador/locked-tests.txt");
 const lockFile = path.join(root, ".orquestador", "locked-tests.txt");
-const locked = new Set(existsSync(lockFile)
-  ? stripBom(readFileSync(lockFile, "utf8")).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map(key)
-  : []);
+const lockedPaths = existsSync(lockFile)
+  ? stripBom(readFileSync(lockFile, "utf8")).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
+  : [];
+const locked = new Set(lockedPaths.map(key));
+// A directory that holds a locked file: deleting or moving it takes the file with it.
+const holdsLocked = (rel) => rel === "" || [...locked].some((l) => l.startsWith(rel + "/"));
 const storiesRel = config.storiesDir ? key(path.join(config.storiesDir, "stories")) + "/" : null;
 const mapRel = config.storiesDir ? key(path.join(config.storiesDir, "map.md")) : null;
 
@@ -143,6 +146,14 @@ function checkGit(args) {
     if (broadAddBlocked && (has(/^--all$/) || has(/^-[a-z]*a/i))) block("`git commit -a` stages everything. Stage the story's files by name.");
     const b = currentBranch(dirArg);
     if (b && protectedBranches.includes(b)) block(`commits on ${b} are blocked. Create the story branch first.`);
+    // A role must not commit a change to a locked file: the Stop check compares against HEAD.
+    if (inSubagent) {
+      let staged = [];
+      try { staged = execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: dirArg, stdio: ["ignore", "pipe", "ignore"] }).toString().split(/\r?\n/).filter(Boolean).map(key); }
+      catch { /* not a repository: nothing staged */ }
+      const hit = staged.find((f) => locked.has(f) || f === LOCK_REL);
+      if (hit) block(`${hit} is locked. Unstage it; only the orchestrator commits changes to locked files.`);
+    }
   }
   if (["merge", "rebase", "cherry-pick", "pull", "am", "revert"].includes(sub)) {
     const b = currentBranch(dirArg);
@@ -154,19 +165,27 @@ function checkGit(args) {
   if (sub === "reset" && has(/^--hard$/)) block("git reset --hard is blocked. It discards work.");
   if (sub === "clean" && has(/^-[a-z]*f/i)) block("git clean -f is blocked. It deletes untracked files.");
   if ((sub === "checkout" || sub === "restore") && rest.some((a) => a === "." || a === ":/")) block(`git ${sub} . discards every uncommitted change. Name the files instead.`);
-  if (["rm", "mv", "checkout", "restore"].includes(sub)) checkPaths(rest, dirArg);
+  // Restoring a locked file to HEAD is how a role undoes a change to it, so that stays allowed.
+  const toHead = (sub === "restore" && !has(/^(-s|--source)/))
+    || (sub === "checkout" && rest.includes("--") && rest.slice(0, rest.indexOf("--")).every((a) => /^HEAD$/i.test(a)));
+  if (["rm", "mv"].includes(sub)) checkPaths(sub === "mv" ? rest.slice(0, -1) : rest, dirArg, true);
+  if (["rm", "mv", "checkout", "restore"].includes(sub) && !toHead) checkPaths(rest, dirArg);
 }
 
 const WRITERS = /^(rm|del|erase|rmdir|mv|move|cp|copy|tee|sed|truncate|remove-item|move-item|copy-item|set-content|add-content|out-file|clear-content|new-item)$/i;
+const REMOVERS = /^(rm|del|erase|rmdir|rd|mv|move|remove-item|move-item|ri|mi)$/i;
 
-function checkPaths(tokens, dir) {
+function checkPaths(tokens, dir, removes = false) {
   const base = toplevel(dir) ?? root;
   for (const t of tokens) {
     const p = t.replace(/^[<>]+/, "").replace(/^(-\w+:)/, "");
     if (!p || p.startsWith("-")) continue;
     const rel = relTo(base, path.resolve(dir, p));
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
+    if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
     if (inSubagent && rel === LOCK_REL) block("subagents cannot change the locked-tests list.");
+    if (isRole("builder") && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
+    if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   }
 }
 
@@ -178,7 +197,13 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     block("run the branch switch and the commit as separate commands.");
   }
   for (const raw of cmds) {
-    const tokens = raw[0] && /^(rtk|sudo|command|exec|&)$/i.test(raw[0]) ? raw.slice(1) : raw;
+    // Strip wrappers and VAR=value prefixes: `HUSKY=0 git commit` is still a git commit.
+    let s = 0;
+    while (s < raw.length && (/^(rtk|sudo|command|exec|env|nohup|time|&)$/i.test(raw[s]) || /^\$?(env:)?[A-Za-z_]\w*=/.test(raw[s]))) {
+      if (/^\$?(env:)?HUSKY=0/i.test(raw[s])) block("HUSKY=0 skips the commit hooks. Fix the failing hook instead.");
+      s++;
+    }
+    const tokens = raw.slice(s);
     if (!tokens.length) continue;
     if (isGit(tokens[0])) {
       if (readOnlyRole && !/^(status|diff|log|show|blame|grep|ls-files|rev-parse|branch|remote)$/i.test(tokens.find((t, i) => i > 0 && !t.startsWith("-")) ?? "")) block(`${agentType} is read-only. It may only run git commands that read.`);
@@ -190,6 +215,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     const split = tokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);
     const redirTargets = split.filter((t, i) => i > 0 && /^>>?$/.test(split[i - 1]));
     if (WRITERS.test(tokens[0])) checkPaths(tokens.slice(1), cwd);
+    if (REMOVERS.test(tokens[0])) checkPaths(/^(mv|move|move-item|mi)$/i.test(tokens[0]) ? tokens.slice(1, -1) : tokens.slice(1), cwd, true);
     if (redirTargets.length) checkPaths(redirTargets, cwd);
     if (readOnlyRole) {
       const targets = [...(WRITERS.test(tokens[0]) ? tokens.slice(1).filter((t) => !t.startsWith("-")) : []), ...redirTargets]
@@ -206,7 +232,17 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
 // Orca worker finishes. In the orchestrator's own session there is no role, so Stop exits at once.
 
 if (input.hook_event_name === "SubagentStop" || input.hook_event_name === "Stop") {
-  if (!isRole("builder") || input.stop_hook_active) process.exit(0); // One retry only; then the builder reports honestly.
+  if (!isRole("builder")) process.exit(0);
+  // Content, not command shape: whatever tool changed a locked file, the story files or the lock
+  // list, the difference from HEAD shows it. This check ignores stop_hook_active: the builder
+  // restores the files (git restore <file>) or stops for good only by reporting BLOCKED.
+  const watched = [...lockedPaths, ".orquestador/locked-tests.txt", ...(storiesRel ? [storiesRel, mapRel] : [])]
+    .map((p) => (WIN ? `:(icase)${p}` : p));
+  let changed = [];
+  try { changed = execFileSync("git", ["diff", "--name-only", "HEAD", "--", ...watched], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().split(/\r?\n/).filter(Boolean); }
+  catch { /* folder workspace or no commit yet: nothing to compare against */ }
+  if (changed.length) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore them with \`git restore <file>\`, then report what you needed to change them for.`);
+  if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the builder reports honestly.
   const deadline = Date.now() + 1000 * 1000; // Stay inside the hook timeout in hooks.json.
   for (const c of config.verify?.onBuilderStop ?? []) {
     const left = deadline - Date.now();
