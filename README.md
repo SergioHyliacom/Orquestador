@@ -22,7 +22,14 @@ The plugin is inert in projects without `.orquestador.json`. In projects with it
 
 ## Install the plugin
 
-From this folder:
+From GitHub:
+
+```
+claude plugin marketplace add sydneyhylia/orquestador
+claude plugin install orquestador@orquestador-local
+```
+
+From a local clone of this folder:
 
 ```
 claude plugin validate .
@@ -31,6 +38,8 @@ claude plugin install orquestador@orquestador-local
 ```
 
 To try it without installing: `claude --plugin-dir <path to this folder>`.
+
+Claude Code builds its plugin registry when the process starts. After installing, start a new session — restart the CLI, not just `/clear` — or the skills, the role agents and the guard will not be there.
 
 ## Set up a project
 
@@ -51,3 +60,8 @@ The plugin is written in English. Each project's files are written in that proje
 - Claude Code with plugin support.
 - Node.js 20 or later, on `PATH` (the guard and the validator use it).
 - Git. The GitHub steps use the `gh` CLI.
+- Optional: [Orca](https://orca.computer). Without it the roles run as Claude Code subagents.
+
+## Authors
+
+Sydney and Claude (Claude Code, Opus 5). MIT licensed; see `LICENSE`.
