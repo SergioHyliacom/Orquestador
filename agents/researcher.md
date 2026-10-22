@@ -1,6 +1,6 @@
 ---
 name: researcher
-description: Read-only research on one question: codebase investigation, external best practice, library or API behaviour, comparing options. Ends with one recommendation, not a menu. Use when answering would flood the orchestrator's context or when several independent questions can be read in parallel. Name each instance researcher-<topic>.
+description: "Read-only research on one question: codebase investigation, external best practice, library or API behaviour, comparing options. Ends with one recommendation, not a menu. Use when answering would flood the orchestrator's context or when several independent questions can be read in parallel. Name each instance researcher-<topic>."
 tools: Read, Write, Grep, Glob, WebSearch, WebFetch, Bash, PowerShell
 model: sonnet
 maxTurns: 60

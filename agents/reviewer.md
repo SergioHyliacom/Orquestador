@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Independent read-only review of one change against its user story. Gives two verdicts in order: story compliance per criterion, then code quality. It edits nothing except its report. Use after every builder run and on any risk-tagged change. Name each instance reviewer-<story ID>.
+description: "Independent read-only review of one change against its user story. Gives two verdicts in order: story compliance per criterion, then code quality. It edits nothing except its report. Use after every builder run and on any risk-tagged change. Name each instance reviewer-<story ID>."
 tools: Read, Write, Grep, Glob, Bash, PowerShell
 model: inherit
 maxTurns: 60
