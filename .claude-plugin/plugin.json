@@ -4,10 +4,10 @@
   "description": "The main session orchestrates and delegates to role agents. User stories drive product work. The human is contacted only at review points.",
   "author": {
     "name": "Sydney and Claude",
-    "url": "https://github.com/sydneyhylia/orquestador"
+    "url": "https://github.com/sydneyhylia/Orquestador"
   },
-  "homepage": "https://github.com/sydneyhylia/orquestador",
-  "repository": "https://github.com/sydneyhylia/orquestador",
+  "homepage": "https://github.com/sydneyhylia/Orquestador",
+  "repository": "https://github.com/sydneyhylia/Orquestador",
   "license": "MIT",
   "keywords": ["orchestration", "subagents", "user-stories", "workflow", "orca"]
 }

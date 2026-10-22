@@ -1,4 +1,4 @@
-# orquestador
+# Orquestador
 
 A Claude Code plugin for orchestrated product work.
 
@@ -25,7 +25,7 @@ The plugin is inert in projects without `.orquestador.json`. In projects with it
 From GitHub:
 
 ```
-claude plugin marketplace add sydneyhylia/orquestador
+claude plugin marketplace add sydneyhylia/Orquestador
 claude plugin install orquestador@orquestador-local
 ```
 
