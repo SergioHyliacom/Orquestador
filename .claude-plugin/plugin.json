@@ -1,0 +1,7 @@
+{
+  "name": "orquestador",
+  "version": "0.1.0",
+  "description": "The main session orchestrates and delegates to role agents. User stories drive product work. The human is contacted only at review points.",
+  "license": "MIT",
+  "keywords": ["orchestration", "subagents", "user-stories", "workflow"]
+}

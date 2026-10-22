@@ -1,0 +1,16 @@
+{
+  "root": "..",
+  "releases": ["{{FIRST_RELEASE}}", "{{NEXT_RELEASE}}", "{{LATER}}"],
+  "mainRelease": "{{FIRST_RELEASE}}",
+  "personas": ["{{PERSONA}}"],
+  "tests": {
+    "command": "{{TEST_COMMAND_WITH_{report}_PLACEHOLDER, e.g. npx vitest run --reporter=json --outputFile={report}}}",
+    "cwd": "{{DIR_WHERE_TESTS_RUN, relative to root}}",
+    "format": "jest-json"
+  },
+  "lanes": [
+    { "id": "journey", "title": "{{JOURNEY_LANE_TITLE}}" },
+    { "id": "separate", "title": "{{SEPARATE_LANE_TITLE}}" }
+  ],
+  "labels": {}
+}
