@@ -56,7 +56,7 @@ orca orchestration check --wait --types "worker_done,escalation,question" --time
 3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close`. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
 4. **An empty wait or a timeout is a checkpoint, not a failure.** Keep rolling waits until every expected Dispatch settles. After three consecutive empty waits, enumerate with `worker-list --run <id> --include-remote --json` and run each row's literal `projection.nextAction`; a `none` action means read `liveness.reason` and keep waiting.
 5. **Absence proves nothing.** `unverifiable`, a null `agentWait`, an unchanged output tail and a lost connection are all absence, and absence authorizes no stop, abandon, retry or release. Leave a wait only on positive proof: `exited` liveness, the worker's own observation of exit, or a transcript whose last agent turn sent no `worker_done`. Then load `recovery-and-cleanup` and choose `worker-stop` or `worker-abandon` explicitly.
-6. **Read each new worker once, and any worker that seems stuck.** Right after `worker-start`, and whenever a worker goes quiet, run `worker-read` on its terminal. If the agent waits at a prompt (the Bypass Permissions warning, a trust dialog, a tool permission request), never answer it: that is the human's consent. `worker-stop` the worker, tell the human the exact prompt, and run that role through the Agent tool meanwhile. Record it as unsupervised.
+6. **Read each new worker once, and any worker that seems stuck.** Right after `worker-start`, and whenever a worker goes quiet, run `worker-read` on its terminal. If the agent waits at a prompt (a folder-trust question, the Bypass Permissions warning, a tool permission request), never answer it: that is the human's consent. `worker-stop` the worker, tell the human the exact prompt, and run that role through the Agent tool meanwhile. Record it as unsupervised.
 7. **A non-zero `worker-start` is not a reason to relaunch.** Read the receipt's `failedStage` and `residualResources` and follow `recovery-and-cleanup`. After three failed attempts a Task circuit-breaks: report it to the human instead of routing around it with a new Run or Task.
 
 ### The statuses of §5, in Orca terms
@@ -80,17 +80,17 @@ A fresh worker means a fresh terminal, not a new Git worktree.
 - **Name the work:** the terminal's `--title` and the `--task-title` are both `<role>-<scope>`.
 - Pass a model only when the human named one: put `--model <id>` in the `claude` command.
 
-### Launch: your permission mode, not Orca's default
+### Launch: the worker mode, not Orca's default
 
-`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs. That default can be `--dangerously-skip-permissions`, and then the worker stops at the Bypass Permissions warning and never runs. So launch the terminal yourself, in the permission mode your own session runs in, and dispatch into it. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names your mode:
+`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs, which the project does not control. So launch the terminal yourself and dispatch into it. The worker mode is `orca.workerPermissionMode` in `.orquestador.json` when set (for example `bypassPermissions`), otherwise the permission mode your own session runs in. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names the mode:
 
 ```
-orca terminal create --worktree <current | the writer's worktree> --title "<role>-<scope>" --command "claude --permission-mode <your mode>" --json
+orca terminal create --worktree <current | the writer's worktree> --title "<role>-<scope>" --command "claude --permission-mode <worker mode>" --json
 orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 60000 --json
 orca orchestration worker-start --terminal <handle> --worktree <same selector> --spec "<the brief>" --task-title "<role>-<scope>" --json
 ```
 
-If the wait reports a `blockedReason`, read the terminal. A folder-trust or permission prompt goes to the human (rule 6 of **The loop**). A new worktree is a new folder, so the first writer in it can meet the trust prompt. Verified on 2026-10-22: a worker launched this way in `auto` mode ran its turn and sent `worker_done`.
+If the wait reports a `blockedReason`, read the terminal and take the prompt to the human (rule 6 of **The loop**). The usual one is `agent-trust-workspace`: Claude asks to trust a folder that neither it nor any parent folder is trusted in, and no permission mode skips that question. Trust is inherited, so the human trusts the parent of the repository and of Orca's worktree folder once, and the install checks it. The Bypass Permissions warning does not block a worker when the Claude profile Orca launches with has `skipDangerousModePermissionPrompt: true`. Verified on 2026-10-22: `bypassPermissions` started without a prompt in a trusted folder and stopped at the trust question in an untrusted one; a worker in `auto` mode ran its turn and sent `worker_done`.
 - Role agents do not dispatch workers; their contracts say so. Nested workers obey `nested_worker_depth_exceeded`, and a new Run does not reset depth.
 
 ## The brief is the spec
