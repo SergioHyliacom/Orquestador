@@ -139,7 +139,8 @@ function checkGit(args) {
   if (sub === "push") {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
     if (has(/^--no-verify$/)) block("--no-verify is blocked. Fix the failing hook instead.");
-    if (!git.allowPush) block("git push is blocked. Ask the product owner to push, or to run it with `! git push`.");
+    if (inSubagent) block("role agents never push. Report DONE; the orchestrator pushes when the product owner asks.");
+    if (git.allowPush === false) block("git push is blocked in this project (git.allowPush is false). Ask the product owner to run `! git push`.");
   }
   if (sub === "commit") {
     if (has(/^--no-verify$/) || has(/^-[a-z]*n/i)) block("skipping commit hooks is blocked. Fix the failing hook instead.");
@@ -210,7 +211,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       checkGit(tokens.slice(1));
       continue;
     }
-    if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "") && !git.allowPush) block("gh pr merge is blocked. The product owner merges.");
+    if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "") && (inSubagent || git.allowPush === false)) block("gh pr merge is blocked here. The product owner merges, or asks the orchestrator to.");
     // Redirections write too: split "x>file" and "> file" into their own tokens.
     const split = tokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);
     const redirTargets = split.filter((t, i) => i > 0 && /^>>?$/.test(split[i - 1]));

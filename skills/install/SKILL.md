@@ -64,7 +64,7 @@ Insert `assets/claude-md-block.md`, filled and translated, into the root `CLAUDE
 - Every command in `.orquestador.json` runs.
 - Every path cited in the `CLAUDE.md` block exists.
 - `node <storiesDir>/stories.mjs --tests --check` passes. CI runs the same command.
-- The guard is active: ask the human to try `git push` in a fresh session and confirm it is blocked. If hooks do not run on this machine, record it in the `CLAUDE.md` block; the agents still carry the same rules in their prompts.
+- The guard is active: ask the human to try `git push --force` in a fresh session and confirm it is blocked. If hooks do not run on this machine, record it in the `CLAUDE.md` block; the agents still carry the same rules in their prompts.
 - **The delegation mechanism works.** Detect the harness (`orchestrate` skill → `references/harness.md`) and prove the chain once, now, with the smallest real delegation — not by reading the documentation. In Orca: bind a Run, dispatch one `researcher` on a throwaway question, and confirm `orca orchestration run-list --json`, `worker-list --run <id> --json` and `orca worktree ps` all show it; then release it. In plain Claude Code: one Agent-tool subagent that returns a report file. Record the result in the `CLAUDE.md` block's **Delegation** line. A mechanism nobody has exercised is not installed.
 
 Report each check as ✅ measured and working, ⚠️ not verified (with the manual step), ❌ failed.

@@ -16,7 +16,7 @@
   "design": "{{DESIGN_SOURCE: design file link, design-system docs}}",
   "git": {
     "protectedBranches": ["main", "master"],
-    "allowPush": false,
+    "allowPush": true,
     "blockBroadAdd": true,
     "codeOwner": "{{CODE_OWNER or null}}"
   }

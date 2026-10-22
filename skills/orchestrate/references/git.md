@@ -13,7 +13,8 @@
 
 ## Push and remote
 
-- Push only when the human asks. The guard blocks `git push` unless `git.allowPush` is `true`. If blocked, tell the human to run `! git push -u origin <branch>`.
+- Push only when the human asks. When the human says "commit and push", do both: a commit alone is half the request.
+- Role agents never push; the guard blocks it. `git.allowPush: false` blocks the orchestrator too. Then tell the human to run `! git push -u origin <branch>`.
 - Check `git remote -v` and the auth setup before the first push in a project. Non-interactive sessions cannot answer credential prompts.
 
 ## Pull requests
