@@ -30,7 +30,7 @@ Write the verdict on the first line of `.orquestador/state.md`, with the Run id 
 
 ## Orca: the guide is the authority
 
-Run `orca skills get orchestration` before the first delegation and follow it. It is version-matched to the installed CLI; this file only maps orquestador onto it and never overrides it. Use the same executable for the whole run, and read a reference at its action gate:
+Run `orca skills get orchestration` before the first delegation and follow it. It is version-matched to the installed CLI; this file only maps orquestador onto it and never overrides it. Use the same executable for the whole run, and read a reference at its action gate. On Windows, PowerShell splits a multi-line `--spec` at its quotes; write the spec to a file and pass it from Git Bash as `--spec "$(cat <file>)"`.
 
 ```
 orca skills get orchestration --reference references/<file>.md
@@ -56,7 +56,8 @@ orca orchestration check --wait --types "worker_done,escalation,question" --time
 3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close`. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
 4. **An empty wait or a timeout is a checkpoint, not a failure.** Keep rolling waits until every expected Dispatch settles. After three consecutive empty waits, enumerate with `worker-list --run <id> --include-remote --json` and run each row's literal `projection.nextAction`; a `none` action means read `liveness.reason` and keep waiting.
 5. **Absence proves nothing.** `unverifiable`, a null `agentWait`, an unchanged output tail and a lost connection are all absence, and absence authorizes no stop, abandon, retry or release. Leave a wait only on positive proof: `exited` liveness, the worker's own observation of exit, or a transcript whose last agent turn sent no `worker_done`. Then load `recovery-and-cleanup` and choose `worker-stop` or `worker-abandon` explicitly.
-6. **A non-zero `worker-start` is not a reason to relaunch.** Read the receipt's `failedStage` and `residualResources` and follow `recovery-and-cleanup`. After three failed attempts a Task circuit-breaks: report it to the human instead of routing around it with a new Run or Task.
+6. **Read each new worker once, and any worker that seems stuck.** Right after `worker-start`, and whenever a worker goes quiet, run `worker-read` on its terminal. If the agent waits at a prompt (the Bypass Permissions warning, a trust dialog, a tool permission request), never answer it: that is the human's consent. `worker-stop` the worker, tell the human the exact prompt, and run that role through the Agent tool meanwhile. Record it as unsupervised.
+7. **A non-zero `worker-start` is not a reason to relaunch.** Read the receipt's `failedStage` and `residualResources` and follow `recovery-and-cleanup`. After three failed attempts a Task circuit-breaks: report it to the human instead of routing around it with a new Run or Task.
 
 ### The statuses of §5, in Orca terms
 
