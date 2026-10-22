@@ -175,6 +175,7 @@ function checkGit(args) {
 
 const WRITERS = /^(rm|del|erase|rmdir|mv|move|cp|copy|tee|sed|truncate|remove-item|move-item|copy-item|set-content|add-content|out-file|clear-content|new-item)$/i;
 const REMOVERS = /^(rm|del|erase|rmdir|rd|mv|move|remove-item|move-item|ri|mi)$/i;
+const PERMISSION_MODES = ["default", "acceptEdits", "plan", "auto", "dontAsk", "bypassPermissions"];
 
 function checkPaths(tokens, dir, removes = false) {
   const base = toplevel(dir) ?? root;
@@ -211,12 +212,16 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       checkGit(tokens.slice(1));
       continue;
     }
-    // Orca workers run in this session's permission mode, not Orca's default arguments (harness.md, Launch).
-    if (/^orca(\.exe)?$/i.test(tokens[0]) && input.permission_mode) {
-      const want = `--permission-mode ${input.permission_mode}`;
+    // Orca workers run in orca.workerPermissionMode, or else in this session's mode, never in Orca's
+    // default arguments (harness.md, Launch).
+    const workerMode = config.orca?.workerPermissionMode || input.permission_mode;
+    if (/^orca(\.exe)?$/i.test(tokens[0]) && workerMode) {
+      if (!PERMISSION_MODES.includes(workerMode)) block(`orca.workerPermissionMode "${workerMode}" is not a permission mode (${PERMISSION_MODES.join(", ")}). Fix .orquestador.json.`);
+      const want = `--permission-mode ${workerMode}`;
+      const from = config.orca?.workerPermissionMode ? "orca.workerPermissionMode" : "this session's mode";
       if (tokens[1] === "orchestration" && tokens[2] === "worker-start" && tokens.includes("--agent")) block(`launch the worker's terminal yourself with \`orca terminal create --command "claude ${want}"\`, then \`worker-start --terminal <handle>\`. --agent uses Orca's default arguments.`);
       const cmd = tokens[tokens.indexOf("--command") + 1] ?? "";
-      if (tokens[1] === "terminal" && tokens[2] === "create" && /^claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in this session's mode: --command "claude ${want}".`);
+      if (tokens[1] === "terminal" && tokens[2] === "create" && /(^|[;&|]\s*)claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in ${from}: --command "claude ${want}".`);
     }
     if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "") && (inSubagent || git.allowPush === false)) block("gh pr merge is blocked here. The product owner merges, or asks the orchestrator to.");
     // Redirections write too: split "x>file" and "> file" into their own tokens.
