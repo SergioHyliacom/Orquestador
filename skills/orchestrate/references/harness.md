@@ -74,7 +74,7 @@ A gate is for a decision **you** own that blocks one Task while the rest of the 
 A fresh worker means a fresh terminal, not a new Git worktree.
 
 - **Writers** never share your workspace: `--worktree new-child --name <role>-<scope> --setup run`. One worktree per writer, and the branch rules of `references/git.md` apply inside it.
-- **Read-only roles** (`reviewer`, `researcher`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report.
+- **Read-only roles** (`reviewer`, `researcher`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout.
 - **Folder workspaces are first-class.** When the workspace is a folder, there is no worktree lineage and no branch: `git.md` does not apply, and the story's evidence is the verification commands alone. Say so in the close report.
 - **Name the work, do not rename terminals:** `--task-title "<role>-<scope>"` and `--display-name "<role>-<scope>"`. How the worker appears — chat or terminal — follows the human's own setting for new agent tabs. There is no flag for it and no reason to ask.
 - `--agent claude` unless the human named another agent. Pass `--model`/`--effort` only when the human named them, and compare `launch.requested` with `launch.effective` before claiming either took effect.

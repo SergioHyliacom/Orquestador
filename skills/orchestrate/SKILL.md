@@ -26,6 +26,8 @@ Technical rulings are yours; list them in the close report. Product rulings are 
 
 Two decisions, in this order: **who** does it, then **through which mechanism**. The second one is not a detail — it decides whether the human sees the work happen, whether it survives your compaction, and whether the guard can still hold the role to its contract. `references/harness.md` rules it. In Orca: everything that writes, runs long, or produces a verdict the human will read is a supervised worker; the Agent tool is for a short read-only lookup whose answer only you need.
 
+A human ruling can change the mechanism, for example "no commits", which keeps writers out of their own worktrees. When you ask for one, name what the human loses: "the builder runs as a subagent, with no terminal you can watch". Write the ruling with its scope. It expires at the end of the block of work; ask again at the next block. It never moves read-only roles: in Orca they stay visible workers.
+
 Ask in this order. Stop at the first match.
 
 1. **Is it trivial?** One-line fix, rename, lookup → do it directly.
