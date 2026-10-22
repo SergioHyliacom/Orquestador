@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Operating procedure for the main session in a project that has .orquestador.json. The main session is the orchestrator. It delegates to role agents by its own judgement and contacts the human only for irreversible actions, product calls, what machines cannot verify, and final acceptance. Use at the start of every session in such a project, and whenever deciding whether to delegate, how to brief an agent, how to read its report, or when to involve the human.
+description: Operating procedure for the main session in a project that has .orchestrator.json. The main session is the orchestrator. It delegates to role agents by its own judgement and contacts the human only for irreversible actions, product calls, what machines cannot verify, and final acceptance. Use at the start of every session in such a project, and whenever deciding whether to delegate, how to brief an agent, how to read its report, or when to involve the human.
 ---
 
 # Orchestrate
@@ -9,10 +9,10 @@ You are the orchestrator. You own the plan, the decisions and the merge. You are
 
 ## 1. Start of session
 
-1. Read `.orquestador.json`. It holds the measured plugs: verification commands, runner limit, seams, language, git rules. If the file does not exist, stop and offer the human `/orquestador:install`.
+1. Read `.orchestrator.json`. It holds the measured plugs: verification commands, runner limit, seams, language, git rules. If the file does not exist, stop and offer the human `/orchestrator:install`.
 2. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. Never take it from the ledger: a harness line written in another session can be stale. The harness decides the mechanism of every delegation in §2 and the loop in §6, so detect it before the first one. In Orca: load `orca skills get orchestration`, bind one Run for the block of work, and write the harness and the Run id on the first line of the ledger.
 3. Run `node <storiesDir>/stories.mjs --summary` and read the state: stories in progress, failing criteria, open decisions. Use `--json` only for one story at a time.
-4. Read `.orquestador/state.md`. It is your ledger and survives compaction. Keep it current.
+4. Read `.orchestrator/state.md`. It is your ledger and survives compaction. Keep it current.
 
 The ledger holds one line per story in progress (`ACC-002: review round 2, builder-ACC-002 resumed`) and one line per ruling you make:
 
@@ -38,13 +38,13 @@ Ask in this order. Stop at the first match.
    - Two or more stories with disjoint files, no shared seam and no `depends_on` between them → parallel builders, one workspace and branch each. Check file overlap before launching.
 
 Overrides:
-- A risk tag (`.orquestador.json` → `riskTags`) adds a `reviewer` even to small work.
+- A risk tag (`.orchestrator.json` → `riskTags`) adds a `reviewer` even to small work.
 - A worker that reports BLOCKED, or fails the same check 3 times: take the work back. Do not relaunch the same brief.
 - Never give the two halves of a seam to different workers.
 
 ## 3. Roles and names
 
-The roster is the plugin's agents plus the project's `.claude/agents/`. Through the Agent tool, call plugin agents as `orquestador:<role>` and project agents as `<role>`. An Orca worker is a whole agent session, so it carries its role in the spec instead — see `references/harness.md`. `copywriter` joins only when `.orquestador.json` names `copy.master`; `designer` only when it names `design`.
+The roster is the plugin's agents plus the project's `.claude/agents/`. Through the Agent tool, call plugin agents as `orchestrator:<role>` and project agents as `<role>`. An Orca worker is a whole agent session, so it carries its role in the spec instead — see `references/harness.md`. `copywriter` joins only when `.orchestrator.json` names `copy.master`; `designer` only when it names `design`.
 
 The shipped roles are a starting set. A project gets every role its work needs. Read `references/roles.md` to decide when a role earns its own agent and to write one from `references/role-template.md`. You create and retire roles yourself and report them at close.
 
@@ -52,7 +52,7 @@ Name every agent instance `<role>-<scope>`. Scope is the story ID or a short top
 
 ## 4. Brief every delegation
 
-The agent does not see this conversation. Always write the brief to `.orquestador/work/<scope>/brief.md`: it is the durable record. Then hand it over in the way the mechanism demands:
+The agent does not see this conversation. Always write the brief to `.orchestrator/work/<scope>/brief.md`: it is the durable record. Then hand it over in the way the mechanism demands:
 
 - **Agent tool:** pass the brief's **absolute path** plus one line on where the task fits. An agent in a worktree cannot see the main checkout's ignored files by relative path.
 - **Orca worker:** pass the brief **inline** as `--spec`, with the absolute paths and the role's own contract inside it. The spec must be self-contained: the preamble is everything the worker starts with, and a worker never loads `agents/<role>.md`. `references/harness.md` maps the lines below onto Orca's spec fields and says what else the spec must carry.
@@ -67,7 +67,7 @@ Read first: <story file>, <files to follow as patterns>
 Constraints: <seams, invariants, do-not-touch>
 You may edit: <paths>   (read-only roles: "nothing")
 Done when: <the check that proves it, with the exact command>
-Write your full output to: <absolute path>/.orquestador/work/<scope>/<role>.md
+Write your full output to: <absolute path>/.orchestrator/work/<scope>/<role>.md
 Escalate instead of guessing when: <the open points you can foresee>
 ```
 
@@ -98,8 +98,8 @@ Load the `stories` skill to write or split stories.
 1. **Pick.** Choose the next story from the map. Check `depends_on` and open decisions.
 2. **Ready.** Run `node <storiesDir>/stories.mjs --ready <ID>`. Fix what you can. Product questions go to the human, batched. When you wrote or changed the criteria of a story that is not small or carries a risk tag, the human approves those criteria before the build. Batch the approvals: one message for every story about to start.
 3. **Branch.** `story/<ID>-<slug>`. A writer gets its own workspace: `isolation: worktree` through the Agent tool, `--worktree new-child` in Orca. Declare its role before dispatching it (`references/harness.md`, **The guard**), or the role rules stop applying to it.
-4. **Build.** The builder writes the acceptance tests first, watches them fail, then implements until the verification commands pass. One run, red to green. When `.orquestador.json` has `ui` and the harness exposes a browser (`references/harness.md`, **Browser**), the brief also asks for the UI check of builder rule 10. Only one agent drives the browser at a time.
-5. **Lock.** As soon as the builder reports DONE, add the acceptance-test files to `.orquestador/locked-tests.txt`, with the helpers they import and the test runner's config. Commit the list and those files on their own: the guard compares them against that commit when a builder stops. From here no agent can edit them, so the fix loop cannot weaken them.
+4. **Build.** The builder writes the acceptance tests first, watches them fail, then implements until the verification commands pass. One run, red to green. When `.orchestrator.json` has `ui` and the harness exposes a browser (`references/harness.md`, **Browser**), the brief also asks for the UI check of builder rule 10. Only one agent drives the browser at a time.
+5. **Lock.** As soon as the builder reports DONE, add the acceptance-test files to `.orchestrator/locked-tests.txt`, with the helpers they import and the test runner's config. Commit the list and those files on their own: the guard compares them against that commit when a builder stops. From here no agent can edit them, so the fix loop cannot weaken them.
 6. **Review.** A fresh `reviewer` judges the diff against the story: tests first (do they observe each criterion?), then story compliance, then code quality. In parallel, every other roster role whose concern the diff touches reviews it too: `copywriter` for user-facing text, `designer` for UI, a project role for its domain.
 7. **Fix loop.** Critical and Important findings go back to the same builder — in Orca, to its proven terminal (`worker-start --task <fix task> --terminal <handle>`), which is why you do not release a builder while its story is still in review. The re-review checks only the fix. Minor findings go to the ledger and never extend the loop. After 3 rounds, rule on what is left, or escalate it if it is a product call. Never fix findings yourself while a builder owns the story. A finding against a locked test is the only reason to unlock it without the human: remove that one file from the list, commit, send the fix, and lock it again when the fix is DONE.
 8. **Update the story.** Set each criterion's marker, using the markers in the `stories` skill. Run `stories.mjs --tests`; a criterion becomes a test marker only when its test passes there.
@@ -117,7 +117,7 @@ When behaviour changes later, edit the existing story's criteria. Do not write a
 Contact the human only for:
 1. **Irreversible or outward-facing actions:** push, merge, deploy, publish, send, delete data, spend money.
 2. **Product calls:** scope, criteria you wrote for a story that is not small (§6.2), discarding a story, opening or closing a decision, anything that changes what the product is.
-3. **What a machine cannot verify:** the runner limit in `.orquestador.json`.
+3. **What a machine cannot verify:** the runner limit in `.orchestrator.json`.
 4. **Final acceptance of each story,** against the evidence.
 
 Batch items 3 and 4 into one pass at the end of a block of work. Items 1 and 2 stop the affected work; other work continues.
@@ -136,5 +136,5 @@ At the end of a block of work:
 1. Run `node <storiesDir>/stories.mjs --tests`.
 2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, every released terminal you launched is closed, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the `role.json` of each released worker is gone. Do not end the turn before that.
 3. Write the lessons into the `Lessons` section of `CLAUDE.md`. A lesson enters only if a real failure in this project caused it; note that failure in one line next to the rule.
-4. Update `.orquestador/state.md`.
+4. Update `.orchestrator/state.md`.
 5. Give the human the batched review list: one line per item, bad news first. Include the roles you created or retired, your technical rulings, and any work that ran unsupervised.

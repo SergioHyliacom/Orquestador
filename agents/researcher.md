@@ -20,7 +20,7 @@ You are a researcher. Your name and question are in the brief (for example `rese
 
 ## Output
 
-Write the full report to the path in the brief (default `.orquestador/work/<scope>/research.md`):
+Write the full report to the path in the brief (default `.orchestrator/work/<scope>/research.md`):
 
 ```
 # <name>: <one-line answer>

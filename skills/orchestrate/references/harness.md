@@ -11,7 +11,7 @@ Detect once per session. The harness decides **how** you delegate, not whether. 
 
 Check with `env | grep -E '^(TERM_PROGRAM|ORCA_|CLAUDECODE)'` or `Get-ChildItem env: | Where-Object Name -match 'ORCA|TERM_PROGRAM|CLAUDECODE'`.
 
-Write the verdict on the first line of `.orquestador/state.md`, with the Run id when the harness is Orca. A session that does not know its harness delegates to the wrong mechanism silently.
+Write the verdict on the first line of `.orchestrator/state.md`, with the Run id when the harness is Orca. A session that does not know its harness delegates to the wrong mechanism silently.
 
 ## Two mechanisms
 
@@ -26,11 +26,11 @@ Write the verdict on the first line of `.orquestador/state.md`, with the Run id 
 
 **In Orca the worker is the default.** Use the Agent tool only for a short read-only lookup whose answer only you need and that you would otherwise do yourself. Everything that writes, runs long, or produces a verdict the human will read is a supervised worker. Never substitute the Agent tool when the human asked to supervise, monitor or track the work: that request is for Orca provenance, and an in-process subagent leaves none.
 
-**In plain Claude Code** the Agent tool is the only mechanism. Parallel writers get `isolation: worktree`. Separate sessions only if the human runs them; coordinate through files in `.orquestador/work/` and cross-session messages (ListAgents/SendMessage). A message lasts only as long as the session; the branch and the files are the durable record.
+**In plain Claude Code** the Agent tool is the only mechanism. Parallel writers get `isolation: worktree`. Separate sessions only if the human runs them; coordinate through files in `.orchestrator/work/` and cross-session messages (ListAgents/SendMessage). A message lasts only as long as the session; the branch and the files are the durable record.
 
 ## Orca: the guide is the authority
 
-Run `orca skills get orchestration` before the first delegation and follow it. It is version-matched to the installed CLI; this file only maps orquestador onto it and never overrides it. Use the same executable for the whole run, and read a reference at its action gate. On Windows, PowerShell splits a multi-line `--spec` at its quotes; write the spec to a file and pass it from Git Bash as `--spec "$(cat <file>)"`.
+Run `orca skills get orchestration` before the first delegation and follow it. It is version-matched to the installed CLI; this file only maps orchestrator onto it and never overrides it. Use the same executable for the whole run, and read a reference at its action gate. On Windows, PowerShell splits a multi-line `--spec` at its quotes; write the spec to a file and pass it from Git Bash as `--spec "$(cat <file>)"`.
 
 ```
 orca skills get orchestration --reference references/<file>.md
@@ -82,7 +82,7 @@ A fresh worker means a fresh terminal, not a new Git worktree.
 
 ### Launch: the worker mode, not Orca's default
 
-`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs, which the project does not control. So launch the terminal yourself and dispatch into it. The worker mode is `orca.workerPermissionMode` in `.orquestador.json` when set (for example `bypassPermissions`), otherwise the permission mode your own session runs in. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names the mode:
+`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs, which the project does not control. So launch the terminal yourself and dispatch into it. The worker mode is `orca.workerPermissionMode` in `.orchestrator.json` when set (for example `bypassPermissions`), otherwise the permission mode your own session runs in. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names the mode:
 
 ```
 orca terminal create --worktree <current | the writer's worktree> --title "<role>-<scope>" --command "claude --permission-mode <worker mode>" --json
@@ -95,7 +95,7 @@ If the wait reports a `blockedReason`, read the terminal and take the prompt to 
 
 ## The brief is the spec
 
-Orca requires a **self-contained** spec: the injected preamble is all the worker starts with, and a worker in another workspace cannot read your ignored files by relative path. So pass the §4 brief **inline** as `--spec`, and keep writing it to `.orquestador/work/<scope>/brief.md` as the durable record.
+Orca requires a **self-contained** spec: the injected preamble is all the worker starts with, and a worker in another workspace cannot read your ignored files by relative path. So pass the §4 brief **inline** as `--spec`, and keep writing it to `.orchestrator/work/<scope>/brief.md` as the durable record.
 
 | Orca spec field | §4 brief line |
 |---|---|
@@ -133,7 +133,7 @@ What a real run taught:
 
 So, for every Orca worker, before you dispatch it:
 
-1. Write `<the worker's workspace>/.orquestador/role.json`:
+1. Write `<the worker's workspace>/.orchestrator/role.json`:
 
 ```json
 { "role": "builder", "scope": "ACC-002", "workspace": "<absolute path of that workspace>" }
@@ -143,7 +143,7 @@ The guard reads it when `agent_type` is empty, checks that `workspace` is the wo
 
 2. **Never write it into your own workspace.** It would apply those rules to you. That is the second reason a writer gets its own workspace.
 3. Delete it when you release the worker.
-4. A workspace whose root has no `.orquestador.json` is unguarded. Do not place a writer there.
+4. A workspace whose root has no `.orchestrator.json` is unguarded. Do not place a writer there.
 
 ## Prove it once per project
 
@@ -155,7 +155,7 @@ orca orchestration worker-list --run <id> --json   # your worker is there
 orca worktree ps                                   # its row, named <role>-<scope>
 ```
 
-Record the result as a ruling in `.orquestador/state.md`. Only `run_legacy_local` and an empty worker list mean the orchestration layer has never been used in this project.
+Record the result as a ruling in `.orchestrator/state.md`. Only `run_legacy_local` and an empty worker list mean the orchestration layer has never been used in this project.
 
 ## Avoid
 
@@ -163,4 +163,4 @@ Record the result as a ruling in `.orquestador/state.md`. Only `run_legacy_local
 - Two writers on the same files, in any harness.
 - `dispatch --inject` (it leaves the process unsupervised), `terminal close` in place of `worker-release`, and `orchestration reset` during active coordination.
 - Claiming a worker is dead, or retrying it, from absence alone.
-- Opening a browser — Orca's embedded browser included — unless the brief or the human allows it. The `ui` key in `.orquestador.json` is the human's permission for the UI check, and only for it.
+- Opening a browser — Orca's embedded browser included — unless the brief or the human allows it. The `ui` key in `.orchestrator.json` is the human's permission for the UI check, and only for it.

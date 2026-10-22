@@ -1,4 +1,4 @@
-# Orquestador
+# Orchestrator
 
 A Claude Code plugin for orchestrated product work.
 
@@ -6,9 +6,9 @@ A Claude Code plugin for orchestrated product work.
 - **The harness decides how it delegates.** In [Orca](https://orca.computer) the roles run as supervised workers under one orchestration Run: each in its own named terminal, with blocking questions, decision gates and a settlement the orchestrator must account for. In plain Claude Code they run as Agent-tool subagents. `skills/orchestrate/references/harness.md` maps the method onto each.
 - **Role agents** do the work. The plugin ships `builder` (the only role agent that writes code), `reviewer`, `researcher`, `copywriter` and `designer`. These are a starting set: each project gets every role its work needs, written into the project's `.claude/agents/` from a template. Each role is a contract: inputs, output file, tools, turn limit and when to stop.
 - **User stories** drive product work. Each story has acceptance criteria with a verification marker. A validator computes the status of each story and generates the map.
-- **A guard hook** blocks the dangerous actions: push from role agents, force push, `--no-verify`, `reset --hard`, commits on protected branches, broad `git add`, and edits to locked acceptance tests. It also holds each role to its contract: a Claude Code subagent is recognised by its `agent_type`, an Orca worker by the `.orquestador/role.json` the orchestrator writes into that worker's own workspace.
+- **A guard hook** blocks the dangerous actions: push from role agents, force push, `--no-verify`, `reset --hard`, commits on protected branches, broad `git add`, and edits to locked acceptance tests. It also holds each role to its contract: a Claude Code subagent is recognised by its `agent_type`, an Orca worker by the `.orchestrator/role.json` the orchestrator writes into that worker's own workspace.
 
-The plugin is inert in projects without `.orquestador.json`. In projects with it, a session-start hook tells the main session to load the `orchestrate` skill.
+The plugin is inert in projects without `.orchestrator.json`. In projects with it, a session-start hook tells the main session to load the `orchestrate` skill.
 
 ## Contents
 
@@ -25,8 +25,8 @@ The plugin is inert in projects without `.orquestador.json`. In projects with it
 From GitHub:
 
 ```
-claude plugin marketplace add sydneyhylia/Orquestador
-claude plugin install orquestador@orquestador-local
+claude plugin marketplace add sydneyhylia/Orchestrator
+claude plugin install orchestrator@orchestrator-local
 ```
 
 From a local clone of this folder:
@@ -34,7 +34,7 @@ From a local clone of this folder:
 ```
 claude plugin validate .
 claude plugin marketplace add .
-claude plugin install orquestador@orquestador-local
+claude plugin install orchestrator@orchestrator-local
 ```
 
 To try it without installing: `claude --plugin-dir <path to this folder>`.
@@ -43,13 +43,21 @@ Claude Code builds its plugin registry when the process starts. After installing
 
 ## Set up a project
 
-Open the project and run `/orquestador:install`. The install runs only on that command. It measures the project and asks only what it cannot measure. Then it writes:
+Open the project and run `/orchestrator:install`. The install runs only on that command. It measures the project and asks only what it cannot measure. Then it writes:
 
-- `.orquestador.json`: the measured plugs (commands, runner limit, seams, language, git rules);
+- `.orchestrator.json`: the measured plugs (commands, runner limit, seams, language, git rules);
 - project roles in `.claude/agents/`, when the project needs them;
 - the story folder in the project's language, with `stories.mjs`;
 - a block in `CLAUDE.md`;
-- `.orquestador/`: the ledger and the locked-tests list.
+- `.orchestrator/`: the ledger and the locked-tests list.
+
+### Projects installed as orquestador
+
+Before 0.3.0 the plugin was called orquestador. The guard still reads `.orquestador.json` and `.orquestador/`, so nothing breaks. To migrate a project:
+
+1. Rename `.orquestador.json` to `.orchestrator.json` and `.orquestador/` to `.orchestrator/` with `git mv`.
+2. Replace `.orquestador` with `.orchestrator` in `.gitignore` and in the `CLAUDE.md` block.
+3. Replace the plugin: `claude plugin uninstall orquestador@orquestador-local`, then install `orchestrator@orchestrator-local` as above. Restart the CLI.
 
 ## Languages
 

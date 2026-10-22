@@ -33,9 +33,9 @@ These are examples, not a list to pick from. Read the project and decide.
 
 1. Write `.claude/agents/<role>.md` in the project from `role-template.md` (next to this file). Project roles live in the project, not in the plugin.
 2. Fill every field. A role is a contract: purpose, inputs, output file, tools, model, turn limit, escalation rule, report shape.
-3. Read-only roles get `Write` only to write their report under `.orquestador/work/`. They get no `Edit`. Only roles that own a deliverable edit project files, and only their deliverable.
+3. Read-only roles get `Write` only to write their report under `.orchestrator/work/`. They get no `Edit`. Only roles that own a deliverable edit project files, and only their deliverable.
 4. State in the role's `description` which test it meets.
-5. Record the addition in `.orquestador/state.md` as a ruling, and list it in the close report.
+5. Record the addition in `.orchestrator/state.md` as a ruling, and list it in the close report.
 
 Creating, changing or retiring a role is the orchestrator's call. It is internal and reversible. It does not need the human's approval.
 

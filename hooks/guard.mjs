@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// orquestador guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
-// Inert unless the repository has .orquestador.json at its root.
+// orchestrator guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
+// Inert unless the repository has .orchestrator.json at its root.
 // Exit 0 = allow. Exit 2 = block; stderr goes back to Claude.
 
 import { execFileSync, execSync } from "node:child_process";
@@ -13,7 +13,7 @@ const input = JSON.parse(stripBom(readFileSync(0, "utf8")) || "{}");
 const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 function block(reason) {
-  process.stderr.write(`orquestador: ${reason}\n`);
+  process.stderr.write(`orchestrator: ${reason}\n`);
   process.exit(2);
 }
 
@@ -26,12 +26,14 @@ function toplevel(dir) {
 
 // The checkout the session works in. A worktree has its own toplevel and its own branch.
 const root = toplevel(cwd) ?? path.resolve(process.env.CLAUDE_PROJECT_DIR || cwd);
-const configPath = path.join(root, ".orquestador.json");
+// Projects installed before the rename keep .orquestador.json and .orquestador/ until they migrate.
+const STATE = existsSync(path.join(root, ".orchestrator.json")) || !existsSync(path.join(root, ".orquestador.json")) ? ".orchestrator" : ".orquestador";
+const configPath = path.join(root, `${STATE}.json`);
 if (!existsSync(configPath)) process.exit(0);
 
 let config;
 try { config = JSON.parse(stripBom(readFileSync(configPath, "utf8"))); }
-catch (e) { block(`.orquestador.json is not valid JSON (${e.message}). Fix it before continuing.`); }
+catch (e) { block(`${STATE}.json is not valid JSON (${e.message}). Fix it before continuing.`); }
 
 const git = config.git ?? {};
 const protectedBranches = git.protectedBranches ?? ["main", "master"];
@@ -39,7 +41,7 @@ const broadAddBlocked = git.blockBroadAdd !== false;
 // The role of this session. A Claude Code subagent carries it in agent_type. An Orca worker is a
 // whole session and carries none, so the orchestrator declares it in the worker's own workspace.
 function declaredRole() {
-  const file = path.join(root, ".orquestador", "role.json");
+  const file = path.join(root, STATE, "role.json");
   if (!existsSync(file)) return "";
   // A role file in the main checkout would gag the orchestrator. Only a linked worktree, or a
   // workspace with no git at all, can be a worker's own.
@@ -49,7 +51,7 @@ function declaredRole() {
   } catch { /* folder workspace: nothing to compare, trust the file */ }
   let role;
   try { role = JSON.parse(stripBom(readFileSync(file, "utf8"))); }
-  catch (e) { block(`.orquestador/role.json is not valid JSON (${e.message}). Fix it or delete it.`); }
+  catch (e) { block(`${STATE}/role.json is not valid JSON (${e.message}). Fix it or delete it.`); }
   // A copy that travelled with the branch names someone else's workspace. Ignore it.
   if (role.workspace && path.resolve(role.workspace) !== root) return "";
   return String(role.role ?? "");
@@ -63,8 +65,8 @@ const readOnlyRole = ["reviewer", "researcher", "designer"].some(isRole);
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
 const relTo = (base, p) => key(path.relative(base, path.resolve(base, p)));
-const LOCK_REL = key(".orquestador/locked-tests.txt");
-const lockFile = path.join(root, ".orquestador", "locked-tests.txt");
+const LOCK_REL = key(`${STATE}/locked-tests.txt`);
+const lockFile = path.join(root, STATE, "locked-tests.txt");
 const lockedPaths = existsSync(lockFile)
   ? stripBom(readFileSync(lockFile, "utf8")).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
   : [];
@@ -88,7 +90,7 @@ if (input.hook_event_name === "SessionStart") {
     ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
     : "Harness, detected now: plain Claude Code.";
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: `This project uses orquestador. Load the orquestador:orchestrate skill before any work and follow it. ${harness}` } }));
+    additionalContext: `This project uses orchestrator. Load the orchestrator:orchestrate skill before any work and follow it. ${harness}` } }));
   process.exit(0);
 }
 
@@ -99,7 +101,7 @@ function checkFileWrite(rel, absolute) {
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   if (inSubagent && rel === LOCK_REL) block("subagents cannot change the locked-tests list.");
   if (isRole("builder") && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
-  if (readOnlyRole && !key(absolute).includes("/.orquestador/work/")) block(`${agentType} is read-only. It writes only its report under .orquestador/work/.`);
+  if (readOnlyRole && !key(absolute).includes(`/${STATE}/work/`)) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/.`);
 }
 
 if (input.hook_event_name === "PreToolUse" && ["Edit", "Write", "MultiEdit", "NotebookEdit"].includes(input.tool_name)) {
@@ -224,7 +226,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     // default arguments (harness.md, Launch).
     const workerMode = cliMode(config.orca?.workerPermissionMode || input.permission_mode);
     if (/^orca(\.exe)?$/i.test(tokens[0]) && workerMode) {
-      if (!PERMISSION_MODES.includes(workerMode)) block(`orca.workerPermissionMode "${workerMode}" is not a permission mode (${PERMISSION_MODES.join(", ")}). Fix .orquestador.json.`);
+      if (!PERMISSION_MODES.includes(workerMode)) block(`orca.workerPermissionMode "${workerMode}" is not a permission mode (${PERMISSION_MODES.join(", ")}). Fix .orchestrator.json.`);
       const want = `--permission-mode ${workerMode}`;
       const from = config.orca?.workerPermissionMode ? "orca.workerPermissionMode" : "this session's mode";
       if (tokens[1] === "orchestration" && tokens[2] === "worker-start" && tokens.includes("--agent")) block(`launch the worker's terminal yourself with \`orca terminal create --command "claude ${want}"\`, then \`worker-start --terminal <handle>\`. --agent uses Orca's default arguments.`);
@@ -241,8 +243,8 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     if (readOnlyRole) {
       const targets = [...(WRITERS.test(tokens[0]) ? tokens.slice(1).filter((t) => !t.startsWith("-")) : []), ...redirTargets]
         .filter((t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t));
-      const outside = targets.find((t) => !key(path.resolve(cwd, t)).includes("/.orquestador/work/"));
-      if (outside) block(`${agentType} is read-only. It writes only its report under .orquestador/work/ (not ${outside}).`);
+      const outside = targets.find((t) => !key(path.resolve(cwd, t)).includes(`/${STATE}/work/`));
+      if (outside) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/ (not ${outside}).`);
     }
   }
   process.exit(0);
@@ -258,14 +260,14 @@ if (input.hook_event_name === "SubagentStop" || input.hook_event_name === "Stop"
   // list, the difference from HEAD shows it. This check ignores stop_hook_active: the builder
   // restores the files (git restore <file>) or stops for good only by reporting BLOCKED.
   const spec = (list) => list.map((p) => (WIN ? `:(icase)${p}` : p));
-  const lockSet = spec([...lockedPaths, ".orquestador/locked-tests.txt"]);
+  const lockSet = spec([...lockedPaths, `${STATE}/locked-tests.txt`]);
   const run = (a) => { try { return execFileSync("git", a, { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { return ""; } };
   const names = (a) => run(a).split(/\r?\n/).filter(Boolean);
   const changed = names(["diff", "--name-only", "HEAD", "--", ...lockSet, ...spec(storiesRel ? [storiesRel, mapRel] : [])]);
   if (changed.length) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore them with \`git restore <file>\`, then report what you needed to change them for.`);
   // A commit made through an interpreter leaves the tree equal to HEAD. The orchestrator commits each
   // lock, so the last commit that touched the lock list is the base the locked files must still match.
-  const base = run(["log", "-1", "--format=%H", "--", ".orquestador/locked-tests.txt"]);
+  const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`]);
   const committed = base ? names(["diff", "--name-only", base, "HEAD", "--", ...lockSet]) : [];
   if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
   if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the builder reports honestly.

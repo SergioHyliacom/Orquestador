@@ -1,12 +1,12 @@
 {
-  "name": "orquestador-local",
-  "description": "Local marketplace for the Orquestador plugin",
-  "owner": { "name": "orquestador" },
+  "name": "orchestrator-local",
+  "description": "Local marketplace for the Orchestrator plugin",
+  "owner": { "name": "orchestrator" },
   "plugins": [
     {
-      "name": "orquestador",
+      "name": "orchestrator",
       "source": "./",
-      "description": "Orquestador: orchestrator + role agents + user stories"
+      "description": "Orchestrator: orchestrator + role agents + user stories"
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 name: install
-description: Install orquestador in one project. Measures the project, writes .orquestador.json, the story folder and validator in the project's language, project roles and a CLAUDE.md block, and migrates an existing story folder. Run only when the human asks for /orquestador:install. Not for spec-driven (SDD) setups.
+description: Install orchestrator in one project. Measures the project, writes .orchestrator.json, the story folder and validator in the project's language, project roles and a CLAUDE.md block, and migrates an existing story folder. Run only when the human asks for /orchestrator:install. Not for spec-driven (SDD) setups.
 disable-model-invocation: true
 ---
 
@@ -9,7 +9,7 @@ disable-model-invocation: true
 The install has three layers. Store each one in its own place:
 
 - **Method:** fixed. It lives in the plugin (`orchestrate`, `stories`, the agents, the guard). Never copy it into the project.
-- **Plugs:** measured in this repo. Commands, paths, limits, seams, roles, language. They go into `.orquestador.json` and the `CLAUDE.md` block.
+- **Plugs:** measured in this repo. Commands, paths, limits, seams, roles, language. They go into `.orchestrator.json` and the `CLAUDE.md` block.
 - **Lessons:** start empty. Only real failures in this project add them, at close time.
 
 Never copy a rule or a lesson from another project.
@@ -28,9 +28,9 @@ Run things. Do not read them off `package.json` or a README.
 
 Ask the human only what you cannot measure, all at once: the product's personas, the release names, the risk tags that matter, the code owner if any, and whether agents may check the UI in a browser during the build. If yes, also ask which test data agents may touch. The `ui` key is that permission: remove it when the answer is no. In Orca, also ask which permission mode the workers launch in; `bypassPermissions` means they never stop to ask. That answer is `orca.workerPermissionMode`: remove the key when the workers should run in the orchestrator's own mode.
 
-## Step 2: write `.orquestador.json`
+## Step 2: write `.orchestrator.json`
 
-Copy `assets/orquestador.json` to the repo root as `.orquestador.json` and fill every slot. Remove `copy` or `design` when the project has no copy master or design source. Do not leave a `{{` anywhere.
+Copy `assets/orchestrator.json` to the repo root as `.orchestrator.json` and fill every slot. Remove `copy` or `design` when the project has no copy master or design source. Do not leave a `{{` anywhere.
 
 ## Step 3: create the story folder
 
@@ -55,13 +55,13 @@ Insert `assets/claude-md-block.md`, filled and translated, into the root `CLAUDE
 
 ## Step 5: prepare git
 
-1. Create `.orquestador/` with an empty `locked-tests.txt` and a `state.md` that says "No work in progress." Add `.orquestador/work/` and `.orquestador/role.json` to `.gitignore`; keep `locked-tests.txt` and `state.md` tracked. `role.json` is per-workspace and must never travel with a branch.
+1. Create `.orchestrator/` with an empty `locked-tests.txt` and a `state.md` that says "No work in progress." Add `.orchestrator/work/` and `.orchestrator/role.json` to `.gitignore`; keep `locked-tests.txt` and `state.md` tracked. `role.json` is per-workspace and must never travel with a branch.
 2. If several people share the repository, offer the human the optional GitHub settings in the `orchestrate` skill's `references/git.md`. Do not apply them yourself.
 
 ## Step 6: verify the install
 
-- `grep -r "{{" .orquestador.json CLAUDE.md <storiesDir>` returns nothing.
-- Every command in `.orquestador.json` runs.
+- `grep -r "{{" .orchestrator.json CLAUDE.md <storiesDir>` returns nothing.
+- Every command in `.orchestrator.json` runs.
 - Every path cited in the `CLAUDE.md` block exists.
 - `node <storiesDir>/stories.mjs --tests --check` passes. CI runs the same command.
 - The guard is active: ask the human to try `git push --force` in a fresh session and confirm it is blocked. If hooks do not run on this machine, record it in the `CLAUDE.md` block; the agents still carry the same rules in their prompts.
@@ -73,7 +73,7 @@ Report each check as ✅ measured and working, ⚠️ not verified (with the man
 
 When the project already has stories in another format:
 
-1. Map its fields to the orquestador keys (`id`, `title`, `activity`, `persona`, `release`, `blocked_by`, `depends_on`, `tags`, `screens`, `discarded`). Write the mapping down before changing files.
+1. Map its fields to the orchestrator keys (`id`, `title`, `activity`, `persona`, `release`, `blocked_by`, `depends_on`, `tags`, `screens`, `discarded`). Write the mapping down before changing files.
 2. Map its markers and headings to `labels`. If the existing words already work, keep them as the labels instead of rewriting every file.
 3. Rename the activity file keys to `code`, `name`, `folder`, `lane`, `purpose`.
 4. Change files with a script, not by hand. Run the validator before and after; the number of stories and criteria must not change.

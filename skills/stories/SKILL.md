@@ -1,6 +1,6 @@
 ---
 name: stories
-description: Write, split, review and maintain user stories in a project that uses orquestador. Covers the story file format, acceptance criteria as rules plus key examples, verification markers, splitting patterns, decisions, and the anti-patterns the validator flags. Use when creating or editing a story, turning a request into stories, splitting a large story, checking if a story is ready, or recording that a criterion fails.
+description: Write, split, review and maintain user stories in a project that uses orchestrator. Covers the story file format, acceptance criteria as rules plus key examples, verification markers, splitting patterns, decisions, and the anti-patterns the validator flags. Use when creating or editing a story, turning a request into stories, splitting a large story, checking if a story is ready, or recording that a criterion fails.
 ---
 
 # Stories

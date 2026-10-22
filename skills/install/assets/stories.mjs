@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Story validator and map generator (orquestador). No dependencies: Node >= 20.
+// Story validator and map generator (orchestrator). No dependencies: Node >= 20.
 //
 //   node stories.mjs                 generate the map with the last saved test results
 //   node stories.mjs --tests         run the test command, then generate the map

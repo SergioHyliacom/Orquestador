@@ -26,7 +26,7 @@ You are <role>. Your name and scope are in the brief (for example `<role>-<scope
 
 ## Output
 
-Write the full report to the path in the brief (default `.orquestador/work/<scope>/<role>.md`). For each finding:
+Write the full report to the path in the brief (default `.orchestrator/work/<scope>/<role>.md`). For each finding:
 
 ```
 ### <Critical|Important|Minor> — <title>
