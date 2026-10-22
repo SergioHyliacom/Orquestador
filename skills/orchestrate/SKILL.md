@@ -134,7 +134,7 @@ Read `references/git.md`. In short: one branch per story, one worktree per paral
 
 At the end of a block of work:
 1. Run `node <storiesDir>/stories.mjs --tests`.
-2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the `role.json` of each released worker is gone. Do not end the turn before that.
+2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, every released terminal you launched is closed, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the `role.json` of each released worker is gone. Do not end the turn before that.
 3. Write the lessons into the `Lessons` section of `CLAUDE.md`. A lesson enters only if a real failure in this project caused it; note that failure in one line next to the rule.
 4. Update `.orquestador/state.md`.
 5. Give the human the batched review list: one line per item, bad news first. Include the roles you created or retired, your technical rulings, and any work that ran unsupervised.
