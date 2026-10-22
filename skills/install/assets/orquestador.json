@@ -7,6 +7,7 @@
     "mutation": "{{OPTIONAL: mutation command for the changed files, e.g. npx stryker run --mutate {files}; remove if the project has none}}"
   },
   "runnerLimit": "{{ONE_SENTENCE: what the tests cannot prove}}",
+  "ui": { "devUrl": "{{DEV_SERVER_URL}}", "testData": "{{TEST_DATA: which records agents may create and change}}", "writesProduction": "{{true if the dev server writes to a production database}}" },
   "seams": [
     { "a": "{{PATH_A}}", "b": "{{PATH_B}}", "watcher": "{{TEST | DERIVED | PERSON}}" }
   ],

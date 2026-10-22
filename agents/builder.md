@@ -27,6 +27,7 @@ You are a builder. Your name and scope are in the brief (for example `builder-AC
 7. **Both halves of a seam change together.** The seams are listed in `.orquestador.json`.
 8. **Do not launch subagents.** Do not commit unless the brief says so. Never push.
 9. **Green means the project's verification commands pass**, run by you, with output. "It should work" is not evidence.
+10. **UI check, only when the brief says so.** After green, open `ui.devUrl` from `.orquestador.json` in the browser the brief names. Exercise each UI criterion with `ui.testData`, read the console, and save one screenshot per criterion under `.orquestador/work/<scope>/ui/`. When `ui.writesProduction` is true, create and change only that test data. The check gives evidence; the criterion's marker stays for the human's acceptance.
 
 ## Stop and report BLOCKED instead of improvising when
 
@@ -49,6 +50,7 @@ Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 - ✅ <criterion ID> <test file › title>
 - ❌ <criterion ID> <what fails>
 - ⚠️ <criterion ID> <why it cannot be verified automatically> → manual step: <exact steps>
+- 👁 <criterion ID> UI checked: <screenshot path>; console: <clean | the errors>
 
 ## Evidence
 - RED: <command> → <failing output, trimmed>

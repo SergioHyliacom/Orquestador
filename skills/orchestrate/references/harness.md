@@ -102,6 +102,16 @@ The spec also carries the absolute path of the brief file, the absolute path of 
 
 A worker that was not told its contract will invent one.
 
+## Browser
+
+Orca exposes its workspace browser tab through the `orca` CLI: `tab list`, `goto`, `snapshot`, `screenshot --json`, `click`, `fill`, `type`, `keypress`, `eval`, and `exec --command console`. Check that `orca tab list` returns a tab before you promise a UI check. Plain Claude Code exposes no browser of its own; skip the UI check there.
+
+What a real run taught:
+- A click on an element outside the viewport does not register. Scroll it into view with `eval` first.
+- The snapshot can lag behind the page. Screenshots are the evidence.
+- Pick elements by the snapshot's ref, not by a regex over its text. A regex picked the wrong combobox twice.
+- There is one tab. Never give the UI check to two agents at the same time.
+
 ## The guard
 
 `hooks/guard.mjs` reads the role from the hook's `agent_type`, which exists only for Agent-tool subagents. **An Orca worker is a full Claude Code session: `agent_type` is empty there.** Without a declared role, the read-only roles stop being read-only and the builder stops being held to red-to-green — silently. The git rules and the locked acceptance tests still apply, because those do not depend on the role.
@@ -138,4 +148,4 @@ Record the result as a ruling in `.orquestador/state.md`. Only `run_legacy_local
 - Two writers on the same files, in any harness.
 - `dispatch --inject` (it leaves the process unsupervised), `terminal close` in place of `worker-release`, and `orchestration reset` during active coordination.
 - Claiming a worker is dead, or retrying it, from absence alone.
-- Opening a browser — Orca's embedded browser included — unless the brief or the human allows it.
+- Opening a browser — Orca's embedded browser included — unless the brief or the human allows it. The `ui` key in `.orquestador.json` is the human's permission for the UI check, and only for it.

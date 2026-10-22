@@ -26,7 +26,7 @@ Run things. Do not read them off `package.json` or a README.
 6. **Language.** Detect the language of the project's docs and UI. If they disagree, ask the human once.
 7. **Roster.** Pick the roles the project needs with the tests in the `orchestrate` skill's `references/roles.md`. Write project roles into `.claude/agents/` from `references/role-template.md`. List each role with one line on why it exists.
 
-Ask the human only what you cannot measure, all at once: the product's personas, the release names, the risk tags that matter, the code owner if any.
+Ask the human only what you cannot measure, all at once: the product's personas, the release names, the risk tags that matter, the code owner if any, and whether agents may check the UI in a browser during the build. If yes, also ask which test data agents may touch. The `ui` key is that permission: remove it when the answer is no.
 
 ## Step 2: write `.orquestador.json`
 
