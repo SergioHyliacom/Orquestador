@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // orchestrator guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
 // Inert unless the repository has .orchestrator.json at its root.
-// Exit 0 = allow. Exit 2 = block; stderr goes back to Claude.
+// Exit 0 = allow. Exit 2 = block; stderr goes back to Claude. Exit 0 with permissionDecision "ask" on
+// stdout = Claude Code asks the human to confirm.
 
 import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
@@ -16,6 +17,11 @@ function block(reason) {
   process.stderr.write(`orchestrator: ${reason}\n`);
   process.exit(2);
 }
+
+// A command the human must confirm. It is reported only after every other check on the line passed,
+// so a blocked command never reaches the prompt.
+let confirmReason = null;
+const confirm = (reason) => { confirmReason ??= `orchestrator: ${reason}`; };
 
 function toplevel(dir) {
   let d = path.resolve(dir);
@@ -147,7 +153,7 @@ function checkGit(args) {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
     if (has(/^--no-verify$/)) block("--no-verify is blocked. Fix the failing hook instead.");
     if (inSubagent) block("role agents never push. Report DONE; the orchestrator pushes when the product owner asks.");
-    if (git.allowPush === false) block("git push is blocked in this project (git.allowPush is false). Ask the product owner to run `! git push`.");
+    if (git.allowPush === false) confirm("git.allowPush is false in this project, so every push needs the product owner's confirmation.");
   }
   if (sub === "commit") {
     if (has(/^--no-verify$/) || has(/^-[a-z]*n/i)) block("skipping commit hooks is blocked. Fix the failing hook instead.");
@@ -233,7 +239,10 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       const cmd = tokens[tokens.indexOf("--command") + 1] ?? "";
       if (tokens[1] === "terminal" && tokens[2] === "create" && /(^|[;&|]\s*)claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in ${from}: --command "claude ${want}".`);
     }
-    if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "") && (inSubagent || git.allowPush === false)) block("gh pr merge is blocked here. The product owner merges, or asks the orchestrator to.");
+    if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "")) {
+      if (inSubagent) block("role agents never merge. The product owner merges, or asks the orchestrator to.");
+      if (git.allowPush === false) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
+    }
     // Redirections write too: split "x>file" and "> file" into their own tokens.
     const split = tokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);
     const redirTargets = split.filter((t, i) => i > 0 && /^>>?$/.test(split[i - 1]));
@@ -247,6 +256,8 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       if (outside) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/ (not ${outside}).`);
     }
   }
+  if (confirmReason) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse",
+    permissionDecision: "ask", permissionDecisionReason: confirmReason } }));
   process.exit(0);
 }
 
