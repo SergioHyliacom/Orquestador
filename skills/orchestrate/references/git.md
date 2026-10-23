@@ -14,7 +14,7 @@
 ## Push and remote
 
 - Push only when the human asks. When the human says "commit and push", do both: a commit alone is half the request.
-- Role agents never push; the guard blocks it. `git.allowPush: false` blocks the orchestrator too. Then tell the human to run `! git push -u origin <branch>`.
+- Role agents never push; the guard blocks it. When the human asks, run the push yourself. With `git.allowPush: false` the guard makes Claude Code ask the human to confirm each push and each `gh pr merge`; that prompt is their consent, so run the command and let them approve it. Do not hand the command back to the human.
 - Check `git remote -v` and the auth setup before the first push in a project. Non-interactive sessions cannot answer credential prompts.
 
 ## Pull requests
