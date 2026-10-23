@@ -90,6 +90,15 @@ orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 60000 --json
 orca orchestration worker-start --terminal <handle> --worktree <same selector> --spec "<the brief>" --task-title "<role>-<scope>" --json
 ```
 
+`orca worktree create` opens a plain shell as the new worktree's first terminal. A writer's worktree then shows an empty tab beside the worker. After `terminal create`, list the worktree's terminals and close every one that is not the worker's handle:
+
+```
+orca terminal list --worktree <the writer's worktree> --json
+orca terminal close --terminal <the empty shell's handle> --json
+```
+
+Do this only in a worktree you created. On `--worktree current` the other terminals are yours and the human's.
+
 If the wait reports a `blockedReason`, read the terminal and take the prompt to the human (rule 6 of **The loop**). Two prompts can stop a worker. `agent-trust-workspace` is Claude asking to trust the folder; no permission mode skips it. Do not count on a trusted parent folder: on one machine a folder inside a trusted parent still asked. The human trusts each folder workers run in, and the install checks it. The Bypass Permissions warning stops a `bypassPermissions` worker unless the Claude profile it launches with has `skipDangerousModePermissionPrompt: true`; on a machine without it, every bypass worker stopped there. Verified on 2026-10-22: `bypassPermissions` started without a prompt in a trusted folder and stopped at the trust question in an untrusted one; a worker in `auto` mode ran its turn and sent `worker_done`.
 - Role agents do not dispatch workers; their contracts say so. Nested workers obey `nested_worker_depth_exceeded`, and a new Run does not reset depth.
 
