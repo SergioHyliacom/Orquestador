@@ -81,6 +81,13 @@
   .walk .cell > b { display: block; font-size: 14px; margin-bottom: 4px; }
   .walk .skip { border-style: dashed; border-top-color: var(--line); color: var(--muted); background: var(--bg); }
 
+  .when { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+  .when > div { background: var(--infra-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .audit-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .astep { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; background: #fff; }
+  .astep .n { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700; text-align: center; line-height: 26px; font-size: 13px; }
+  .when .t, .astep .t { display: block; margin-bottom: 4px; font-size: 14.5px; }
+
   /* 4. Ramas */
   ol.steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   ol.steps li { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
@@ -115,7 +122,7 @@
 
   @media (max-width: 900px) {
     .lanes { grid-template-columns: 1fr; } .lanes .rowlabel { display: none; } .down { grid-column: 1; }
-    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds, .questions, .walk { grid-template-columns: 1fr; }
+    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds, .questions, .walk, .when, .audit-steps { grid-template-columns: 1fr; }
     .stage::after, .step::after { display: none; }
     .flowline { grid-template-columns: 1fr; } .arrow::before { content: "↓"; }
   }
@@ -422,13 +429,20 @@
 <section id="auditoria">
   <h2><span class="num">7</span>Al cerrar cada entrega: auditoría por muestreo</h2>
   <p class="lead"><b>Lo aprendido vive en el repositorio.</b> Los tests prueban que cada historia hace lo que dice, no cómo está construido el código. La auditoría busca lo que no ven y convierte cada error que puede repetirse en algo que lo impida.</p>
-  <div class="timeline">
-    <div class="step"><h3>1 · Muestra</h3>Unas cuantas historias fusionadas en la entrega (5 por defecto): al menos una de cada lado, todas las de riesgo y las de diffs más grandes.</div>
-    <div class="step"><h3>2 · Auditoría</h3>El agente <code>auditor</code>, de solo lectura, busca reglas incumplidas, un segundo patrón, duplicación, datos personales en logs, consultas repetidas, tests que no prueban su criterio…</div>
-    <div class="step"><h3>3 · Prevención</h3>Cada hallazgo que se repite se convierte en:<ul><li>una comprobación de la máquina (lo mejor)</li><li>una lección en <code>CLAUDE.md</code></li><li>un fichero de ejemplo</li></ul></div>
-    <div class="step"><h3>4 · Registro</h3>Queda en <code>docs/audits/</code>. La siguiente auditoría lo lee y dice si la tendencia mejora.</div>
+  <div class="when">
+    <div><b class="t">Cuándo</b>Al cerrar cada entrega, <b>empezando por los cimientos</b>: sus patrones son los que copiarán todas las historias.</div>
+    <div><b class="t">Quién la pide</b>Una persona, normalmente un responsable técnico. Nunca es automática: la sesión avisa cuando una entrega está lista para auditarse.</div>
+    <div><b class="t">Sobre qué</b>Una muestra con regla fija: 5 historias, al menos una de cada lado, todas las de riesgo y los diffs más grandes. El auditor no elige qué mirar.</div>
   </div>
-  <div class="parallel" style="background:var(--shared-soft)"><b>Pendiente de decidir: ¿la confirma una persona al final?</b> Con <code>audit.confirm: human</code>, una persona decide qué hallazgos se convierten en reglas. Con <code>auto</code>, el orquestador lo hace por su cuenta y abre el PR. En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. <b>Mientras no se decida, la confirma una persona.</b></div>
+  <div class="audit-steps">
+    <div class="astep"><span class="n">1</span><div><b class="t">Audita contra la lista del equipo</b>El <code>auditor</code>, de solo lectura, comprueba <code>docs/audits/checklist.md</code>, no su gusto. Cada hallazgo dice qué regla rompe; si no rompe ninguna, va aparte como propuesta.</div></div>
+    <div class="astep"><span class="n">2</span><div><b class="t">Cada hallazgo, con su prueba</b>Trae el comando que lo demuestra. Antes de que nadie lo lea, el orquestador lo repite: si no se reproduce, se descarta como falso positivo.</div></div>
+    <div class="astep"><span class="n">3</span><div><b class="t">Se decide qué se convierte en regla</b>Pendiente: si lo confirma una persona o el orquestador por su cuenta (abajo).</div></div>
+    <div class="astep"><span class="n">4</span><div><b class="t">La regla demuestra que funciona</b>Falla sobre el código malo que la motivó y pasa cuando se corrige. Si no, no entra.</div></div>
+    <div class="astep"><span class="n">5</span><div><b class="t">Se registra</b>En <code>docs/audits/</code>: aceptado, rechazado o falso positivo, y el porcentaje de acierto. Lo rechazado no se vuelve a sacar.</div></div>
+    <div class="astep"><span class="n">6</span><div><b class="t">La lista aprende</b>Lo aceptado que la máquina no puede comprobar entra en la lista; lo que ya comprueba la máquina sale de ella.</div></div>
+  </div>
+  <div class="parallel" style="background:var(--shared-soft)"><b>Pendiente de decidir: ¿la confirma una persona al final?</b> Con <code>audit.confirm: human</code>, una persona decide qué hallazgos se convierten en reglas. Con <code>auto</code>, el orquestador lo hace por su cuenta y abre el PR. En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. <b>Mientras no se decida, la confirma una persona.</b> Un criterio posible: empezar así y pasar a <code>auto</code> cuando el auditor lleve varias entregas con un acierto alto.</div>
 </section>
 
 <!-- Reglas -->

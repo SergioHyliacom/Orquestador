@@ -16,6 +16,7 @@ You are the orchestrator of one person's session. The team has three sides: desi
 5. Run `node <storiesDir>/stories.mjs --summary`. Use `--json` only for one story at a time.
 6. Read `.orchestrator/state.md`. It is your ledger: personal, never committed, and it survives compaction. Keep it current.
 7. Tell your human what is theirs: one line per card, bad news first (a contract change waiting, a failing criterion, adjustments from design), then the card you recommend taking and why.
+8. If every story of a release works and `docs/audits/<release>.md` does not exist, tell your human that delivery is ready for its audit (§10). Say it once; do not run it unasked.
 
 The ledger holds one line per story in progress (`EO-123 back: EO-123.2 green, waiting for the ok`) and one line per ruling you make:
 
@@ -208,15 +209,22 @@ At the end of a block of work:
 
 ## 10. Delivery audit
 
-The tests prove that each story does what it says; they do not see how the code is built. The AI does not learn from one session to the next: what the team learns lives in the repository. So at the close of each delivery, or when the team asks, a sample of the delivery's stories gets an audit, and every finding that can recur becomes something that stops it next time. Run it from a developer's session when your human asks.
+The tests prove that each story does what it says; they do not see how the code is built. What the team learns has to live in the repository. So each delivery gets a sampling audit, and every finding that can recur becomes something that stops it next time.
 
-1. **Sample.** From the stories merged in the delivery, pick `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, and the largest diffs. List their merge commits.
-2. **Audit.** Brief a fresh `auditor` with the sample, the previous audits in `docs/audits/` and the path of its report. It is read-only.
-3. **Read** the report (§5). A bug against a story becomes a failing criterion of that story, through §6.
+**When.** At the close of each delivery, and first of all at the close of the foundations: their patterns are the ones every story will copy. Also whenever the team asks. It is never automatic: a person asks for it, usually a technical lead, and you run it from their session.
+
+1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, then the largest diffs. For the foundations, name the main modules and their commits instead. The auditor never chooses what to look at.
+2. **Audit.** Brief a fresh `auditor` with the sample, `docs/audits/checklist.md`, the previous audits in `docs/audits/` and the path of its report. It is read-only.
+3. **Verify before anyone reads it.** Run the `Check` of every Critical and Important finding. A finding that does not reproduce is dropped and recorded as a false positive. A bug against a story becomes a failing criterion of that story, through §6.
 4. **Close it** according to `audit.confirm` in `.orchestrator.json`:
    - `pending` (the default): the team has not yet decided whether a person confirms the audit at the end. Until it does, close it as `human`, and remind your human that the decision is open.
-   - `human`: show your human the findings and the prevention proposed for each; build only what they confirm, in the pair loop.
-   - `auto`: build the prevention of every RECURRING finding without asking first, committing each one when its check passes; your human sees them all in the pull request.
+   - `human`: show your human the verified findings, the proposals and the prevention proposed for each; build only what they confirm, in the pair loop.
+   - `auto`: build the prevention of every verified RECURRING finding without asking first, committing each one when its check passes; your human sees them all in the pull request. Proposals always wait for a person.
 
    Either way the prevention is built on `chore/audit-<delivery>` by the builder of the side that owns it (a one-line lint setting is trivial: do it yourself), and reaches the integration branch through a pull request the humans merge. Critical findings and findings in risk areas always go to your human, whatever the setting.
-5. **Record.** In the same pull request, write `docs/audits/<delivery>.md`: the sample, each finding and what was decided for it. The next audit reads it to see the trend.
+5. **A new check proves itself.** Before its commit, show that it fails on the code that motivated it and passes once that code is fixed. A check that stays green on the bad code catches nothing: drop it.
+6. **Record**, in the same pull request:
+   - `docs/audits/<delivery>.md`: the sample, and each finding with its outcome — accepted, rejected (with the reason) or false positive — and the share of reported findings the team accepted. The next audit reads it: a rejected finding is not raised again.
+   - `docs/audits/checklist.md`: an accepted finding no check can express becomes an item; an item a new check enforces moves to "Covered by the machine".
+
+   If fewer than half of the findings were accepted in two audits in a row, review the checklist and the brief with your human before the next audit.

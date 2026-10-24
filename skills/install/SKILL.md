@@ -100,6 +100,7 @@ Ask the human only what you cannot measure, all at once: the code owner if any; 
 2. Add `tests` (the three reports from 2.1) and `contractSpec` (`contract.spec`) to `<storiesDir>/stories.config.json`.
 3. Replace the Part 1 `bitbucket-pipelines.yml` with the whole of `assets/bitbucket-pipelines.yml`, with the project's image, setup and verification commands.
 4. Fill the lines of the `CLAUDE.md` block that Part 1 left pending.
+5. Write `docs/audits/checklist.md` from `assets/audit-checklist.md`, translated into the project's language. Keep the starting items that match the project's rules, and adapt their sources to `CLAUDE.md` and the standards. List under "Covered by the machine" what the checks measured in 2.1 already enforce. The first audit is the one of the foundations (`orchestrate` skill, §10).
 
 ### 2.3 Verify Part 2
 

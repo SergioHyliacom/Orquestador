@@ -146,13 +146,21 @@ El stack no sale de las historias: el esqueleto se monta antes, porque el propio
 
 **La IA no aprende de vosotros.** El modelo no se reentrena con vuestro trabajo y cada sesión empieza de cero. Lo que se acumula es lo que queda escrito en el repositorio: el código (cuyos patrones la IA copia, los buenos y los malos), `CLAUDE.md`, los estándares, los tests, la guardia y los linters. La inercia cultural de la sección 1 la lleva el repositorio, y hay que cuidarla a propósito.
 
-Los tests prueban que cada historia hace lo que dice, no cómo está construido el código. Por eso, al cerrar cada entrega:
+Los tests prueban que cada historia hace lo que dice, no cómo está construido el código. Por eso cada entrega pasa una auditoría por muestreo.
 
-1. **Muestra.** Se eligen unas cuantas historias fusionadas en la entrega (5 por defecto): al menos una de cada lado, todas las que llevan riesgo y las de diffs más grandes.
-2. **Auditoría.** El agente `auditor`, de solo lectura, busca lo que los tests y la guardia no ven: reglas incumplidas, un segundo patrón donde ya había uno, duplicación, datos personales en logs, consultas repetidas, datos de cuenta sin test de aislamiento, tests que no prueban su criterio, dependencias nuevas sin decidir.
-3. **Prevención.** Cada hallazgo que puede repetirse se convierte, por orden de preferencia, en: una comprobación de la máquina (linter, test de arquitectura, paso de la CI); una lección en `CLAUDE.md`, solo si no hay comprobación posible; o un fichero de ejemplo que citen los encargos. Un fallo de comportamiento es un criterio que falla en su historia, no una regla.
-4. **Cierre.** **Pendiente de decidir** si la auditoría la confirma una persona al final (`audit.confirm: human`) o el orquestador convierte los hallazgos que se repiten en reglas por su cuenta y abre el PR (`audit.confirm: auto`). En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. Mientras no se decida (`audit.confirm: pending`), la confirma una persona.
-5. **Registro.** El resultado queda en `docs/audits/<entrega>.md`, y la siguiente auditoría lo lee para ver si la tendencia mejora.
+**Cuándo y quién.** Al cerrar cada entrega, **empezando por los cimientos**, cuyos patrones son los que copiarán todas las historias. Nunca es automática: la pide una persona, normalmente un responsable técnico, y la sesión avisa cuando una entrega tiene todas sus historias funcionando y aún no tiene auditoría.
+
+**Cómo funciona, y cómo se evita que el auditor se invente cosas:**
+
+1. **Muestra con regla fija:** 5 historias por defecto, al menos una de cada lado, todas las que llevan riesgo y las de diffs más grandes. El auditor no elige qué mirar.
+2. **Audita contra la lista del equipo** (`docs/audits/checklist.md`), no contra su gusto. Cada hallazgo dice qué regla rompe. Si no rompe ninguna regla escrita, va aparte como propuesta, marcada como opinión.
+3. **Cada hallazgo trae su prueba:** el comando que lo demuestra. Antes de que nadie lo lea, el orquestador lo repite, y si no se reproduce se descarta como falso positivo.
+4. **Se decide qué se convierte en regla.** Por orden de preferencia: una comprobación de la máquina (linter, test de arquitectura, paso de la CI); una lección en `CLAUDE.md`, si no hay comprobación posible; o un fichero de ejemplo para los encargos. Un fallo de comportamiento es un criterio que falla en su historia, no una regla.
+5. **La regla demuestra que funciona:** falla sobre el código malo que la motivó y pasa cuando se corrige. Si no, no entra.
+6. **Se registra** en `docs/audits/<entrega>.md`: cada hallazgo como aceptado, rechazado (con el motivo) o falso positivo, y el porcentaje de acierto. Lo rechazado no se vuelve a sacar.
+7. **La lista aprende:** lo aceptado que la máquina no puede comprobar entra en la lista; lo que ya comprueba la máquina sale de ella. Si dos auditorías seguidas aciertan menos de la mitad, se revisan la lista y el encargo antes de la siguiente.
+
+**Pendiente de decidir: ¿la confirma una persona al final?** Con `audit.confirm: human`, una persona decide qué hallazgos se convierten en reglas. Con `auto`, el orquestador lo hace por su cuenta y abre el PR. En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. Mientras no se decida (`pending`), la confirma una persona. Un criterio posible: empezar así y pasar a `auto` cuando el auditor lleve varias entregas con un acierto alto.
 
 Así la revisión de código baja de verdad con el tiempo: no porque haya que fiarse más de la IA, sino porque cada error encontrado deja de poder repetirse. Lo que no baja nunca es «cero fe» ni la revisión de las zonas de riesgo.
 
