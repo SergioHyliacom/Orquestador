@@ -1,75 +1,101 @@
-# Orchestrator
+# easyone-orchestrator
 
-A Claude Code plugin for orchestrated product work.
+Plugin de Claude Code con el que el equipo de Hyliacom desarrolla EASY One. Es una adaptación del [Orchestrator](https://github.com/sydneyhylia/Orchestrator) de Sydney y Claude.
 
-- The main session is the **orchestrator**. It contacts the human only for irreversible actions, product calls, what machines cannot verify, and final acceptance. It decides the rest itself.
-- **The harness decides how it delegates.** In [Orca](https://orca.dev) the roles run as supervised workers under one orchestration Run: each in its own named terminal, with blocking questions, decision gates and a settlement the orchestrator must account for. In plain Claude Code they run as Agent-tool subagents. `skills/orchestrate/references/harness.md` maps the method onto each.
-- **Role agents** do the work. The plugin ships `builder` (the only role agent that writes code), `reviewer`, `researcher`, `copywriter` and `designer`. These are a starting set: each project gets every role its work needs, written into the project's `.claude/agents/` from a template. Each role is a contract: inputs, output file, tools, turn limit and when to stop.
-- **User stories** drive product work. Each story has acceptance criteria with a verification marker. A validator computes the status of each story and generates the map.
-- **A guard hook** blocks the dangerous actions: push from role agents, force push, `--no-verify`, `reset --hard`, commits on protected branches, broad `git add`, and edits to locked acceptance tests. It also holds each role to its contract: a Claude Code subagent is recognised by its `agent_type`, an Orca worker by the `.orchestrator/role.json` the orchestrator writes into that worker's own workspace.
+Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 
-The plugin is inert in projects without `.orchestrator.json`. In projects with it, a session-start hook tells the main session to load the `orchestrate` skill.
+- **Cada persona tiene su propia sesión de Claude (Opus)**, que orquesta su parte del trabajo. Al empezar, lee en Jira lo que le toca a esa persona.
+- **Diseño escribe las historias** con sus criterios, incluidos los estados de cada pantalla, y al final hace la revisión visual.
+- **Backend y frontend acuerdan el contrato** (el OpenAPI generado desde Go) y desarrollan sus dos mitades en paralelo.
+- **Cada desarrollador trabaja en pareja con su agente (Sonnet)**, un criterio cada vez. El agente escribe el test, lo ve fallar, lo hace pasar y se para. La persona valida el concepto y las pruebas, y la sesión hace el commit tras su ok.
+- **Git guarda el qué; Jira muestra el quién y el cuándo.** Las tarjetas las mueve Bitbucket Pipelines a partir de lo que hay en el repositorio.
+- **Una guardia** (un hook) impide lo peligroso y mantiene a cada agente en su lado.
 
-## Contents
+**Para enseñárselo al equipo:** [`docs/esquema-orquestador.html`](docs/esquema-orquestador.html). **El porqué de cada decisión:** [`docs/propuesta.md`](docs/propuesta.md).
 
-| Path | What it is |
+## Contenido
+
+| Ruta | Qué es |
 |---|---|
-| `skills/orchestrate/` | The orchestrator's operating procedure, harness detection, git rules |
-| `skills/stories/` | How to write, split and maintain stories; English templates |
-| `skills/install/` | Adapts the plugin to one project; assets copied into the project |
-| `agents/` | The role contracts |
-| `hooks/` | The guard |
+| `agents/backend-builder.md` | Agente de backend (Go + PostgreSQL): el contrato o un criterio por encargo |
+| `agents/frontend-builder.md` | Agente de frontend (React, Hyliable y la plantilla Astro): un criterio por encargo, la integración |
+| `agents/reviewer.md` | Revisión independiente al cerrar una historia, solo si lleva etiqueta de riesgo |
+| `agents/researcher.md` | Investigación de solo lectura |
+| `agents/copywriter.md`, `agents/designer.md` | Del original. Inactivos salvo que `.orchestrator.json` los configure |
+| `skills/orchestrate/` | El día a día de cada sesión: etapas, contrato, bucle en pareja, integración, merge. Git y Bitbucket en `references/git.md` |
+| `skills/stories/` | Cómo se escriben y mantienen las historias |
+| `skills/install/` | Prepara un proyecto, en dos partes. Plantillas, validador (`stories.mjs`), sincronización con Jira (`jira-sync.mjs`) y pipeline |
+| `hooks/guard.mjs` | La guardia |
+| `docs/` | El diagrama y la propuesta |
 
-## Install the plugin
+## Instalar el plugin
 
-From GitHub:
-
-```
-claude plugin marketplace add sydneyhylia/Orchestrator
-claude plugin install orchestrator@orchestrator-local
-```
-
-From a local clone of this folder:
+El fork está de momento solo en local. Desde su carpeta:
 
 ```
 claude plugin validate .
 claude plugin marketplace add .
-claude plugin install orchestrator@orchestrator-local
+claude plugin install easyone-orchestrator@easyone-orchestrator-local
 ```
 
-To try it without installing: `claude --plugin-dir <path to this folder>`.
+Para probarlo sin instalarlo: `claude --plugin-dir <ruta de esta carpeta>`.
 
-Claude Code builds its plugin registry when the process starts. After installing, start a new session — restart the CLI, not just `/clear` — or the skills, the role agents and the guard will not be there.
+Claude Code carga los plugins al arrancar. Después de instalar, abre una sesión nueva: hay que reiniciar el CLI, no basta con `/clear`.
 
-## Set up a project
+**Si tienes instalado el orquestador original** (`orchestrator`), sus hooks también actuarían en el repositorio de EASY One. La instalación lo desactiva para ese proyecto en `.claude/settings.json`, que es un fichero compartido. Cada miembro del equipo necesita tener el plugin instalado.
 
-Open the project and run `/orchestrator:install`. The install runs only on that command. It measures the project and asks only what it cannot measure. Then it writes:
+## Preparar un proyecto
 
-- `.orchestrator.json`: the measured plugs (commands, runner limit, seams, language, git rules);
-- project roles in `.claude/agents/`, when the project needs them;
-- the story folder in the project's language, with `stories.mjs`;
-- a block in `CLAUDE.md`;
-- `.orchestrator/`: the ledger and the locked-tests list.
+Abre el proyecto y ejecuta `/easyone-orchestrator:install`. La instalación tiene dos partes:
 
-### Projects installed as orquestador
+1. **Parte 1, historias (el día uno).** Carpeta de historias y validador, proyecto de Jira con sus 6 estados, ajustes de git y un pipeline mínimo. Con esto diseño ya puede escribir historias.
+2. **Parte 2, desarrollo (al acabar los cimientos).** Se ejecuta cuando un endpoint de prueba va de Go al panel pasando por el OpenAPI y una prueba E2E, con PostgreSQL real. Mide los comandos de verificación, el contrato y sus generadores, las rutas y comprobaciones de cada lado y los informes de tests, y completa el pipeline.
 
-Before 0.3.0 the plugin was called orquestador. The guard still reads `.orquestador.json` and `.orquestador/`, so nothing breaks. To migrate a project:
+La primera vez que cada persona abre Claude en el proyecto, su sesión le pregunta quién es y de qué lado trabaja (`.orchestrator/me.json`, que es personal y no entra en git).
 
-1. Rename `.orquestador.json` to `.orchestrator.json` and `.orquestador/` to `.orchestrator/` with `git mv`.
-2. Replace `.orquestador` with `.orchestrator` in `.gitignore` and in the `CLAUDE.md` block.
-3. Replace the plugin: `claude plugin uninstall orquestador@orquestador-local`, then install `orchestrator@orchestrator-local` as above. Restart the CLI.
+**Variables del pipeline** (repositorio de Bitbucket, como variables protegidas): `JIRA_EMAIL` y `JIRA_API_TOKEN`. Ningún token se escribe en un fichero del repositorio.
 
-## Languages
+**Flujo de Jira:** cada estado tiene que poder recibir tarjetas desde cualquier otro («allow all statuses to transition to this one»), porque el pipeline mueve las tarjetas en los dos sentidos.
 
-The plugin is written in English. Each project's files are written in that project's language only. The install step translates the headings, markers and templates into `stories.config.json` → `labels` and `<storiesDir>/templates/`.
+## Requisitos
 
-## Requirements
+- Claude Code con soporte de plugins.
+- Node.js 20 o posterior en el `PATH`. Lo usan la guardia, el validador y la sincronización con Jira.
+- Git y un repositorio en Bitbucket con Pipelines.
+- Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`. Sin ninguno de los dos, la sesión pide la lista a la persona.
+- En el proyecto: `gotestsum` para el informe de los tests de Go, Vitest y un runner E2E con informe JUnit.
+- Opcional: [Orca](https://orca.dev). Sin él, los agentes funcionan como subagentes de Claude Code.
 
-- Claude Code with plugin support.
-- Node.js 20 or later, on `PATH` (the guard and the validator use it).
-- Git. The GitHub steps use the `gh` CLI.
-- Optional: [Orca](https://orca.dev). Without it the roles run as Claude Code subagents.
+## Diferencias con el original
 
-## Authors
+| Original | easyone-orchestrator |
+|---|---|
+| Un humano y una sesión que orquesta casi sin intervención | Una sesión por persona; el humano valida cada criterio |
+| Un `builder` que hace la historia entera | `backend-builder` y `frontend-builder`, un criterio por encargo, cada uno en su lado |
+| `reviewer` después de cada builder | `reviewer` una vez al cerrar, solo si la historia tiene riesgo |
+| Identificador por actividad (`ACC-002`) | Clave de Jira (`EO-123`) |
+| Un comando de tests | Varias fuentes de tests (Go, Vitest, E2E); un criterio pasa si pasan todos sus tests |
+| Una lista de tests bloqueados | Una lista por mitad de historia, para evitar conflictos |
+| GitHub y `gh` | Bitbucket y Bitbucket Pipelines |
+| El estado vive en `.orchestrator/state.md` | Jira es el estado compartido; `state.md` es personal |
 
-Sydney and Claude (Claude Code, Opus 5). MIT licensed; see `LICENSE`.
+## Traer mejoras del original
+
+`main` es una copia del original y la adaptación vive en la rama `easyone`:
+
+```
+git fetch upstream
+git switch main && git merge --ff-only upstream/main
+git switch easyone && git merge main
+```
+
+Las skills y los agentes siguen en inglés, como en el original: los lee el modelo, y así se fusionan mejor las mejoras. Cada proyecto escribe sus historias en su propio idioma.
+
+## Estado
+
+- **Probado:** la guardia (escenarios simulados de cada rol), el validador con resultados de Go y Vitest, y la sincronización con Jira de principio a fin contra un Jira simulado. `claude plugin validate` pasa.
+- **Sin probar todavía:** las skills y la instalación en el repositorio real de EASY One, Jira real, el acceso a Jira desde Claude Code y el pipeline en Bitbucket. La primera historia sirve de piloto.
+
+## Autores
+
+Adaptación de Hyliacom con Claude (Claude Code, Opus 5.5) a partir del Orchestrator de Sydney y Claude. Licencia MIT; ver `LICENSE`.
