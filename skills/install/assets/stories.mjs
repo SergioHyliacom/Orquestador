@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Story validator and map generator (orchestrator). No dependencies: Node >= 20.
+// Story validator and map generator (easyone-orchestrator). No dependencies: Node >= 20.
 //
 //   node stories.mjs                 generate the map with the last saved test results
-//   node stories.mjs --tests         run the test command, then generate the map
+//   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
 //   node stories.mjs --check         exit 1 on errors or if the map is stale
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
 //   node stories.mjs --pr ID         print a PR checklist for one story
@@ -56,7 +56,11 @@ const ROOT = path.resolve(DIR, config.root ?? "..");
 const RELEASES = config.releases;
 const MAIN_RELEASE = config.mainRelease ?? RELEASES[0];
 const PERSONAS = config.personas ?? null;
-const RESULTS = path.join(DIR, ".test-results");
+// One saved report per test source: .test-results, .test-results-1, ...
+const resultsFile = (i) => path.join(DIR, `.test-results${i ? `-${i}` : ""}`);
+// A story ID is its Jira key. idPrefix pins the Jira project; without it any Jira key is accepted.
+const ID_PREFIX = config.idPrefix ? escape(config.idPrefix) : "[A-Z][A-Z0-9]+";
+const STORY_ID = new RegExp(`^${ID_PREFIX}-\\d+$`);
 const MAP = path.join(DIR, "map.md");
 const SCRIPT = path.relative(ROOT, path.join(DIR, "stories.mjs")).split(path.sep).join("/");
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? `{${k}}`);
@@ -109,7 +113,7 @@ function parseCriteria(text, file, storyId) {
   const M = L.markers;
   const known = new RegExp(`\\[((?:${[M.test, M.manual, M.unverified, M.unbuilt, M.failing].map(escape).join("|")})(?![\\p{L}\\p{N}]).*)\\]\\s*$`, "iu");
   for (const block of text.split(/^- /m).slice(1)) {
-    const idMatch = block.match(/^\*\*([A-Z]{2,4}-\d{3}\.\d+)\*\*/);
+    const idMatch = block.match(new RegExp(`^\\*\\*(${ID_PREFIX}-\\d+\\.\\d+)\\*\\*`));
     if (!idMatch) { errors.push(`${file}: criterion "${block.split("\n")[0].slice(0, 40)}" has no valid ID (**${storyId}.N**).`); continue; }
     const id = idMatch[1];
     if (!id.startsWith(storyId + ".")) errors.push(`${file}: criterion ${id} does not belong to ${storyId}.`);
@@ -163,7 +167,10 @@ function readDir(dir) {
 
 const rel = (p) => path.relative(DIR, p).split(path.sep).join("/");
 const activities = readJson(path.join(DIR, "activities.json"));
-const byCode = new Map(activities.map((a) => [a.code, a]));
+// The contract the stories' operations must appear in: the OpenAPI spec generated from Go.
+const SPEC = config.contractSpec ? path.resolve(ROOT, config.contractSpec) : null;
+const specText = SPEC && existsSync(SPEC) ? readFileSync(SPEC, "utf8") : null;
+const inSpec = (op) => new RegExp(`["']?operationId["']?\\s*:\\s*["']?${escape(op)}["']?\\s*(,|$)`, "m").test(specText ?? "");
 
 const decisions = new Map();
 for (const file of readDir(path.join(DIR, "decisions"))) {
@@ -178,51 +185,61 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   const f = rel(file);
   const { data, body } = parseFrontmatter(readFileSync(file, "utf8"), f);
   const id = data.id;
-  if (!/^[A-Z]{2,4}-\d{3}$/.test(id ?? "")) { errors.push(`${f}: invalid id "${id}".`); continue; }
+  if (!STORY_ID.test(id ?? "")) { errors.push(`${f}: invalid id "${id}". The id is the story's Jira key (${config.idPrefix ?? "PROJ"}-123).`); continue; }
   if (seen.has(id)) errors.push(`${f}: id ${id} is repeated.`);
   seen.add(id);
-  const code = id.split("-")[0];
-  const act = byCode.get(code);
-  if (!act) errors.push(`${f}: activity code ${code} is not in activities.json.`);
-  else {
-    if (!f.startsWith(`stories/${act.folder}/`)) errors.push(`${f}: must live in stories/${act.folder}/.`);
-    if (data.activity && data.activity !== act.name) errors.push(`${f}: activity "${data.activity}" does not match activities.json ("${act.name}").`);
-  }
+  // The ID is a Jira key, so the activity comes from the frontmatter, not from the ID's prefix.
+  const act = activities.find((a) => a.name === data.activity);
+  const code = act?.code;
+  if (!act) errors.push(`${f}: activity "${data.activity ?? ""}" is not in activities.json.`);
+  else if (!f.startsWith(`stories/${act.folder}/`)) errors.push(`${f}: must live in stories/${act.folder}/.`);
   if (!path.basename(file).startsWith(id + "-")) errors.push(`${f}: file name must start with ${id}-.`);
   if (!RELEASES.includes(data.release)) errors.push(`${f}: unknown release "${data.release}". Known: ${RELEASES.join(", ")}.`);
   if (PERSONAS && data.persona && !PERSONAS.includes(data.persona)) errors.push(`${f}: persona "${data.persona}" is not in stories.config.json personas.`);
   const blockedBy = asList(data.blocked_by);
   for (const d of blockedBy) if (!decisions.has(d)) errors.push(`${f}: decision ${d} does not exist.`);
   const secs = sections(body);
+  const operations = asList(data.operations);
+  if (operations.length && config.contractSpec && !specText) warnings.push(`${config.contractSpec} not found: contract not checked.`);
   stories.push({
     id, title: data.title, code, release: data.release, persona: data.persona,
+    operations, contractMissing: specText ? operations.filter((op) => !inSpec(op)) : operations,
     tags: asList(data.tags), blockedBy, dependsOn: asList(data.depends_on), discarded: data.discarded === true,
     screens: asList(data.screens), secs, criteria: parseCriteria(section(secs, "criteria"), f, id), file: f,
   });
 }
-stories.sort((a, b) => a.id.localeCompare(b.id));
+stories.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 const storyIds = new Set(stories.map((s) => s.id));
 for (const s of stories) for (const d of s.dependsOn) if (!storyIds.has(d)) errors.push(`${s.file}: depends_on ${d} does not exist.`);
 
 // ---------- Test results
 
-const T = config.tests ?? null;
+// A vertical story is tested on several sides: Go (JUnit, e.g. through gotestsum), Vitest (jest-json),
+// the end-to-end runner. tests is one source or a list of them.
+const SOURCES = (Array.isArray(config.tests) ? config.tests : config.tests ? [config.tests] : []).filter(Boolean);
 let runnerCode = 0;
 if (flag("--tests")) {
-  if (!T?.command) { console.error("stories.config.json: tests.command is not set."); process.exit(2); }
-  const cwd = path.resolve(ROOT, T.cwd ?? ".");
-  const out = path.relative(cwd, RESULTS).split(path.sep).join("/");
-  rmSync(RESULTS, { force: true });
-  console.log(`Running: ${fill(T.command, { report: out })}`);
-  try { execSync(fill(T.command, { report: out }), { cwd, stdio: ["ignore", "ignore", "inherit"] }); }
-  // A failing test exits non-zero; the report is still valid, and the code is passed on at the end.
-  catch (e) { runnerCode = e.status || 1; }
-  if (!existsSync(RESULTS)) { console.error("The test command wrote no report. Check tests.command and its {report} placeholder."); process.exit(2); }
+  if (!SOURCES.length || SOURCES.some((t) => !t.command)) { console.error("stories.config.json: every entry in tests needs a command."); process.exit(2); }
+  SOURCES.forEach((T, i) => {
+    const cwd = path.resolve(ROOT, T.cwd ?? ".");
+    const out = path.relative(cwd, resultsFile(i)).split(path.sep).join("/");
+    rmSync(resultsFile(i), { force: true });
+    console.log(`Running: ${fill(T.command, { report: out })}`);
+    try { execSync(fill(T.command, { report: out }), { cwd, stdio: ["ignore", "ignore", "inherit"] }); }
+    // A failing test exits non-zero; the report is still valid, and the code is passed on at the end.
+    catch (e) { runnerCode ||= e.status || 1; }
+    if (!existsSync(resultsFile(i))) { console.error(`The test command wrote no report: ${T.command}. Check its {report} placeholder.`); process.exit(2); }
+  });
 }
 
 function loadResults() {
-  if (!existsSync(RESULTS)) return null;
-  const raw = lf(readFileSync(RESULTS, "utf8"));
+  // Results from only some sources would make the others' criteria look untested.
+  if (!SOURCES.length || SOURCES.some((_, i) => !existsSync(resultsFile(i)))) return null;
+  return SOURCES.flatMap((T, i) => loadSource(T, resultsFile(i)) ?? []);
+}
+
+function loadSource(T, file) {
+  const raw = lf(readFileSync(file, "utf8"));
   const cwd = path.resolve(ROOT, T?.cwd ?? ".");
   const norm = (p) => path.relative(cwd, path.resolve(cwd, p)).split(path.sep).join("/");
   if ((T?.format ?? "jest-json") === "junit") {
@@ -238,7 +255,7 @@ function loadResults() {
     return cases;
   }
   let report;
-  try { report = JSON.parse(raw); } catch { errors.push(`${path.basename(RESULTS)} is not valid JSON: run with --tests again.`); return null; }
+  try { report = JSON.parse(raw); } catch { errors.push(`${path.basename(file)} is not valid JSON: run with --tests again.`); return null; }
   return report.testResults.flatMap((f) => f.assertionResults.map((t) => ({ file: norm(f.name), title: t.title, status: t.status })));
 }
 const tests = loadResults();
@@ -247,7 +264,8 @@ const sameFile = (a, b) => { const [x, y] = a.length >= b.length ? [a, b] : [b, 
 
 function testResult(c) {
   if (!tests) return "noResults";
-  const byId = tests.filter((t) => t.title.startsWith(`[${c.id}]`));
+  // Go reports a subtest as Parent/[EO-123.1]_name, so the ID may also follow a slash.
+  const byId = tests.filter((t) => t.title.startsWith(`[${c.id}]`) || t.title.includes(`/[${c.id}]`));
   // Parameterised tests (it.each) report %s, %d... substituted: treat them as wildcards.
   const pattern = c.ref && new RegExp("^" + c.ref.title.split(/%[sdifjo#%]/).map(escape).join(".*") + "$");
   const matches = byId.length ? byId : c.ref

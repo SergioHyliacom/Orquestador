@@ -1,6 +1,6 @@
 ---
 name: stories
-description: Write, split, review and maintain user stories in a project that uses orchestrator. Covers the story file format, acceptance criteria as rules plus key examples, verification markers, splitting patterns, decisions, and the anti-patterns the validator flags. Use when creating or editing a story, turning a request into stories, splitting a large story, checking if a story is ready, or recording that a criterion fails.
+description: Write, split, review and maintain user stories in a project that uses easyone-orchestrator. The design team writes them; the developers add the contract's operations. Covers the story file format, acceptance criteria as rules plus key examples, verification markers, splitting patterns, decisions, and the anti-patterns the validator flags. Use when creating or editing a story, turning a request into stories, splitting a large story, checking if a story is ready, or recording that a criterion fails.
 ---
 
 # Stories
@@ -22,7 +22,9 @@ Stories have no priority field. The release sets the order. The first release in
 ## The story file
 
 - File: `stories/<activity folder>/<ID>-<short-title>.md`. Lowercase, no accents, hyphens.
-- ID: `<ACTIVITY CODE>-NNN`, e.g. `ACC-004`. Criterion ID: `<ID>.N`, e.g. `ACC-004.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
+- ID: the story's **Jira key**, e.g. `EO-123`. Create the Jira card first and use its key; the same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
+- Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
+- Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story needs. Design leaves it empty. Backend and frontend fill it at the contract step, and the validator checks that each one is in the spec.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
 - Status is never written by hand. The script computes it from the criteria and the decisions.
 
@@ -40,7 +42,7 @@ Sections, in order (the project uses its translated headings):
 Each criterion is a **rule**, optionally followed by **key examples**.
 
 ```
-- **ACC-004.1** When the user saves a text, the system shows the new text in the preview. [unbuilt]
+- **EO-123.1** When the user saves a text, the system shows the new text in the preview. [unbuilt]
   - Given the heading says "Hello", when the user changes it to "Hi" and saves, then the preview shows "Hi".
   - Given the user clears the text, when they save, then the system keeps the previous text and shows an error.
 ```
@@ -50,6 +52,8 @@ Each criterion is a **rule**, optionally followed by **key examples**.
 - One behaviour per criterion. One "when" per example.
 - Write examples declaratively ("the user saves"), not as clicks, selectors or URLs.
 - Include the unhappy paths: error, empty, permission, limit. Agents skip them unless told.
+- For a screen, name its states as criteria: loading, empty, error, success. Each state is something a test can observe.
+- How a screen looks against its design is a criterion too. No test checks it: the design team checks it in the visual review and marks it `[manual YYYY-MM-DD, who]`.
 - More than 6 criteria: split the story.
 
 ### Verification markers
@@ -64,7 +68,12 @@ Each criterion's rule line ends with exactly one marker (the project uses its tr
 | `[unbuilt]` | The behaviour does not exist yet. |
 | `[failing: reason]` | The behaviour exists and does not hold. |
 
-A test title can also start with the criterion ID, e.g. `it("[ACC-004.1] shows the new text")`. Then the marker is `[test]` with no reference. Choose one convention per project and record it in the project's `CLAUDE.md`.
+In this project a test is tagged by starting its name with the criterion ID, and the marker is `[test]` with no reference:
+
+- Go: a subtest, `t.Run("[EO-123.1] rejects an invalid NIF", ...)`.
+- Vitest and the end-to-end runner: the title, `it("[EO-123.1] shows 'NIF no válido' under the field")`.
+
+A criterion that both halves implement has a test on each side with the same ID. It works only when every test with its ID passes.
 
 A bug is not a new story. Mark the criterion it breaks as failing.
 
@@ -99,21 +108,23 @@ Then try these patterns in order. Prefer the split that lets you drop or defer a
 8. Defer performance: make it work, then make it fast, as two stories.
 9. Spike: when the unknown is too big, a time-boxed investigation first.
 
-Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices.
+Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices. The backend and frontend halves of a story are two branches of the same story, not two stories.
 
 ## Turning a request into stories
 
 1. Find the activity. If none fits, propose a new one to the human; activities are product calls.
-2. Write the story and its rules. Ask the human only what you cannot infer, all at once.
-3. Add key examples where a rule is ambiguous.
-4. Fill out-of-scope and verification.
-5. Run `node <storiesDir>/stories.mjs --ready <ID>`.
+2. Create the story's Jira card, in the design status, and take its key as the ID.
+3. Write the story and its rules. Ask the human only what you cannot infer, all at once.
+4. Add key examples where a rule is ambiguous.
+5. Fill out-of-scope and verification. Link the designs in `screens`.
+6. Run `node <storiesDir>/stories.mjs --ready <ID>`.
+7. The story enters the integration branch through a pull request. Merging it is design's approval: from then on it is the developers' turn.
 
 ## What the validator flags
 
 `stories.mjs` checks structure on every run and readiness with `--ready`:
 
-- Errors: bad or repeated IDs, file in the wrong folder, activity name that does not match `activities.json`, unknown release or persona, missing marker, unknown marker, missing test, unknown decision or `depends_on`, discarded without reason.
+- Errors: an ID that is not a Jira key, repeated IDs, file in the wrong folder, activity name that does not match `activities.json`, unknown release or persona, missing marker, unknown marker, missing test, unknown decision or `depends_on`, discarded without reason.
 - Not ready: empty out-of-scope, empty verification, open questions, open blocking decision, hedged words in a rule.
 - Warnings: story text not in the persona/want/benefit shape, vague words ("fast", "easy", "intuitive"…), more than 6 criteria, dependency not yet working.
 

@@ -1,13 +1,15 @@
 {
   "root": "..",
+  "idPrefix": "{{JIRA_PROJECT_KEY: e.g. EO}}",
+  "contractSpec": "{{PATH_TO_OPENAPI_SPEC relative to root, e.g. apps/api/openapi.yaml}}",
   "releases": ["{{FIRST_RELEASE}}", "{{NEXT_RELEASE}}", "{{LATER}}"],
   "mainRelease": "{{FIRST_RELEASE}}",
   "personas": ["{{PERSONA}}"],
-  "tests": {
-    "command": "{{TEST_COMMAND_WITH_{report}_PLACEHOLDER, e.g. npx vitest run --reporter=json --outputFile={report}}}",
-    "cwd": "{{DIR_WHERE_TESTS_RUN, relative to root}}",
-    "format": "jest-json"
-  },
+  "tests": [
+    { "command": "{{GO_TEST_COMMAND_WITH_{report}, e.g. gotestsum --junitfile {report} -- ./...}}", "cwd": "{{DIR relative to root, e.g. .}}", "format": "junit" },
+    { "command": "{{VITEST_COMMAND_WITH_{report}, e.g. pnpm vitest run --reporter=json --outputFile={report}}}", "cwd": "{{DIR relative to root}}", "format": "jest-json" },
+    { "command": "{{E2E_COMMAND_WITH_{report}, e.g. Playwright with its junit reporter writing to {report}}}", "cwd": "{{DIR relative to root}}", "format": "junit" }
+  ],
   "lanes": [
     { "id": "journey", "title": "{{JOURNEY_LANE_TITLE}}" },
     { "id": "separate", "title": "{{SEPARATE_LANE_TITLE}}" }
