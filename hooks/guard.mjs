@@ -5,7 +5,7 @@
 // stdout = Claude Code asks the human to confirm.
 
 import { execFileSync, execSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 const WIN = process.platform === "win32";
@@ -75,11 +75,15 @@ const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
 const relTo = (base, p) => key(path.relative(base, path.resolve(base, p)));
+// Each half of a story locks its tests in its own list, .orchestrator/locked/<ID>-<side>.txt, so the
+// two halves never conflict when they meet on the story branch. locked-tests.txt is still read.
 const LOCK_REL = key(`${STATE}/locked-tests.txt`);
-const lockFile = path.join(root, STATE, "locked-tests.txt");
-const lockedPaths = existsSync(lockFile)
-  ? stripBom(readFileSync(lockFile, "utf8")).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))
-  : [];
+const LOCK_DIR_REL = key(`${STATE}/locked`);
+const isLockList = (rel) => rel === LOCK_REL || rel === LOCK_DIR_REL || rel.startsWith(LOCK_DIR_REL + "/");
+const lockFiles = [path.join(root, STATE, "locked-tests.txt"),
+  ...(existsSync(path.join(root, STATE, "locked")) ? readdirSync(path.join(root, STATE, "locked")).filter((f) => f.endsWith(".txt")).map((f) => path.join(root, STATE, "locked", f)) : [])];
+const lockedPaths = lockFiles.filter((f) => existsSync(f))
+  .flatMap((f) => stripBom(readFileSync(f, "utf8")).split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")));
 const locked = new Set(lockedPaths.map(key));
 // A directory that holds a locked file: deleting or moving it takes the file with it.
 const holdsLocked = (rel) => rel === "" || [...locked].some((l) => l.startsWith(rel + "/"));
@@ -119,7 +123,7 @@ function checkRolePaths(rel) {
 function checkFileWrite(rel, absolute) {
   if (locked.has(rel)) block(`${rel} is a locked acceptance test. Report the problem instead of changing the test; only the orchestrator unlocks it, on the product owner's request.`);
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
-  if (inSubagent && rel === LOCK_REL) block("subagents cannot change the locked-tests list.");
+  if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
   if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
   checkRolePaths(rel);
   if (readOnlyRole && !key(absolute).includes(`/${STATE}/work/`)) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/.`);
@@ -180,7 +184,7 @@ function checkGit(args) {
       let staged = [];
       try { staged = execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: dirArg, stdio: ["ignore", "pipe", "ignore"] }).toString().split(/\r?\n/).filter(Boolean).map(key); }
       catch { /* not a repository: nothing staged */ }
-      const hit = staged.find((f) => locked.has(f) || f === LOCK_REL);
+      const hit = staged.find((f) => locked.has(f) || isLockList(f));
       if (hit) block(`${hit} is locked. Unstage it; only the orchestrator commits changes to locked files.`);
     }
   }
@@ -216,7 +220,7 @@ function checkPaths(tokens, dir, removes = false) {
     const rel = relTo(base, path.resolve(dir, p));
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
     if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
-    if (inSubagent && rel === LOCK_REL) block("subagents cannot change the locked-tests list.");
+    if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
     if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
     if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   }
@@ -289,14 +293,14 @@ if (input.hook_event_name === "SubagentStop" || input.hook_event_name === "Stop"
   // list, the difference from HEAD shows it. This check ignores stop_hook_active: the builder
   // restores the files (git restore <file>) or stops for good only by reporting BLOCKED.
   const spec = (list) => list.map((p) => (WIN ? `:(icase)${p}` : p));
-  const lockSet = spec([...lockedPaths, `${STATE}/locked-tests.txt`]);
+  const lockSet = spec([...lockedPaths, `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
   const run = (a) => { try { return execFileSync("git", a, { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { return ""; } };
   const names = (a) => run(a).split(/\r?\n/).filter(Boolean);
   const changed = names(["diff", "--name-only", "HEAD", "--", ...lockSet, ...spec(storiesRel ? [storiesRel, mapRel] : [])]);
   if (changed.length) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore them with \`git restore <file>\`, then report what you needed to change them for.`);
   // A commit made through an interpreter leaves the tree equal to HEAD. The orchestrator commits each
   // lock, so the last commit that touched the lock list is the base the locked files must still match.
-  const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`]);
+  const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
   const committed = base ? names(["diff", "--name-only", base, "HEAD", "--", ...lockSet]) : [];
   if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
   // Files someone else changed would trap the builder, so this check gives one retry, then lets it report.
