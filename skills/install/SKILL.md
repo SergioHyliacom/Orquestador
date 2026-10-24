@@ -116,7 +116,7 @@ Report each check as ✅ measured and working, ⚠️ not verified (with the man
 
 When the project already has stories in another format:
 
-1. Map its fields to the orchestrator keys (`id`, `title`, `activity`, `persona`, `release`, `blocked_by`, `depends_on`, `tags`, `screens`, `operations`, `discarded`). Each story needs a Jira card: its key becomes the new ID. Write the mapping (old ID → Jira key) down before changing files.
+1. Map its fields to the orchestrator keys (`id`, `title`, `activity`, `persona`, `release`, `blocked_by`, `depends_on`, `tags`, `screens`, `sides`, `operations`, `discarded`). Each story needs a Jira card: its key becomes the new ID. Write the mapping (old ID → Jira key) down before changing files.
 2. Map its markers and headings to `labels`. If the existing words already work, keep them as the labels instead of rewriting every file.
 3. Rename the activity file keys to `code`, `name`, `folder`, `lane`, `purpose`.
 4. Change files with a script, not by hand: the IDs, the criterion IDs and the test names that carry them. Run the validator before and after; the number of stories and criteria must not change.

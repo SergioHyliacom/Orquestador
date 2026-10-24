@@ -94,10 +94,10 @@ Rules:
 | Stage in Jira | Whose turn | It leaves the stage when |
 |---|---|---|
 | Design | design | the story's pull request merges into the integration branch. That merge is design's approval |
-| Contract | backend and frontend | the spec on `story/<ID>` has every operation in the story's `operations` |
-| Build | backend and frontend, in parallel | both halves are merged into `story/<ID>` |
-| Integration | frontend | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design |
-| Visual review | design; then the risk review if any, and the merge | `story/<ID>` merges into the integration branch |
+| Contract | backend and frontend | `story/<ID>` exists and the spec there has every operation in the story's `operations`. The contract is agreed only when the story changes the API |
+| Build | the story's halves, in parallel | every half in the story's `sides` is merged into `story/<ID>` |
+| Integration | frontend, or backend when the story has no front half | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design. A story with nothing for a person to check stays here until the merge |
+| Visual review | design; then the risk review if any, and the merge | `story/<ID>` merges into the integration branch. Only stories with a criterion a person checks come here |
 | Done | — | — |
 
 The Bitbucket pipeline computes the stage from the repository and moves the card. **You never move a card.** You may comment on a card when your human approves the text: that is how one side asks the other for something.
@@ -111,14 +111,22 @@ Load the `stories` skill to write or change a story.
 3. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
 4. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. When it merges, the story is the developers'.
 
-### 6.2 Contract (backend writes it, both agree it)
+### 6.2 Kickoff and contract
 
-1. The two developers agree the shape: operations, fields, types, status codes, errors. That conversation is theirs; help your human prepare it from the story.
-2. **Backend side:** create `story/<ID>` from the integration branch. Write the agreed `operationId`s into the story's `operations` field: it is the only edit a developer makes to a story's frontmatter. Brief the backend builder with `Change: contract` and the agreed shape. Show your human the operations it generated; on the ok, commit on `story/<ID>` (`<ID>: contract`) and push.
-3. **Frontend side:** wait until the card reaches Build or the backend says so on the card, then fetch.
-4. Each side creates its half from `story/<ID>`: `story/<ID>-back` or `story/<ID>-front`.
+Not every story changes the API. The developers read the story first and settle three cases:
 
-A change to the contract later follows the same path: both agree it, the backend writes it on `story/<ID>`, and each side merges `story/<ID>` into its half.
+| Case | Example | Contract | `sides` |
+|---|---|---|---|
+| It changes the API | a new endpoint, a new field, a new error | agreed by both, written by the backend | `[back, front]` |
+| It only uses the API as it is | showing a field that already arrives, an empty state, a screen adjustment, the Hyliable editor | none | `[front]` |
+| It has no screen | a periodic task, sending emails, an internal rule, an importer | none, unless the API changes | `[back]` |
+
+1. **Kickoff.** The side that starts creates `story/<ID>` from the integration branch and writes two fields in the story's frontmatter: `sides`, the halves it has, and `operations`, the `operationId`s it uses, existing or new. They are the only edits a developer makes to a story's frontmatter. Commit (`<ID>: kickoff`) and push.
+2. **Contract, only when the story changes the API.** The two developers agree the shape: operations, fields, types, status codes, errors. That conversation is theirs; help your human prepare it from the story. The backend side briefs its builder with `Change: contract` and the agreed shape, shows the human the operations it generated and, on the ok, commits on `story/<ID>` (`<ID>: contract`) and pushes.
+3. **The other side** waits until the card reaches Build or the first side says so on the card, then fetches.
+4. Each side in `sides` creates its half from `story/<ID>`: `story/<ID>-back` or `story/<ID>-front`.
+
+A change to the contract later follows the same path: both agree it, the backend writes it on `story/<ID>`, and each side merges `story/<ID>` into its half. A story that turns out to need the other side gets it added to `sides` on `story/<ID>`.
 
 ### 6.3 Build: one criterion at a time
 
@@ -126,7 +134,7 @@ Your side's criteria are those with something your side decides. Backend: what t
 
 For each of your side's criteria, in the order your human picks:
 
-1. **Brief** the builder for that one criterion (§4). Launch it for the first criterion; resume it for the next ones.
+1. **Brief** the builder for that one criterion (§4). Launch it for the first criterion; resume it for the next ones. Work only on halves listed in the story's `sides`.
 2. **Read** its report (§5).
 3. **Show** your human, in at most 8 lines: the criterion, the test's name and what its assertion checks, the RED line, the GREEN line, the verification result and the files changed. Do not paste the code: your human audits the concept and the evidence, and opens the code when they want to.
 4. **Your human answers:** ok, a refactor, or a change. A refactor or a change goes back to the same builder (`Change: refactor <criterion ID>`: behaviour and tests stay as they are, everything stays green).
@@ -145,15 +153,15 @@ When every criterion of your side is green on your half:
 2. Run `node <storiesDir>/stories.mjs --tests`. Every criterion your side tests passes.
 3. With your human's ok, merge your half into `story/<ID>` and push.
 
-### 6.5 Integration (frontend side)
+### 6.5 Integration (frontend side, or backend when the story has no front half)
 
-When both halves are on `story/<ID>`:
+When every half in `sides` is on `story/<ID>`:
 
-1. Brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`.
+1. **With a front half:** brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`. **Back only:** there is no screen to integrate; go on to the markers.
 2. Set the markers. Run `node <storiesDir>/stories.mjs --tests`. A criterion whose tests all pass there becomes `[test]`. A criterion only a person can check (how a screen looks against its design) becomes `[unverified]`: it waits for design. No criterion stays `[unbuilt]`. Commit the story (`<ID>: markers`). Builders never edit stories; this is your edit.
-3. Push. With your human's ok, attach the screenshots to the card and tell design it is their turn.
+3. Push. If a criterion waits for design, attach the screenshots to the card with your human's ok and tell design it is their turn. If none does, the card stays in Integration until the merge: go on to §6.7.
 
-### 6.6 Visual review (design side)
+### 6.6 Visual review (design side, only when a criterion waits for design)
 
 Design compares the screenshots, and the running app when needed, with the designs. Either way the designer's session commits on `story/<ID>` and pushes:
 

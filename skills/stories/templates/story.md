@@ -8,6 +8,7 @@ blocked_by: []
 depends_on: []
 tags: []
 screens: []
+sides: [back, front]
 operations: []
 discarded: false
 ---

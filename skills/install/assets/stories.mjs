@@ -201,9 +201,12 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   const secs = sections(body);
   const operations = asList(data.operations);
   if (operations.length && config.contractSpec && !specText) warnings.push(`${config.contractSpec} not found: contract not checked.`);
+  // The halves the story has. A story that only uses the existing API is front only; one with no screen, back only.
+  const sides = asList(data.sides).length ? asList(data.sides) : ["back", "front"];
+  if (sides.some((h) => !["back", "front"].includes(h))) errors.push(`${f}: sides is [${sides.join(", ")}]. Use back, front or both.`);
   stories.push({
     id, title: data.title, code, release: data.release, persona: data.persona,
-    operations, contractMissing: specText ? operations.filter((op) => !inSpec(op)) : operations,
+    operations, contractMissing: specText ? operations.filter((op) => !inSpec(op)) : operations, sides,
     tags: asList(data.tags), blockedBy, dependsOn: asList(data.depends_on), discarded: data.discarded === true,
     screens: asList(data.screens), secs, criteria: parseCriteria(section(secs, "criteria"), f, id), file: f,
   });

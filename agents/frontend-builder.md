@@ -30,7 +30,7 @@ The brief names one criterion.
 
 ## Integration run
 
-The brief says `Change: integration`. Both halves of the story are on the story branch.
+The brief says `Change: integration`. Every half of the story is on the story branch.
 
 1. Point the UI at the real API instead of the mocks.
 2. Run the story's end-to-end test (write it first if the brief asks for it). It must pass against the real API.

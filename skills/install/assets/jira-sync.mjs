@@ -65,12 +65,15 @@ function storyBranchStage(id) {
   const s = story(id);
   if (!s) return { error: `${id} is not in the stories folder on this branch.` };
   if (s.contractMissing.length) return { stage: "contract", why: `the spec lacks ${s.contractMissing.join(", ")}` };
-  const halves = ["back", "front"].filter((h) => remoteHas(`story/${id}-${h}`));
-  const open = halves.filter((h) => !merged(`story/${id}-${h}`));
-  if (!halves.length || open.length) return { stage: "build", why: halves.length ? `story/${id}-${open.join(", -")} not merged yet` : "no half has been pushed yet" };
+  // Every half the story declares must be merged; a half nobody has pushed yet is still open.
+  const open = s.sides.filter((h) => !merged(`story/${id}-${h}`));
+  if (open.length) return { stage: "build", why: open.map((h) => `story/${id}-${h}`).join(" and ") + " not merged yet" };
   const pending = s.criteria.filter((c) => !settled(c)).map((c) => c.id);
   if (pending.length) return { stage: "integration", why: `not settled yet: ${pending.join(", ")}` };
-  return { stage: "visual", why: s.criteria.some((c) => c.kind === "unverified") ? "waiting for design" : "design approved; waiting for the merge" };
+  // Visual review only when a person has something to check; otherwise the card waits for the merge here.
+  if (s.criteria.some((c) => c.kind === "unverified")) return { stage: "visual", why: "waiting for design" };
+  if (s.criteria.some((c) => c.kind === "manual")) return { stage: "visual", why: "checked by a person; waiting for the merge" };
+  return { stage: "integration", why: "every criterion passes and nothing waits for a person; waiting for the merge" };
 }
 
 // ---------- What this push proves: [{ id, stage, why, mode }]. mode "forward" never moves a card back.

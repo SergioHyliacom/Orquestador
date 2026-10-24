@@ -5,9 +5,9 @@
 | Branch | From | Who works on it | What it carries |
 |---|---|---|---|
 | `design/<ID>` | the integration branch | design | the new story, until its pull request merges |
-| `story/<ID>` | the integration branch | backend for the contract; frontend for the integration; design for the visual review | the contract, both halves once merged, the end-to-end test, the markers |
-| `story/<ID>-back` | `story/<ID>`, after the contract | backend | the backend half |
-| `story/<ID>-front` | `story/<ID>`, after the contract | frontend | the frontend half |
+| `story/<ID>` | the integration branch | the side that starts, for the kickoff and the contract; the side that integrates; design for the visual review | the kickoff, the contract if the API changes, the halves once merged, the end-to-end test, the markers |
+| `story/<ID>-back` | `story/<ID>`, after the kickoff | backend | the backend half, when `sides` has `back` |
+| `story/<ID>-front` | `story/<ID>`, after the kickoff | frontend | the frontend half, when `sides` has `front` |
 
 The integration branch is `git.integrationBranch` (default `develop`). Non-story work: `chore/<slug>` or `fix/<slug>`.
 
@@ -18,7 +18,7 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 - Never commit on a protected branch (`git.protectedBranches`, default `main` and `develop`). The guard blocks it.
 - In Orca a builder works in its own worktree, inside the repo's configured worktree location. In plain Claude Code it works in your checkout: only one writer runs at a time.
 - Stage files by name. The guard blocks `git add .`, `-A` and `--all` unless `git.blockBroadAdd` is `false`.
-- One commit per criterion, after your human's ok. Message: `<criterion ID>: <the rule, short>`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`.
+- One commit per criterion, after your human's ok. Message: `<criterion ID>: <the rule, short>`. The kickoff: `<ID>: kickoff`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`.
 - Check `git status` before staging. Unrelated changes stay out of the commit.
 - Never `--no-verify`, `reset --hard`, `clean -f` or force push. The guard blocks them.
 - Each half's locked tests live in `.orchestrator/locked/<ID>-<side>.txt`, so the two halves never touch the same list.
