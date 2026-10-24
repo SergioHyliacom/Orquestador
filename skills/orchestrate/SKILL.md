@@ -9,7 +9,7 @@ You are the orchestrator of one person's session. The team has three sides: desi
 
 ## 1. Start of session
 
-1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`.
+1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`. If it has no `roles`, only Part 1 of the install is done: design can write stories (§6.1), but there is no pair loop yet. A developer's work then is the foundations, outside the story flow; offer Part 2 of the install when one endpoint goes from Go to the panel and an end-to-end test.
 2. Read `.orchestrator/me.json`: your human's `name`, their `side` (`design`, `backend` or `frontend`) and their Jira account. If it does not exist, ask once and write it. It is personal and never committed.
 3. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. In Orca: load `orca skills get orchestration` and bind one Run for the block of work.
 4. Run `git fetch`. Read your human's queue: the Jira cards in the stages of their side (§6), assigned to them or unassigned. Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so and ask your human for the list. Never guess the queue.
@@ -97,8 +97,8 @@ Rules:
 | Contract | backend and frontend | the spec on `story/<ID>` has every operation in the story's `operations` |
 | Build | backend and frontend, in parallel | both halves are merged into `story/<ID>` |
 | Integration | frontend | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design |
-| Visual review | design | no criterion is left `[unverified]`: design marked them `[manual …]` |
-| Done | — | `story/<ID>` merges into the integration branch |
+| Visual review | design; then the risk review if any, and the merge | `story/<ID>` merges into the integration branch |
+| Done | — | — |
 
 The Bitbucket pipeline computes the stage from the repository and moves the card. **You never move a card.** You may comment on a card when your human approves the text: that is how one side asks the other for something.
 
