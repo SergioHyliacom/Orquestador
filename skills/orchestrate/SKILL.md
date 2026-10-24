@@ -122,7 +122,7 @@ A change to the contract later follows the same path: both agree it, the backend
 
 ### 6.3 Build: one criterion at a time
 
-Your side's criteria are those with something your side decides. Backend: what the API decides — data, rules, errors, permissions, account isolation. Frontend: what the screen shows — states, messages, navigation. Many criteria have both; then each side tests its own part under the same criterion ID. When it is not clear, ask your human.
+Your side's criteria are those with something your side decides. Backend: what the API decides — data, rules, errors, permissions, account isolation. Frontend: what the screen shows — states, messages, navigation — and what Hyliable does: its editor, its agent service, the template the websites start from. Many criteria have both; then each side tests its own part under the same criterion ID. When it is not clear, ask your human.
 
 For each of your side's criteria, in the order your human picks:
 
