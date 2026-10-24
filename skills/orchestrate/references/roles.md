@@ -10,7 +10,7 @@ Create a role when the work meets at least one test:
 2. **Different tools or permissions.** It needs tools others must not have, or must be denied tools others have. Examples: a data role with database access; a read-only auditor.
 3. **Its own deliverable with its own quality bar.** It owns a file or an output, and that output has a standard of its own. Examples: copy master document, translations, SEO metadata, release notes, data migrations.
 
-If none applies, do not create a role. Load the relevant skill into the builder, or put the rule in `CLAUDE.md`.
+If none applies, do not create a role. Load the relevant skill into the builder of that side, or put the rule in `CLAUDE.md`.
 
 A finding that recurs across reviews also signals a missing role.
 
@@ -45,4 +45,4 @@ Retire a role when it stops producing findings or deliverables, or when its work
 
 ## Naming
 
-A role name is a lowercase noun or noun phrase with hyphens: `legal-reviewer`, `data-engineer`. An instance adds the scope: `legal-reviewer-ACC-003`. A role means the same thing in every project that has it.
+A role name is a lowercase noun or noun phrase with hyphens: `legal-reviewer`, `data-engineer`. An instance adds the scope: `legal-reviewer-EO-123`. A role means the same thing in every project that has it.

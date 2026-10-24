@@ -46,15 +46,15 @@ One Run per block of work, not one per story: the Run is your inbox and your nam
 
 ```
 orca orchestration run-create --objective "<the block of work>" --json     # or run-use --run <id>
-orca orchestration worker-start --terminal <handle> --worktree <its worktree> --spec "<the brief, inline>" --task-title "builder-ACC-002" --json
+orca orchestration worker-start --terminal <handle> --worktree <its worktree> --spec "<the brief, inline>" --task-title "backend-builder-EO-123" --json
 orca orchestration worker-start --terminal <handle> --worktree current --spec "<the brief, inline>" --task-title "researcher-pagos" --json
 orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json
 ```
 
 1. **Start the whole independent wave before the first wait.** Launch each terminal first (**Placement → Launch**). `worker-start --spec` creates the Task and its attempt in one call. Use `task-create --deps` plus `worker-start --task <id>` only for real ordering, and prefer parallel waves to chains deeper than three or four steps.
 2. **Process every message in a Delivery before `--ack`.** The batch replays until acknowledged and carries the whole FIFO queue whatever the type filter says. Reply to each question, validate each `worker_done` against the Task you expected and against the evidence rule of §5 of the skill, and decide each settled terminal's next owner.
-3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close` a worker that is not released. `worker-release` leaves the tab open, so after it close the terminal you launched with `orca terminal close --terminal <handle>`. Keep a builder's terminal until its story leaves review: the fix loop reuses it. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
-4. **Remove each writer's worktree when its story is done with it.** That is after the story's commit and after its builder's release. Run `orca worktree rm --worktree <selector> --json` without `--force`. Orca also deletes the branch only when it can prove the branch is merged; the story's branch stays until the human merges it. If the removal refuses (uncommitted changes, a failed hook), leave the worktree and name it in the close report. Never remove `current` or a worktree you did not create. The guard blocks `worktree rm --force`: it discards uncommitted work.
+3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close` a worker that is not released. `worker-release` leaves the tab open, so after it close the terminal you launched with `orca terminal close --terminal <handle>`. Keep a builder's terminal for its whole half: each next criterion, each refactor and the fix loop reuse it. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
+4. **Remove each writer's worktree when its half is closed.** That is after the lock commit, after the half is merged into `story/<ID>`, and after its builder's release. Run `orca worktree rm --worktree <selector> --json` without `--force`. Orca also deletes the branch only when it can prove the branch is merged; the story's branch stays until the human merges it. If the removal refuses (uncommitted changes, a failed hook), leave the worktree and name it in the close report. Never remove `current` or a worktree you did not create. The guard blocks `worktree rm --force`: it discards uncommitted work.
 5. **An empty wait or a timeout is a checkpoint, not a failure.** Keep rolling waits until every expected Dispatch settles. After three consecutive empty waits, enumerate with `worker-list --run <id> --include-remote --json` and run each row's literal `projection.nextAction`; a `none` action means read `liveness.reason` and keep waiting.
 6. **Absence proves nothing.** `unverifiable`, a null `agentWait`, an unchanged output tail and a lost connection are all absence, and absence authorizes no stop, abandon, retry or release. Leave a wait only on positive proof: `exited` liveness, the worker's own observation of exit, or a transcript whose last agent turn sent no `worker_done`. Then load `recovery-and-cleanup` and choose `worker-stop` or `worker-abandon` explicitly.
 7. **Read each new worker once, and any worker that seems stuck.** Right after `worker-start`, and whenever a worker goes quiet, run `worker-read` on its terminal. If the agent waits at a prompt (a folder-trust question, the Bypass Permissions warning, a tool permission request), never answer it: that is the human's consent. `worker-stop` the worker, tell the human the exact prompt, and run that role through the Agent tool meanwhile. Record it as unsupervised.
@@ -120,7 +120,7 @@ The spec also carries the absolute path of the brief file, the absolute path of 
 **The spec also carries the role contract itself.** An Orca worker is a plain agent session: it never loads `agents/<role>.md`, because that file defines a Claude Code subagent, not a session. Nothing but the spec and the project's own `CLAUDE.md` reaches it. So:
 
 - For a **project role**, add its file to `Read first:` — `.claude/agents/<role>.md` is inside the workspace and the worker can read it.
-- For a **plugin role** (`builder`, `reviewer`, `researcher`, `copywriter`, `designer`), paste its Rules, its stop-and-report condition, its Output shape and the `If Orca dispatched you` block into the spec. Do not paraphrase them, and do not cite the plugin by path: the plugin lives outside the workspace and the path is not portable.
+- For a **plugin role** (`backend-builder`, `frontend-builder`, `reviewer`, `researcher`, `copywriter`, `designer`), paste its Rules, its stop-and-report condition, its Output shape and the `If Orca dispatched you` block into the spec. Do not paraphrase them, and do not cite the plugin by path: the plugin lives outside the workspace and the path is not portable.
 - Either way the spec ends with the lifecycle clause: `ask` for a blocking question, `check --terminal <handle>` at each checkpoint and once before finishing, exactly one `worker_done` with both lifecycle IDs, an explicit `--outcome` and `--report-path`.
 
 A worker that was not told its contract will invent one.
@@ -139,17 +139,17 @@ What a real run taught:
 
 ## The guard
 
-`hooks/guard.mjs` reads the role from the hook's `agent_type`, which exists only for Agent-tool subagents. **An Orca worker is a full Claude Code session: `agent_type` is empty there.** Without a declared role, the read-only roles stop being read-only and the builder stops being held to red-to-green — silently. The git rules and the locked acceptance tests still apply, because those do not depend on the role.
+`hooks/guard.mjs` reads the role from the hook's `agent_type`, which exists only for Agent-tool subagents. **An Orca worker is a full Claude Code session: `agent_type` is empty there.** Without a declared role, the read-only roles stop being read-only and a builder stops being held to its side and to red-to-green — silently. The git rules and the locked acceptance tests still apply, because those do not depend on the role.
 
 So, for every Orca worker, before you dispatch it:
 
 1. Write `<the worker's workspace>/.orchestrator/role.json`:
 
 ```json
-{ "role": "builder", "scope": "ACC-002", "workspace": "<absolute path of that workspace>" }
+{ "role": "backend-builder", "scope": "EO-123", "workspace": "<absolute path of that workspace>" }
 ```
 
-The guard reads it when `agent_type` is empty, checks that `workspace` is the workspace it is running in, and then applies the same role rules — plus the builder's verification gate, on the worker's `Stop` instead of `SubagentStop`.
+The guard reads it when `agent_type` is empty, checks that `workspace` is the workspace it is running in, and then applies the same role rules — plus the builder's stop checks for its role, on the worker's `Stop` instead of `SubagentStop`.
 
 2. **Never write it into your own workspace.** It would apply those rules to you. That is the second reason a writer gets its own workspace.
 3. Delete it when you release the worker.
