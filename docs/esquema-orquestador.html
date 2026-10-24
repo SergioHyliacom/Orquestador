@@ -73,6 +73,14 @@
   .kind { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; display: grid; gap: 6px; align-content: start; }
   .kind .ex { color: var(--muted); font-size: 13px; }
 
+  .questions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .q { background: var(--shared-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .q > b:first-child { display: block; margin-bottom: 4px; }
+  .walk { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .walk .cell { border: 1px solid var(--line); border-top: 4px solid var(--back); border-radius: 10px; padding: 10px 12px; font-size: 13px; background: #fff; }
+  .walk .cell > b { display: block; font-size: 14px; margin-bottom: 4px; }
+  .walk .skip { border-style: dashed; border-top-color: var(--line); color: var(--muted); background: var(--bg); }
+
   /* 4. Ramas */
   ol.steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   ol.steps li { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
@@ -107,7 +115,7 @@
 
   @media (max-width: 900px) {
     .lanes { grid-template-columns: 1fr; } .lanes .rowlabel { display: none; } .down { grid-column: 1; }
-    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds { grid-template-columns: 1fr; }
+    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds, .questions, .walk { grid-template-columns: 1fr; }
     .stage::after, .step::after { display: none; }
     .flowline { grid-template-columns: 1fr; } .arrow::before { content: "↓"; }
   }
@@ -186,7 +194,7 @@
   <p class="lead">Seis etapas, que son las columnas del tablero de Jira. Las tarjetas <b>solo las mueve el pipeline</b>, a partir de lo que hay en el repositorio. Las personas solo deciden lo que una máquina no puede decidir.</p>
   <div class="stages">
     <div class="stage"><div class="bar" style="background:var(--design)"></div>
-      <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span></div>
+      <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-back">Desarrollo si no hay pantalla</span></div>
       <dl><dt>Qué pasa</dt><dd>Se crea la tarjeta; se escribe la historia con sus estados y se enlaza el diseño</dd>
       <dt>Rama</dt><dd><code>design/EO-123</code></dd>
       <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación de diseño <span class="human">· humano</span></dd></dl></div>
@@ -216,12 +224,28 @@
       <dt>Después</dt><dd>Si algo cambia, se edita esta historia. Un bug es un criterio que falla, no una historia nueva</dd></dl></div>
   </div>
   <h3 style="margin:22px 0 8px;font-size:16px">No todas las historias tienen las dos mitades</h3>
-  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">En el arranque, los desarrolladores leen la historia y anotan sus mitades (<code>sides</code>) y los endpoints que usa (<code>operations</code>). El pipeline espera a las mitades que diga la historia.</p>
-  <div class="kinds">
-    <div class="kind"><b>Cambia la API</b><span class="ex">Un endpoint nuevo, un campo nuevo, un error nuevo</span><span><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></span><span class="ex">Se acuerda el contrato y el backend lo escribe</span></div>
-    <div class="kind"><b>Solo usa la API que ya existe</b><span class="ex">Mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable</span><span><span class="tag t-front">Solo frontend</span></span><span class="ex">Sin contrato que acordar</span></div>
-    <div class="kind"><b>No tiene pantalla</b><span class="ex">Una tarea periódica, el envío de correos, una regla interna, un importador</span><span><span class="tag t-back">Solo backend</span></span><span class="ex">Sin contrato salvo que cambie la API. Integra el backend y no pasa por revisión visual</span></div>
+  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">En el arranque (columna Contrato), los desarrolladores leen la historia y responden dos preguntas. Lo anotan en la propia historia: sus mitades (<code>sides</code>) y los endpoints que usa (<code>operations</code>). El pipeline espera a las mitades que diga la historia.</p>
+  <div class="questions">
+    <div class="q"><b>1 · ¿Cambia la forma de la API?</b>Endpoints, campos que recibe o devuelve, errores. Si cambia, hay contrato, aunque ninguna pantalla lo use todavía. Cambiar una regla o los datos guardados <b>no</b> es cambiar la API.</div>
+    <div class="q"><b>2 · ¿Qué lados hay que tocar?</b>Backend, frontend o los dos. Cada lado que se toca es una mitad, con su rama.</div>
   </div>
+  <div class="kinds">
+    <div class="kind"><b>Cambia la API</b><span class="ex">Un endpoint nuevo, un campo nuevo o renombrado, un error nuevo</span><span><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></span><span class="ex">Se acuerda el contrato y lo escribe el backend. Si ninguna pantalla lo usa todavía, solo backend, pero con contrato</span></div>
+    <div class="kind"><b>Solo frontend</b><span class="ex">Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable</span><span><span class="tag t-front">Frontend</span></span><span class="ex">Sin contrato. Integra frontend; revisión visual si hay algo que mirar</span></div>
+    <div class="kind"><b>Solo backend</b><span class="ex">Sin pantalla: una regla sobre los datos, una tarea periódica, el envío de correos, un importador, corregir datos guardados</span><span><span class="tag t-back">Backend</span></span><span class="ex">Sin contrato salvo que cambie la API. La puede escribir un desarrollador. Integra el backend y no pasa por revisión visual</span></div>
+  </div>
+
+  <h3 style="margin:22px 0 8px;font-size:16px">Ejemplo: una historia solo de backend, columna a columna</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)"><b>EO-140 · Las facturas rectificativas usan su propia serie.</b> Cambia una regla, no la API, y no tiene pantalla.</p>
+  <div class="walk">
+    <div class="cell"><b>Diseño</b>La escribe un desarrollador, porque es técnica. Se aprueba igual: con su PR a <code>develop</code></div>
+    <div class="cell"><b>Contrato</b>Arranque: crea <code>story/EO-140</code> con <code>sides: [back]</code> y sin endpoints. Sin reunión: pasa en minutos</div>
+    <div class="cell"><b>Desarrollo</b>Solo existe <code>story/EO-140-back</code>. Un criterio cada vez, con tu ok</div>
+    <div class="cell"><b>Integración</b>El backend junta su mitad, pasan todos los tests y pone los marcadores. La tarjeta espera aquí el merge</div>
+    <div class="cell skip"><b>Revisión visual</b>No pasa: diseño no tiene nada que mirar. Como es fiscal, antes del merge revisa el <code>reviewer</code></div>
+    <div class="cell"><b>Hecha</b>PR de <code>story/EO-140</code> a <code>develop</code> y merge</div>
+  </div>
+  <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">Si la historia corrige datos ya guardados, eso es una migración: el agente se para antes de ejecutarla en una base de datos compartida, y la decides tú.</p>
 </section>
 
 <!-- 3 -->

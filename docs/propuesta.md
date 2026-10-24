@@ -21,7 +21,7 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | **Orquestador** | La sesión de Claude (Opus) de **cada persona** | Lee en Jira lo que le toca a su persona, prepara cada encargo, le enseña las pruebas, hace el commit tras su ok |
 | **Agentes que programan** | `backend-builder` y `frontend-builder` (Sonnet) | Un encargo cada vez: el contrato, un criterio o la integración. Prueban, se paran e informan |
 | **Desarrolladores** | Backend (Go) y frontend (TypeScript) | Navegan: acuerdan el contrato, validan cada paso, deciden |
-| **Diseño** | Equipo de diseño, como product owners | Escribe las historias verticales con sus estados y hace la revisión visual |
+| **Diseño** | Equipo de diseño, como product owners | Escribe las historias verticales con sus estados y hace la revisión visual. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador |
 | **Revisor** | `reviewer`, solo lectura | Revisa la historia completa al cerrarla, **solo si lleva etiqueta de riesgo** |
 | **Investigador** | `researcher`, solo lectura | Resuelve dudas sin tocar nada |
 
@@ -70,7 +70,7 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 | Etapa en Jira | Le toca a | Qué pasa | Avanza cuando |
 |---|---|---|---|
-| **Diseño** | Diseño | Crea la tarjeta y escribe la historia en `design/EO-123`: reglas, estados de cada pantalla, diseños enlazados | El PR de la historia entra en `develop`. **Es la aprobación de diseño** |
+| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Crea la tarjeta y escribe la historia en `design/EO-123`: reglas, estados de cada pantalla, diseños enlazados | El PR de la historia entra en `develop`. **Es la aprobación** |
 | **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
 | **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
 | **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
@@ -79,11 +79,24 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 ### No todas las historias tienen las dos mitades
 
+La pregunta clave es: **¿cambia la forma de la API?** Es decir, sus endpoints, los campos que reciben o devuelven, o sus errores. Cambiar una regla o los datos guardados **no** es cambiar la API.
+
 | Caso | Ejemplos | Contrato | Mitades (`sides`) |
 |---|---|---|---|
-| Cambia la API | Un endpoint nuevo, un campo nuevo, un error nuevo | Se acuerda y lo escribe el backend | `[back, front]` |
-| Solo usa la API que ya existe | Mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable | Ninguno | `[front]` |
-| No tiene pantalla | Una tarea periódica, el envío de correos, una regla interna, un importador | Ninguno, salvo que cambie la API | `[back]` |
+| Cambia la API | Un endpoint nuevo, un campo nuevo o renombrado, un error nuevo | Se acuerda y lo escribe el backend, aunque ninguna pantalla lo use todavía | `[back, front]`, o `[back]` si ninguna pantalla lo usa todavía |
+| Solo frontend | Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable | Ninguno | `[front]` |
+| Solo backend | Sin pantalla: una regla sobre los datos, una tarea periódica, el envío de correos, un importador, corregir datos guardados | Ninguno, salvo que cambie la API | `[back]` |
+
+**Ejemplo, EO-140 · «Las facturas rectificativas usan su propia serie».** Cambia una regla, no la API, y no tiene pantalla:
+
+1. **Diseño:** la escribe un desarrollador y se aprueba con su PR.
+2. **Contrato:** arranque con `sides: [back]` y sin endpoints; pasa en minutos.
+3. **Desarrollo:** solo la mitad `-back`, un criterio cada vez.
+4. **Integración:** el backend junta su mitad y pone los marcadores. La tarjeta espera aquí el merge.
+5. **Revisión visual:** no pasa. Como es fiscal, antes del merge revisa el `reviewer`.
+6. **Hecha:** PR y merge.
+
+Si la historia corrige datos ya guardados, eso es una migración: el agente se para antes de ejecutarla en una base de datos compartida, y la decide la persona.
 
 Los desarrolladores lo deciden en el arranque, leyendo la historia. El pipeline espera a las mitades que diga la historia: si backend termina antes de que frontend empiece, la tarjeta sigue en Desarrollo.
 
@@ -143,6 +156,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Identificador de historia | La clave de Jira, en todas partes |
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
+| Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador. La aprobación es siempre el PR |
 | Agentes | `backend-builder` y `frontend-builder` con Sonnet; orquestador con Opus |
 | Commits | Los hace el orquestador tras el ok de la persona |
 | Revisor | Solo en historias con riesgo, una vez al cerrar |

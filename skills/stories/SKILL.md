@@ -24,6 +24,7 @@ Stories have no priority field. The release sets the order. The first release in
 - File: `stories/<activity folder>/<ID>-<short-title>.md`. Lowercase, no accents, hyphens.
 - ID: the story's **Jira key**, e.g. `EO-123`. Create the Jira card first and use its key; the same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
+- Author: design writes every story with a screen. A story with no screen can be written by the developer who understands it; its pull request is still the approval.
 - Sides: the `sides` field lists the halves the story has: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
 - Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story uses, existing or new. Design leaves it empty. The developers fill it at the kickoff, and the validator checks that each one is in the spec.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.

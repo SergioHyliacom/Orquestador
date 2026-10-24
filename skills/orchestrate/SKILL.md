@@ -93,7 +93,7 @@ Rules:
 
 | Stage in Jira | Whose turn | It leaves the stage when |
 |---|---|---|
-| Design | design | the story's pull request merges into the integration branch. That merge is design's approval |
+| Design | design, or a developer for a story with no screen | the story's pull request merges into the integration branch. That merge is the approval |
 | Contract | backend and frontend | `story/<ID>` exists and the spec there has every operation in the story's `operations`. The contract is agreed only when the story changes the API |
 | Build | the story's halves, in parallel | every half in the story's `sides` is merged into `story/<ID>` |
 | Integration | frontend, or backend when the story has no front half | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design. A story with nothing for a person to check stays here until the merge |
@@ -104,7 +104,9 @@ The Bitbucket pipeline computes the stage from the repository and moves the card
 
 Load the `stories` skill to write or change a story.
 
-### 6.1 Design: write the story (design side)
+### 6.1 Write the story (design; a developer when it has no screen)
+
+Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it; the steps are the same, and its pull request is still the approval.
 
 1. Create the story's Jira card in Design. Its key is the story's ID.
 2. Write the story with your human: the rules, the states of each screen as criteria, the designs in `screens`. Leave `operations` empty.
@@ -113,13 +115,13 @@ Load the `stories` skill to write or change a story.
 
 ### 6.2 Kickoff and contract
 
-Not every story changes the API. The developers read the story first and settle three cases:
+Not every story changes the API. What decides it is whether the **shape** of the API changes: its endpoints, the fields they take or return, their errors. Changing a rule or the stored data does not change the API. The developers read the story first and settle three cases:
 
 | Case | Example | Contract | `sides` |
 |---|---|---|---|
-| It changes the API | a new endpoint, a new field, a new error | agreed by both, written by the backend | `[back, front]` |
-| It only uses the API as it is | showing a field that already arrives, an empty state, a screen adjustment, the Hyliable editor | none | `[front]` |
-| It has no screen | a periodic task, sending emails, an internal rule, an importer | none, unless the API changes | `[back]` |
+| It changes the API | a new endpoint, a new or renamed field, a new error | agreed by both, written by the backend, even if no screen uses it yet | `[back, front]`, or `[back]` when no screen uses it yet |
+| Front only | it uses the API as it is: showing a field that already arrives, an empty state, a screen adjustment, the Hyliable editor | none | `[front]` |
+| Back only | no screen: a rule on the data, a periodic task, sending emails, an importer, correcting stored data | none, unless the API changes | `[back]` |
 
 1. **Kickoff.** The side that starts creates `story/<ID>` from the integration branch and writes two fields in the story's frontmatter: `sides`, the halves it has, and `operations`, the `operationId`s it uses, existing or new. They are the only edits a developer makes to a story's frontmatter. Commit (`<ID>: kickoff`) and push.
 2. **Contract, only when the story changes the API.** The two developers agree the shape: operations, fields, types, status codes, errors. That conversation is theirs; help your human prepare it from the story. The backend side briefs its builder with `Change: contract` and the agreed shape, shows the human the operations it generated and, on the ok, commits on `story/<ID>` (`<ID>: contract`) and pushes.
