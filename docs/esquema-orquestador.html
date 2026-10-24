@@ -274,6 +274,7 @@
   <svg viewBox="0 0 1110 410" width="100%" role="img" aria-label="Ramas de una historia">
     <defs>
       <linearGradient id="g-bf" x1="0" x2="0" y1="0" y2="1"><stop offset="50%" stop-color="#2563EB"/><stop offset="50%" stop-color="#0F8F82"/></linearGradient>
+      <marker id="ahv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7C3AED"/></marker>
     </defs>
     <g font-size="13" font-weight="700" text-anchor="end">
       <text x="165" y="55" fill="#475569">develop</text>
@@ -287,8 +288,8 @@
       <line x1="190" y1="50" x2="1090" y2="50" stroke="#475569"/>
       <path d="M230,50 C250,50 245,110 270,110 L300,110 C320,110 315,50 335,50" stroke="#7C3AED"/>
       <path d="M365,50 C385,50 375,190 400,190 L905,190 C930,190 925,50 950,50" stroke="#B45309"/>
-      <path d="M425,190 C445,190 435,260 460,260 L585,260 C610,260 600,190 625,190" stroke="#2563EB"/>
-      <path d="M425,190 C445,190 440,330 470,330 L655,330 C680,330 670,190 695,190" stroke="#0F8F82"/>
+      <path d="M418,190 C438,190 428,260 455,260 L585,260 C610,260 600,190 625,190" stroke="#2563EB"/>
+      <path d="M440,190 C460,190 452,330 478,330 L655,330 C680,330 670,190 695,190" stroke="#0F8F82"/>
     </g>
     <!-- commits -->
     <g stroke="#fff" stroke-width="2">
@@ -302,6 +303,9 @@
       <circle cx="755" cy="190" r="7" fill="#B45309"/><circle cx="815" cy="190" r="7" fill="#B45309"/><circle cx="875" cy="190" r="7" fill="#B45309"/>
       <circle cx="950" cy="50" r="7" fill="#475569"/>
     </g>
+    <!-- adjustments loop -->
+    <path d="M871,182 C866,128 764,128 759,182" fill="none" stroke="#7C3AED" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ahv)"/>
+    <text x="815" y="122" font-size="11.5" text-anchor="middle" fill="#6D28D9">si diseño pide ajustes, vuelve a Integración</text>
     <!-- labels -->
     <g font-size="11.5" fill="#1E293B" text-anchor="middle">
       <text x="285" y="133">historia lista</text>
@@ -310,20 +314,26 @@
       <text x="470" y="283">EO-123.1</text><text x="520" y="283">EO-123.2</text><text x="570" y="283">bloqueo</text>
       <text x="485" y="353">EO-123.1</text><text x="540" y="353">EO-123.3</text><text x="595" y="353">EO-123.4</text><text x="645" y="353">bloqueo</text>
       <text x="615" y="174">junta back</text><text x="702" y="174">junta front</text>
-      <text x="755" y="213">E2E + capturas</text><text x="815" y="174">marcadores</text><text x="875" y="213">visto bueno</text>
+      <text x="755" y="213">E2E + capturas</text><text x="815" y="174">marcadores</text><text x="882" y="213">visto bueno de diseño</text>
       <text x="950" y="34">PR + merge humano</text>
     </g>
     <!-- stage bar -->
     <g font-size="11.5" font-weight="700" fill="#fff" text-anchor="middle">
-      <rect x="215" y="375" width="135" height="24" rx="5" fill="#7C3AED"/><text x="282" y="391">Diseño</text>
-      <rect x="352" y="375" width="83" height="24" rx="5" fill="url(#g-bf)"/><text x="393" y="391">Contrato</text>
-      <rect x="437" y="375" width="268" height="24" rx="5" fill="url(#g-bf)"/><text x="571" y="391">Desarrollo (en paralelo)</text>
-      <rect x="707" y="375" width="128" height="24" rx="5" fill="#0F8F82"/><text x="771" y="391">Integración</text>
-      <rect x="837" y="375" width="113" height="24" rx="5" fill="#7C3AED"/><text x="893" y="391">Revisión visual</text>
-      <rect x="952" y="375" width="138" height="24" rx="5" fill="#475569"/><text x="1021" y="391">Hecha</text>
+      <rect x="215" y="375" width="122" height="24" rx="5" fill="#7C3AED"/><text x="276" y="391">Diseño</text>
+      <rect x="339" y="375" width="63" height="24" rx="5" fill="url(#g-bf)"/><text x="370" y="391">Contrato</text>
+      <rect x="404" y="375" width="289" height="24" rx="5" fill="url(#g-bf)"/><text x="548" y="391">Desarrollo (en paralelo)</text>
+      <rect x="695" y="375" width="118" height="24" rx="5" fill="#0F8F82"/><text x="754" y="391">Integración</text>
+      <rect x="815" y="375" width="133" height="24" rx="5" fill="#7C3AED"/><text x="881" y="391">Revisión visual</text>
+      <rect x="950" y="375" width="140" height="24" rx="5" fill="#475569"/><text x="1020" y="391">Hecha</text>
     </g>
   </svg>
   </div>
+  <div class="parallel" style="background:var(--design-soft)"><b>¿Cuándo se hace la revisión visual?</b> Cuando frontend ha juntado las dos mitades, la prueba E2E pasa contra la API real y ha subido las capturas de cada estado y los marcadores. Con ese push, el pipeline mueve la tarjeta a <b>Revisión visual</b>. Diseño compara las capturas (y la app, si hace falta) con su diseño y, desde su sesión, en <code>story/EO-123</code>:
+    <ul style="margin:6px 0 0;padding-left:18px">
+      <li><b>aprueba:</b> los criterios visuales pasan de <code>[unverified]</code> a <code>[manual fecha, nombre]</code>;</li>
+      <li><b>pide ajustes:</b> cambia criterios de la misma historia; la tarjeta vuelve a Integración y frontend los resuelve en pareja.</li>
+    </ul>
+    Después, el revisor si la historia tiene riesgo, el PR y el merge.</div>
 </section>
 
 <!-- 5 -->
