@@ -1,7 +1,7 @@
 <!-- ORCHESTRATOR:START -->
 ## Orchestrated work (orchestrator)
 
-This project uses the orchestrator plugin. The main session follows the `orchestrator:orchestrate` skill. Stories follow the `orchestrator:stories` skill.
+This project uses the easyone-orchestrator plugin. The main session follows the `easyone-orchestrator:orchestrate` skill. Stories follow the `easyone-orchestrator:stories` skill.
 
 - **Product state:** `{{STORIES_DIR}}/map.md` (generated). Stories: `{{STORIES_DIR}}/stories/`. Decisions: `{{STORIES_DIR}}/decisions/`.
 - **Plugs:** `.orchestrator.json`. **Ledger:** `.orchestrator/state.md`. **Locked tests:** `.orchestrator/locked-tests.txt`.

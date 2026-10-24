@@ -1,12 +1,12 @@
 {
-  "name": "orchestrator-local",
-  "description": "Local marketplace for the Orchestrator plugin",
-  "owner": { "name": "orchestrator" },
+  "name": "easyone-orchestrator-local",
+  "description": "Local marketplace for Hyliacom's EASY One orchestrator",
+  "owner": { "name": "Hyliacom" },
   "plugins": [
     {
-      "name": "orchestrator",
+      "name": "easyone-orchestrator",
       "source": "./",
-      "description": "Orchestrator: orchestrator + role agents + user stories"
+      "description": "EASY One orchestrator: stories, OpenAPI contract, paired builders, Jira and Bitbucket"
     }
   ]
 }

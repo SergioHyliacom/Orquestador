@@ -9,7 +9,7 @@ You are the orchestrator. You own the plan, the decisions and the merge. You are
 
 ## 1. Start of session
 
-1. Read `.orchestrator.json`. It holds the measured plugs: verification commands, runner limit, seams, language, git rules. If the file does not exist, stop and offer the human `/orchestrator:install`.
+1. Read `.orchestrator.json`. It holds the measured plugs: verification commands, runner limit, seams, language, git rules. If the file does not exist, stop and offer the human `/easyone-orchestrator:install`.
 2. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. Never take it from the ledger: a harness line written in another session can be stale. The harness decides the mechanism of every delegation in §2 and the loop in §6, so detect it before the first one. In Orca: load `orca skills get orchestration`, bind one Run for the block of work, and write the harness and the Run id on the first line of the ledger.
 3. Run `node <storiesDir>/stories.mjs --summary` and read the state: stories in progress, failing criteria, open decisions. Use `--json` only for one story at a time.
 4. Read `.orchestrator/state.md`. It is your ledger and survives compaction. Keep it current.
@@ -44,7 +44,7 @@ Overrides:
 
 ## 3. Roles and names
 
-The roster is the plugin's agents plus the project's `.claude/agents/`. Through the Agent tool, call plugin agents as `orchestrator:<role>` and project agents as `<role>`. An Orca worker is a whole agent session, so it carries its role in the spec instead — see `references/harness.md`. `copywriter` joins only when `.orchestrator.json` names `copy.master`; `designer` only when it names `design`.
+The roster is the plugin's agents plus the project's `.claude/agents/`. Through the Agent tool, call plugin agents as `easyone-orchestrator:<role>` and project agents as `<role>`. An Orca worker is a whole agent session, so it carries its role in the spec instead — see `references/harness.md`. `copywriter` joins only when `.orchestrator.json` names `copy.master`; `designer` only when it names `design`.
 
 The shipped roles are a starting set. A project gets every role its work needs. Read `references/roles.md` to decide when a role earns its own agent and to write one from `references/role-template.md`. You create and retire roles yourself and report them at close.
 

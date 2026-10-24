@@ -1,6 +1,6 @@
 ---
 name: install
-description: Install orchestrator in one project. Measures the project, writes .orchestrator.json, the story folder and validator in the project's language, project roles and a CLAUDE.md block, and migrates an existing story folder. Run only when the human asks for /orchestrator:install. Not for spec-driven (SDD) setups.
+description: Install orchestrator in one project. Measures the project, writes .orchestrator.json, the story folder and validator in the project's language, project roles and a CLAUDE.md block, and migrates an existing story folder. Run only when the human asks for /easyone-orchestrator:install. Not for spec-driven (SDD) setups.
 disable-model-invocation: true
 ---
 
