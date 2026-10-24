@@ -10,7 +10,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 - **Cada desarrollador trabaja en pareja con su agente (Sonnet)**, un criterio cada vez. El agente escribe el test, lo ve fallar, lo hace pasar y se para. La persona valida el concepto y las pruebas, y la sesión hace el commit tras su ok.
 - **Git guarda el qué; Jira muestra el quién y el cuándo.** Las tarjetas las mueve Bitbucket Pipelines a partir de lo que hay en el repositorio.
 - **Una guardia** (un hook) impide lo peligroso y mantiene a cada agente en su lado.
-- **Al cerrar cada entrega, una auditoría por muestreo** busca lo que los tests no ven y convierte cada error que puede repetirse en una regla que comprueba la máquina. La IA no aprende de una sesión a otra: lo aprendido vive en el repositorio. Está pendiente decidir si la confirma una persona al final (`audit.confirm`).
+- **Al cerrar cada entrega, una auditoría por muestreo** busca lo que los tests no ven y convierte cada error que puede repetirse en una regla que comprueba la máquina. Lo aprendido vive en el repositorio. Está pendiente decidir si la confirma una persona al final (`audit.confirm`).
 
 **Para enseñárselo al equipo:** [`docs/esquema-orquestador.html`](docs/esquema-orquestador.html). **El porqué de cada decisión:** [`docs/propuesta.md`](docs/propuesta.md).
 
