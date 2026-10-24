@@ -71,11 +71,21 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 | Etapa en Jira | Le toca a | Qué pasa | Avanza cuando |
 |---|---|---|---|
 | **Diseño** | Diseño | Crea la tarjeta y escribe la historia en `design/EO-123`: reglas, estados de cada pantalla, diseños enlazados | El PR de la historia entra en `develop`. **Es la aprobación de diseño** |
-| **Contrato** | Backend + frontend | Acuerdan la API; el backend crea `story/EO-123`, apunta los endpoints y su agente los genera sin implementar | El OpenAPI tiene todos los endpoints de la historia |
-| **Desarrollo** | Backend y frontend, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Las dos mitades están en `story/EO-123` |
-| **Integración** | Frontend | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores | Todos los criterios pasan o esperan a diseño |
-| **Revisión visual** | Diseño; después el revisor si hay riesgo, y el merge | Diseño compara capturas y app con su diseño: aprueba o pide ajustes en la misma historia (vuelve a Integración) | Las personas hacen el merge del PR a `develop` |
+| **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
+| **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
+| **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
+| **Revisión visual** | Diseño; después el revisor si hay riesgo, y el merge | Solo historias con algo que mirar. Diseño compara capturas y app con su diseño: aprueba o pide ajustes en la misma historia (vuelve a Integración) | Las personas hacen el merge del PR a `develop` |
 | **Hecha** | — | La historia está en `develop` con todos sus criterios verificados | — |
+
+### No todas las historias tienen las dos mitades
+
+| Caso | Ejemplos | Contrato | Mitades (`sides`) |
+|---|---|---|---|
+| Cambia la API | Un endpoint nuevo, un campo nuevo, un error nuevo | Se acuerda y lo escribe el backend | `[back, front]` |
+| Solo usa la API que ya existe | Mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable | Ninguno | `[front]` |
+| No tiene pantalla | Una tarea periódica, el envío de correos, una regla interna, un importador | Ninguno, salvo que cambie la API | `[back]` |
+
+Los desarrolladores lo deciden en el arranque, leyendo la historia. El pipeline espera a las mitades que diga la historia: si backend termina antes de que frontend empiece, la tarjeta sigue en Desarrollo.
 
 ### El bucle en pareja (un criterio)
 
@@ -94,8 +104,8 @@ Si el agente se bloquea (por ejemplo, al contrato le falta algo), se para. Tu se
 | Rama | Sale de | Para qué |
 |---|---|---|
 | `design/EO-123` | `develop` | La historia nueva, hasta que entra su PR |
-| `story/EO-123` | `develop` | El contrato, la integración, los marcadores y la revisión visual |
-| `story/EO-123-back` / `-front` | `story/EO-123` | Las dos mitades |
+| `story/EO-123` | `develop` | El arranque, el contrato si cambia la API, la integración, los marcadores y la revisión visual |
+| `story/EO-123-back` / `-front` | `story/EO-123` | Las mitades que tenga la historia |
 
 - Un commit por criterio, tras el ok, con los ficheros por nombre.
 - Push y merge solo cuando la persona lo pide, y la guardia pide confirmación.
@@ -131,7 +141,8 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Repositorio | Bitbucket |
 | Sincronización entre departamentos | Jira; las tarjetas las mueve el pipeline |
 | Identificador de historia | La clave de Jira, en todas partes |
-| Contrato | OpenAPI generado desde Go, en el repositorio |
+| Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
+| Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Agentes | `backend-builder` y `frontend-builder` con Sonnet; orquestador con Opus |
 | Commits | Los hace el orquestador tras el ok de la persona |
 | Revisor | Solo en historias con riesgo, una vez al cerrar |

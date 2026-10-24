@@ -69,6 +69,10 @@
   .auto { font-size: 11px; font-weight: 700; color: var(--infra); }
   .human { font-size: 11px; font-weight: 700; color: var(--design); }
 
+  .kinds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .kind { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: 14px; display: grid; gap: 6px; align-content: start; }
+  .kind .ex { color: var(--muted); font-size: 13px; }
+
   /* 4. Ramas */
   ol.steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   ol.steps li { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
@@ -103,7 +107,7 @@
 
   @media (max-width: 900px) {
     .lanes { grid-template-columns: 1fr; } .lanes .rowlabel { display: none; } .down { grid-column: 1; }
-    .stages, .timeline, .cols, .rules, .repo, ol.steps { grid-template-columns: 1fr; }
+    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds { grid-template-columns: 1fr; }
     .stage::after, .step::after { display: none; }
     .flowline { grid-template-columns: 1fr; } .arrow::before { content: "↓"; }
   }
@@ -188,28 +192,35 @@
       <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación de diseño <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:linear-gradient(90deg,var(--back) 50%,var(--front) 50%)"></div>
       <h3>Contrato</h3><div class="who"><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></div>
-      <dl><dt>Qué pasa</dt><dd>Los dos acuerdan la API; el backend la escribe con los endpoints sin implementar</dd>
+      <dl><dt>Qué pasa</dt><dd>Arranque: se anota qué mitades tiene la historia. <b>Solo si cambia la API</b>, los dos la acuerdan y el backend la escribe</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>El OpenAPI tiene todos los endpoints de la historia <span class="auto">· automático</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>Existe la rama de la historia y el OpenAPI tiene sus endpoints <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:linear-gradient(90deg,var(--back) 50%,var(--front) 50%)"></div>
       <h3>Desarrollo</h3><div class="who"><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></div>
-      <dl><dt>Qué pasa</dt><dd>Cada lado construye su mitad <b>en paralelo</b>, un criterio cada vez (punto 3)</dd>
+      <dl><dt>Qué pasa</dt><dd>Cada lado de la historia construye su mitad <b>en paralelo</b>, un criterio cada vez (punto 3)</dd>
       <dt>Ramas</dt><dd><code>-back</code> y <code>-front</code></dd>
-      <dt>Avanza cuando</dt><dd>Las dos mitades están juntas en <code>story/EO-123</code> <span class="auto">· automático</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>Todas sus mitades están juntas en <code>story/EO-123</code> <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--front)"></div>
-      <h3>Integración</h3><div class="who"><span class="tag t-front">Frontend</span></div>
+      <h3>Integración</h3><div class="who"><span class="tag t-front">Frontend</span> <span class="tag t-back">Backend si no hay pantalla</span></div>
       <dl><dt>Qué pasa</dt><dd>API real en lugar de simulaciones, prueba E2E, capturas por estado, marcadores</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>Todos los criterios pasan o esperan a diseño <span class="auto">· automático</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>Todo pasa y algo espera a diseño. Si nada espera a diseño, se queda aquí hasta el merge <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--design)"></div>
       <h3>Revisión visual</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-shared">Revisor si hay riesgo</span></div>
-      <dl><dt>Qué pasa</dt><dd>Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración)</dd>
+      <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración)</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
       <dt>Avanza cuando</dt><dd>Las personas hacen el merge del PR a <code>develop</code> <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--infra)"></div>
       <h3>Hecha</h3><div class="who"><span class="tag t-infra">—</span></div>
       <dl><dt>Qué pasa</dt><dd>La historia está en <code>develop</code> con todos sus criterios verificados</dd>
       <dt>Después</dt><dd>Si algo cambia, se edita esta historia. Un bug es un criterio que falla, no una historia nueva</dd></dl></div>
+  </div>
+  <h3 style="margin:22px 0 8px;font-size:16px">No todas las historias tienen las dos mitades</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">En el arranque, los desarrolladores leen la historia y anotan sus mitades (<code>sides</code>) y los endpoints que usa (<code>operations</code>). El pipeline espera a las mitades que diga la historia.</p>
+  <div class="kinds">
+    <div class="kind"><b>Cambia la API</b><span class="ex">Un endpoint nuevo, un campo nuevo, un error nuevo</span><span><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></span><span class="ex">Se acuerda el contrato y el backend lo escribe</span></div>
+    <div class="kind"><b>Solo usa la API que ya existe</b><span class="ex">Mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable</span><span><span class="tag t-front">Solo frontend</span></span><span class="ex">Sin contrato que acordar</span></div>
+    <div class="kind"><b>No tiene pantalla</b><span class="ex">Una tarea periódica, el envío de correos, una regla interna, un importador</span><span><span class="tag t-back">Solo backend</span></span><span class="ex">Sin contrato salvo que cambie la API. Integra el backend y no pasa por revisión visual</span></div>
   </div>
 </section>
 
@@ -275,7 +286,7 @@
 <!-- 4 -->
 <section id="ramas">
   <h2><span class="num">4</span>Ramas de una historia</h2>
-  <p class="lead">Cada línea es una rama de git. La gris es <code>develop</code>, la rama común del equipo. La <b style="color:var(--shared)">naranja</b> es la <b>rama de la historia</b>: ahí se sube el contrato, ahí se juntan las dos mitades y ahí integra frontend y revisa diseño. Sigue los números.</p>
+  <p class="lead">Cada línea es una rama de git. La gris es <code>develop</code>, la rama común del equipo. La <b style="color:var(--shared)">naranja</b> es la <b>rama de la historia</b>: ahí se arranca, ahí se juntan las mitades y ahí se integra y revisa diseño. Sigue los números. El dibujo es una historia con las dos mitades; si solo tiene una, falta la otra rama.</p>
   <div class="svgwrap">
   <svg viewBox="0 0 1110 390" width="100%" role="img" aria-label="Ramas de una historia, en ocho pasos">
     <defs>
@@ -315,7 +326,7 @@
     <g stroke="#fff" stroke-width="2">
       <circle cx="335" cy="50" r="14" fill="#7C3AED"/>
       <circle cx="390" cy="128" r="14" fill="#7C3AED"/>
-      <circle cx="465" cy="208" r="14" fill="#2563EB"/>
+      <circle cx="465" cy="208" r="14" fill="#B45309"/>
       <circle cx="610" cy="311" r="14" fill="#1E293B"/>
       <circle cx="745" cy="208" r="14" fill="#B45309"/>
       <circle cx="810" cy="208" r="14" fill="#0F8F82"/>
@@ -332,11 +343,11 @@
   <ol class="steps">
     <li><span class="n" style="background:var(--design)">1</span><div><span class="tag t-design">Diseño</span> Escribe la historia en su rama: reglas, estados de cada pantalla, diseños enlazados.<span class="st">Tarjeta en <b>Diseño</b></span></div></li>
     <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Cuando entra, la historia está aprobada.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
-    <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> Tras acordar la API con frontend, crea la rama de la historia y sube el contrato.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
-    <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
-    <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con las dos dentro, pasa a <b>Integración</b></span></div></li>
-    <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores.<span class="st">La tarjeta pasa a <b>Revisión visual</b></span></div></li>
-    <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Compara las capturas con su diseño y aprueba, o pide ajustes y se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
+    <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Arranque: el lado que empieza crea la rama de la historia y anota sus mitades. Si la API cambia, se acuerda y el backend sube el contrato.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
+    <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada lado de la historia abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
+    <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con todas dentro, pasa a <b>Integración</b></span></div></li>
+    <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores. Sin pantalla, el backend solo pone los marcadores.<span class="st">Si algo espera a diseño, pasa a <b>Revisión visual</b>; si no, espera el merge</span></div></li>
+    <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Si hay algo que mirar: compara las capturas con su diseño y aprueba, o pide ajustes y se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
     <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code> y merge.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
   </ol>
 </section>
@@ -390,7 +401,7 @@
   <div class="rules">
     <div class="rule"><b>Cero fe</b>Nada está hecho sin la salida del test: primero en rojo, luego en verde.</div>
     <div class="rule"><b>Un criterio cada vez</b>Nada entra en git sin el ok de la persona.</div>
-    <div class="rule"><b>El contrato manda</b>Lo acuerdan backend y frontend; lo escribe el backend; el frontend nunca lo toca a mano.</div>
+    <div class="rule"><b>El contrato manda</b>Cuando una historia cambia la API, la acuerdan backend y frontend y la escribe el backend. El frontend nunca toca el contrato a mano.</div>
     <div class="rule"><b>Las tarjetas las mueve el pipeline</b>Jira refleja lo que hay en el repositorio, no lo que alguien recuerda mover.</div>
     <div class="rule"><b>Historias verticales</b>Nunca se divide por capas. Las dos mitades son dos ramas de la misma historia.</div>
     <div class="rule"><b>Un bug no es una historia nueva</b>Es un criterio que falla en la historia que ya existe.</div>
