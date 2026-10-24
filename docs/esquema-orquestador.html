@@ -69,6 +69,12 @@
   .auto { font-size: 11px; font-weight: 700; color: var(--infra); }
   .human { font-size: 11px; font-weight: 700; color: var(--design); }
 
+  /* 4. Ramas */
+  ol.steps { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  ol.steps li { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; }
+  ol.steps .n { flex: none; width: 26px; height: 26px; border-radius: 50%; color: #fff; font-weight: 700; text-align: center; line-height: 26px; font-size: 13px; }
+  ol.steps .st { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+
   /* 4. Guardia */
   .cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .col { border-radius: 12px; padding: 14px 16px; font-size: 14px; }
@@ -97,7 +103,7 @@
 
   @media (max-width: 900px) {
     .lanes { grid-template-columns: 1fr; } .lanes .rowlabel { display: none; } .down { grid-column: 1; }
-    .stages, .timeline, .cols, .rules, .repo { grid-template-columns: 1fr; }
+    .stages, .timeline, .cols, .rules, .repo, ol.steps { grid-template-columns: 1fr; }
     .stage::after, .step::after { display: none; }
     .flowline { grid-template-columns: 1fr; } .arrow::before { content: "↓"; }
   }
@@ -269,71 +275,70 @@
 <!-- 4 -->
 <section id="ramas">
   <h2><span class="num">4</span>Ramas de una historia</h2>
-  <p class="lead">Una rama de historia para el contrato y la integración, y dos mitades que trabajan en paralelo. Cada punto de una mitad es un criterio con tu ok. Debajo, la etapa de Jira en cada momento.</p>
+  <p class="lead">Cada línea es una rama de git. La gris es <code>develop</code>, la rama común del equipo. La <b style="color:var(--shared)">naranja</b> es la <b>rama de la historia</b>: ahí se sube el contrato, ahí se juntan las dos mitades y ahí integra frontend y revisa diseño. Sigue los números.</p>
   <div class="svgwrap">
-  <svg viewBox="0 0 1110 410" width="100%" role="img" aria-label="Ramas de una historia">
+  <svg viewBox="0 0 1110 390" width="100%" role="img" aria-label="Ramas de una historia, en ocho pasos">
     <defs>
-      <linearGradient id="g-bf" x1="0" x2="0" y1="0" y2="1"><stop offset="50%" stop-color="#2563EB"/><stop offset="50%" stop-color="#0F8F82"/></linearGradient>
       <marker id="ahv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#7C3AED"/></marker>
     </defs>
-    <g font-size="13" font-weight="700" text-anchor="end">
-      <text x="165" y="55" fill="#475569">develop</text>
-      <text x="165" y="115" fill="#7C3AED">design/EO-123</text>
-      <text x="165" y="195" fill="#B45309">story/EO-123</text>
-      <text x="165" y="265" fill="#2563EB">story/EO-123-back</text>
-      <text x="165" y="335" fill="#0F8F82">story/EO-123-front</text>
+    <!-- lane names -->
+    <g text-anchor="end">
+      <text x="235" y="48" font-size="14" font-weight="700" fill="#7C3AED">design/EO-123</text>
+      <text x="235" y="65" font-size="11.5" fill="#5B6B7F">diseño escribe la historia</text>
+      <text x="235" y="123" font-size="14" font-weight="700" fill="#475569">develop</text>
+      <text x="235" y="140" font-size="11.5" fill="#5B6B7F">la rama común del equipo</text>
+      <text x="235" y="203" font-size="14" font-weight="700" fill="#B45309">story/EO-123</text>
+      <text x="235" y="220" font-size="11.5" fill="#5B6B7F">rama de la historia: punto de encuentro</text>
+      <text x="235" y="273" font-size="14" font-weight="700" fill="#2563EB">story/EO-123-back</text>
+      <text x="235" y="290" font-size="11.5" fill="#5B6B7F">mitad de backend</text>
+      <text x="235" y="338" font-size="14" font-weight="700" fill="#0F8F82">story/EO-123-front</text>
+      <text x="235" y="355" font-size="11.5" fill="#5B6B7F">mitad de frontend</text>
     </g>
-    <!-- lines -->
-    <g fill="none" stroke-width="3">
-      <line x1="190" y1="50" x2="1090" y2="50" stroke="#475569"/>
-      <path d="M230,50 C250,50 245,110 270,110 L300,110 C320,110 315,50 335,50" stroke="#7C3AED"/>
-      <path d="M365,50 C385,50 375,190 400,190 L905,190 C930,190 925,50 950,50" stroke="#B45309"/>
-      <path d="M418,190 C438,190 428,260 455,260 L585,260 C610,260 600,190 625,190" stroke="#2563EB"/>
-      <path d="M440,190 C460,190 452,330 478,330 L655,330 C680,330 670,190 695,190" stroke="#0F8F82"/>
+    <!-- branches -->
+    <g fill="none" stroke-width="4" stroke-linecap="round">
+      <line x1="255" y1="128" x2="1095" y2="128" stroke="#475569"/>
+      <path d="M285,128 C305,128 300,50 325,50 L345,50 C370,50 365,128 390,128" stroke="#7C3AED"/>
+      <path d="M420,128 C440,128 435,208 460,208 L945,208 C970,208 965,128 990,128" stroke="#B45309"/>
+      <path d="M495,208 C515,208 510,278 535,278 L650,278 C675,278 670,208 695,208" stroke="#2563EB"/>
+      <path d="M530,208 C550,208 545,343 568,343 L700,343 C725,343 720,208 745,208" stroke="#0F8F82"/>
     </g>
-    <!-- commits -->
+    <!-- one commit per criterion -->
     <g stroke="#fff" stroke-width="2">
-      <circle cx="200" cy="50" r="7" fill="#475569"/>
-      <circle cx="285" cy="110" r="7" fill="#7C3AED"/>
-      <circle cx="335" cy="50" r="7" fill="#475569"/>
-      <circle cx="400" cy="190" r="7" fill="#B45309"/>
-      <circle cx="470" cy="260" r="7" fill="#2563EB"/><circle cx="520" cy="260" r="7" fill="#2563EB"/><circle cx="570" cy="260" r="7" fill="#2563EB"/>
-      <circle cx="485" cy="330" r="7" fill="#0F8F82"/><circle cx="540" cy="330" r="7" fill="#0F8F82"/><circle cx="595" cy="330" r="7" fill="#0F8F82"/><circle cx="645" cy="330" r="7" fill="#0F8F82"/>
-      <circle cx="625" cy="190" r="7" fill="#B45309"/><circle cx="695" cy="190" r="7" fill="#B45309"/>
-      <circle cx="755" cy="190" r="7" fill="#B45309"/><circle cx="815" cy="190" r="7" fill="#B45309"/><circle cx="875" cy="190" r="7" fill="#B45309"/>
-      <circle cx="950" cy="50" r="7" fill="#475569"/>
+      <circle cx="565" cy="278" r="6" fill="#2563EB"/><circle cx="600" cy="278" r="6" fill="#2563EB"/><circle cx="635" cy="278" r="6" fill="#2563EB"/>
+      <circle cx="580" cy="343" r="6" fill="#0F8F82"/><circle cx="615" cy="343" r="6" fill="#0F8F82"/><circle cx="650" cy="343" r="6" fill="#0F8F82"/><circle cx="685" cy="343" r="6" fill="#0F8F82"/>
+      <circle cx="695" cy="208" r="6" fill="#B45309"/>
     </g>
-    <!-- adjustments loop -->
-    <path d="M871,182 C866,128 764,128 759,182" fill="none" stroke="#7C3AED" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ahv)"/>
-    <text x="815" y="122" font-size="11.5" text-anchor="middle" fill="#6D28D9">si diseño pide ajustes, vuelve a Integración</text>
-    <!-- labels -->
-    <g font-size="11.5" fill="#1E293B" text-anchor="middle">
-      <text x="285" y="133">historia lista</text>
-      <text x="335" y="34">PR = aprobación de diseño</text>
-      <text x="400" y="213">contrato</text>
-      <text x="470" y="283">EO-123.1</text><text x="520" y="283">EO-123.2</text><text x="570" y="283">bloqueo</text>
-      <text x="485" y="353">EO-123.1</text><text x="540" y="353">EO-123.3</text><text x="595" y="353">EO-123.4</text><text x="645" y="353">bloqueo</text>
-      <text x="615" y="174">junta back</text><text x="702" y="174">junta front</text>
-      <text x="755" y="213">E2E + capturas</text><text x="815" y="174">marcadores</text><text x="882" y="213">visto bueno de diseño</text>
-      <text x="950" y="34">PR + merge humano</text>
+    <!-- adjustments loop: 7 back to 6 -->
+    <path d="M872,193 C866,148 820,148 814,190" fill="none" stroke="#7C3AED" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ahv)"/>
+    <text x="843" y="146" font-size="11.5" text-anchor="middle" fill="#6D28D9">ajustes</text>
+    <!-- numbered steps -->
+    <g stroke="#fff" stroke-width="2">
+      <circle cx="335" cy="50" r="14" fill="#7C3AED"/>
+      <circle cx="390" cy="128" r="14" fill="#7C3AED"/>
+      <circle cx="465" cy="208" r="14" fill="#2563EB"/>
+      <circle cx="610" cy="311" r="14" fill="#1E293B"/>
+      <circle cx="745" cy="208" r="14" fill="#B45309"/>
+      <circle cx="810" cy="208" r="14" fill="#0F8F82"/>
+      <circle cx="878" cy="208" r="14" fill="#7C3AED"/>
+      <circle cx="990" cy="128" r="14" fill="#475569"/>
     </g>
-    <!-- stage bar -->
-    <g font-size="11.5" font-weight="700" fill="#fff" text-anchor="middle">
-      <rect x="215" y="375" width="122" height="24" rx="5" fill="#7C3AED"/><text x="276" y="391">Diseño</text>
-      <rect x="339" y="375" width="63" height="24" rx="5" fill="url(#g-bf)"/><text x="370" y="391">Contrato</text>
-      <rect x="404" y="375" width="289" height="24" rx="5" fill="url(#g-bf)"/><text x="548" y="391">Desarrollo (en paralelo)</text>
-      <rect x="695" y="375" width="118" height="24" rx="5" fill="#0F8F82"/><text x="754" y="391">Integración</text>
-      <rect x="815" y="375" width="133" height="24" rx="5" fill="#7C3AED"/><text x="881" y="391">Revisión visual</text>
-      <rect x="950" y="375" width="140" height="24" rx="5" fill="#475569"/><text x="1020" y="391">Hecha</text>
+    <g font-size="13" font-weight="700" text-anchor="middle" fill="#fff">
+      <text x="335" y="55">1</text><text x="390" y="133">2</text><text x="465" y="213">3</text><text x="610" y="316">4</text>
+      <text x="745" y="213">5</text><text x="810" y="213">6</text><text x="878" y="213">7</text><text x="990" y="133">8</text>
     </g>
+    <text x="610" y="383" font-size="11.5" text-anchor="middle" fill="#5B6B7F">cada punto de una mitad es un criterio con tu ok</text>
   </svg>
   </div>
-  <div class="parallel" style="background:var(--design-soft)"><b>¿Cuándo se hace la revisión visual?</b> Cuando frontend ha juntado las dos mitades, la prueba E2E pasa contra la API real y ha subido las capturas de cada estado y los marcadores. Con ese push, el pipeline mueve la tarjeta a <b>Revisión visual</b>. Diseño compara las capturas (y la app, si hace falta) con su diseño y, desde su sesión, en <code>story/EO-123</code>:
-    <ul style="margin:6px 0 0;padding-left:18px">
-      <li><b>aprueba:</b> los criterios visuales pasan de <code>[unverified]</code> a <code>[manual fecha, nombre]</code>;</li>
-      <li><b>pide ajustes:</b> cambia criterios de la misma historia; la tarjeta vuelve a Integración y frontend los resuelve en pareja.</li>
-    </ul>
-    Después, el revisor si la historia tiene riesgo, el PR y el merge.</div>
+  <ol class="steps">
+    <li><span class="n" style="background:var(--design)">1</span><div><span class="tag t-design">Diseño</span> Escribe la historia en su rama: reglas, estados de cada pantalla, diseños enlazados.<span class="st">Tarjeta en <b>Diseño</b></span></div></li>
+    <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Cuando entra, la historia está aprobada.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
+    <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> Tras acordar la API con frontend, crea la rama de la historia y sube el contrato.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
+    <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
+    <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con las dos dentro, pasa a <b>Integración</b></span></div></li>
+    <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores.<span class="st">La tarjeta pasa a <b>Revisión visual</b></span></div></li>
+    <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Compara las capturas con su diseño y aprueba, o pide ajustes y se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
+    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code> y merge.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
+  </ol>
 </section>
 
 <!-- 5 -->
