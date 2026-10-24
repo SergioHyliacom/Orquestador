@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// orchestrator guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
+// easyone-orchestrator guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
 // Inert unless the repository has .orchestrator.json at its root.
 // Exit 0 = allow. Exit 2 = block; stderr goes back to Claude. Exit 0 with permissionDecision "ask" on
 // stdout = Claude Code asks the human to confirm.
@@ -14,14 +14,14 @@ const input = JSON.parse(stripBom(readFileSync(0, "utf8")) || "{}");
 const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 
 function block(reason) {
-  process.stderr.write(`orchestrator: ${reason}\n`);
+  process.stderr.write(`easyone-orchestrator: ${reason}\n`);
   process.exit(2);
 }
 
 // A command the human must confirm. It is reported only after every other check on the line passed,
 // so a blocked command never reaches the prompt.
 let confirmReason = null;
-const confirm = (reason) => { confirmReason ??= `orchestrator: ${reason}`; };
+const confirm = (reason) => { confirmReason ??= `easyone-orchestrator: ${reason}`; };
 
 function toplevel(dir) {
   let d = path.resolve(dir);
@@ -67,6 +67,10 @@ const agentType = String(input.agent_type ?? "") || declaredRole();
 const inSubagent = Boolean(agentType);
 const isRole = (r) => new RegExp(`(^|:)${r}$`).test(agentType);
 const readOnlyRole = ["reviewer", "researcher", "designer"].some(isRole);
+// Every role that writes code ends in -builder: backend-builder, frontend-builder.
+const builderRole = /(^|:)([a-z0-9]+-)*builder$/.test(agentType);
+// Per-role settings live in .orchestrator.json → roles, keyed by the role name without the plugin prefix.
+const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
 
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
@@ -96,17 +100,28 @@ if (input.hook_event_name === "SessionStart") {
     ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
     : "Harness, detected now: plain Claude Code.";
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: `This project uses orchestrator. Load the orchestrator:orchestrate skill before any work and follow it. ${harness}` } }));
+    additionalContext: `This project uses easyone-orchestrator. Load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}` } }));
   process.exit(0);
 }
 
 // ---------- PreToolUse: file edits
 
+// A builder stays on its side of the contract: it edits only the paths its role lists.
+function checkRolePaths(rel) {
+  const allowed = roleConfig.paths;
+  if (!builderRole || !Array.isArray(allowed) || !allowed.length) return;
+  if (rel.startsWith("..") || rel.startsWith(`${key(STATE)}/work/`)) return;
+  if (!allowed.some((a) => rel === key(a).replace(/\/$/, "") || rel.startsWith(key(a).replace(/\/$/, "") + "/"))) {
+    block(`${agentType} edits only ${allowed.join(", ")}. ${rel} is outside its side of the contract: report what the other side needs to change.`);
+  }
+}
+
 function checkFileWrite(rel, absolute) {
   if (locked.has(rel)) block(`${rel} is a locked acceptance test. Report the problem instead of changing the test; only the orchestrator unlocks it, on the product owner's request.`);
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   if (inSubagent && rel === LOCK_REL) block("subagents cannot change the locked-tests list.");
-  if (isRole("builder") && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
+  if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
+  checkRolePaths(rel);
   if (readOnlyRole && !key(absolute).includes(`/${STATE}/work/`)) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/.`);
 }
 
@@ -202,7 +217,7 @@ function checkPaths(tokens, dir, removes = false) {
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
     if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
     if (inSubagent && rel === LOCK_REL) block("subagents cannot change the locked-tests list.");
-    if (isRole("builder") && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
+    if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
     if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   }
 }
@@ -240,7 +255,8 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       const cmd = tokens[tokens.indexOf("--command") + 1] ?? "";
       if (tokens[1] === "terminal" && tokens[2] === "create" && /(^|[;&|]\s*)claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in ${from}: --command "claude ${want}".`);
     }
-    if (/^gh$/i.test(tokens[0]) && /^pr$/i.test(tokens[1] ?? "") && /^merge$/i.test(tokens[2] ?? "")) {
+    // Bitbucket has no official CLI: a merge is a POST to the pull request's /merge endpoint.
+    if (tokens.some((t) => /api\.bitbucket\.org\/.*\/pullrequests\/\d+\/merge/i.test(t))) {
       if (inSubagent) block("role agents never merge. The product owner merges, or asks the orchestrator to.");
       if (git.allowPush === false) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
     }
@@ -250,6 +266,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     if (WRITERS.test(tokens[0])) checkPaths(tokens.slice(1), cwd);
     if (REMOVERS.test(tokens[0])) checkPaths(/^(mv|move|move-item|mi)$/i.test(tokens[0]) ? tokens.slice(1, -1) : tokens.slice(1), cwd, true);
     if (redirTargets.length) checkPaths(redirTargets, cwd);
+    for (const t of redirTargets.filter((t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t))) checkRolePaths(relTo(toplevel(cwd) ?? root, path.resolve(cwd, t)));
     if (readOnlyRole) {
       const targets = [...(WRITERS.test(tokens[0]) ? tokens.slice(1).filter((t) => !t.startsWith("-")) : []), ...redirTargets]
         .filter((t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t));
@@ -267,7 +284,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
 // Orca worker finishes. In the orchestrator's own session there is no role, so Stop exits at once.
 
 if (input.hook_event_name === "SubagentStop" || input.hook_event_name === "Stop") {
-  if (!isRole("builder")) process.exit(0);
+  if (!builderRole) process.exit(0);
   // Content, not command shape: whatever tool changed a locked file, the story files or the lock
   // list, the difference from HEAD shows it. This check ignores stop_hook_active: the builder
   // restores the files (git restore <file>) or stops for good only by reporting BLOCKED.
@@ -282,9 +299,16 @@ if (input.hook_event_name === "SubagentStop" || input.hook_event_name === "Stop"
   const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`]);
   const committed = base ? names(["diff", "--name-only", base, "HEAD", "--", ...lockSet]) : [];
   if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
+  // Files someone else changed would trap the builder, so this check gives one retry, then lets it report.
+  if (!input.stop_hook_active && Array.isArray(roleConfig.paths) && roleConfig.paths.length) {
+    const inside = (f) => roleConfig.paths.some((a) => { const d = key(a).replace(/\/$/, ""); return f === d || f.startsWith(d + "/"); });
+    const touched = [...names(["diff", "--name-only", "HEAD"]), ...names(["ls-files", "--others", "--exclude-standard"])]
+      .map(key).filter((f) => !f.startsWith(`${key(STATE)}/`) && !inside(f));
+    if (touched.length) block(`${agentType} edits only ${roleConfig.paths.join(", ")}, and these files outside them differ from HEAD: ${touched.join(", ")}. Restore the ones you changed with \`git restore <file>\` (or delete them if new) and report what the other side needs. If you did not change them, say so in your report.`);
+  }
   if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the builder reports honestly.
   const deadline = Date.now() + 1000 * 1000; // Stay inside the hook timeout in hooks.json.
-  for (const c of config.verify?.onBuilderStop ?? []) {
+  for (const c of roleConfig.onStop ?? config.verify?.onBuilderStop ?? []) {
     const left = deadline - Date.now();
     if (left <= 0) block("the verification checks ran out of time. Report the unchecked commands as ⚠️.");
     try { execSync(c, { cwd: root, stdio: ["ignore", "pipe", "pipe"], timeout: left, maxBuffer: 64 * 1024 * 1024 }); }

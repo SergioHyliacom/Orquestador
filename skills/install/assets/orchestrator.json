@@ -1,23 +1,48 @@
 {
-  "language": "{{LANGUAGE: ISO code, e.g. en}}",
+  "language": "{{LANGUAGE: ISO code, e.g. es}}",
   "storiesDir": "{{STORIES_DIR: e.g. product}}",
   "verify": {
-    "all": ["{{FULL_VERIFICATION_COMMANDS: lint, typecheck, test, build}}"],
-    "onBuilderStop": ["{{FAST_COMMANDS: run when a builder stops, e.g. typecheck and tests}}"],
-    "mutation": "{{OPTIONAL: mutation command for the changed files, e.g. npx stryker run --mutate {files}; remove if the project has none}}"
+    "all": ["{{FULL_VERIFICATION_COMMANDS: Go and TypeScript lint, typecheck, test, build}}"],
+    "mutation": "{{OPTIONAL: mutation command for the changed files; remove if the project has none}}"
+  },
+  "contract": {
+    "spec": "{{PATH: the OpenAPI file generated from Go, e.g. apps/api/openapi.yaml}}",
+    "generateSpec": "{{COMMAND: regenerates the spec from the Go code}}",
+    "generateClient": "{{COMMAND: regenerates the TypeScript client and the test mocks from the spec}}"
+  },
+  "roles": {
+    "backend-builder": {
+      "paths": ["{{BACKEND_PATHS: e.g. apps/api/, modules/, db/migrations/, and the spec file}}"],
+      "onStop": ["{{FAST_GO_COMMANDS: run when the backend builder stops, e.g. go vet ./... and go test for the touched modules}}"]
+    },
+    "frontend-builder": {
+      "paths": ["{{FRONTEND_PATHS: e.g. apps/panel/, apps/employee/, packages/ui/, the generated client}}"],
+      "onStop": ["{{FAST_TS_COMMANDS: run when the frontend builder stops, e.g. typecheck and vitest run for the touched app}}"]
+    }
   },
   "runnerLimit": "{{ONE_SENTENCE: what the tests cannot prove}}",
   "ui": { "devUrl": "{{DEV_SERVER_URL}}", "testData": "{{TEST_DATA: which records agents may create and change}}", "writesProduction": "{{true if the dev server writes to a production database}}" },
   "seams": [
-    { "a": "{{PATH_A}}", "b": "{{PATH_B}}", "watcher": "{{TEST | DERIVED | PERSON}}" }
+    { "a": "{{the spec file}}", "b": "{{the generated client}}", "watcher": "TEST" }
   ],
-  "riskTags": ["production", "legal", "security", "costs"],
-  "copy": { "master": "{{COPY_MASTER_DOC}}", "rules": "{{VOICE_RULES_FILE_OR_SKILL}}" },
-  "design": "{{DESIGN_SOURCE: design file link, design-system docs}}",
+  "riskTags": ["account-isolation", "identity", "payments", "fiscal", "personal-data", "production"],
+  "jira": {
+    "site": "{{JIRA_SITE: e.g. hyliacom.atlassian.net}}",
+    "project": "{{JIRA_PROJECT_KEY: e.g. EO}}",
+    "statuses": {
+      "design": "{{Jira status name for Diseño}}",
+      "contract": "{{Jira status name for Contrato}}",
+      "build": "{{Jira status name for Desarrollo}}",
+      "integration": "{{Jira status name for Integración}}",
+      "visual": "{{Jira status name for Revisión visual}}",
+      "done": "{{Jira status name for Hecha}}"
+    }
+  },
   "orca": { "workerPermissionMode": "{{OPTIONAL: the mode Orca workers launch in, e.g. bypassPermissions; remove to use the orchestrator's own mode}}" },
   "git": {
-    "protectedBranches": ["main", "master"],
-    "allowPush": true,
+    "protectedBranches": ["main", "develop"],
+    "integrationBranch": "develop",
+    "allowPush": false,
     "blockBroadAdd": true,
     "codeOwner": "{{CODE_OWNER or null}}"
   }
