@@ -1,0 +1,46 @@
+# Bitbucket Pipelines for a project that uses easyone-orchestrator.
+# Every push runs the checks. Story branches and the integration branch also move the story's Jira card:
+# jira-sync runs in after-script, so a red build still moves the card (to Integration, for example).
+# Secured repository variables: JIRA_EMAIL, JIRA_API_TOKEN.
+
+image: {{IMAGE: an image with Go, Node 22 and pnpm}}
+
+clone:
+  depth: full # jira-sync compares the story branches with git merge-base
+
+definitions:
+  services:
+    postgres:
+      image: postgres:18
+      variables:
+        POSTGRES_PASSWORD: {{TEST_DB_PASSWORD: a throwaway password for the test database}}
+  steps:
+    - step: &build
+        name: Verify, stories and Jira
+        services:
+          - postgres
+        caches:
+          - node
+        script:
+          - {{SETUP: install the dependencies, e.g. pnpm install --frozen-lockfile && go mod download}}
+          - {{VERIFY: one line per command in .orchestrator.json → verify.all}}
+          - node {{STORIES_DIR}}/stories.mjs --tests --check
+        after-script:
+          - node {{STORIES_DIR}}/jira-sync.mjs
+    - step: &stories
+        name: Stories and Jira
+        script:
+          - node {{STORIES_DIR}}/stories.mjs --check
+        after-script:
+          - node {{STORIES_DIR}}/jira-sync.mjs
+
+pipelines:
+  branches:
+    "design/*":
+      - step: *stories
+    "story/*":
+      - step: *build
+    {{INTEGRATION_BRANCH: e.g. develop}}:
+      - step: *build
+    main:
+      - step: *build
