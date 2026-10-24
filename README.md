@@ -10,6 +10,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 - **Cada desarrollador trabaja en pareja con su agente (Sonnet)**, un criterio cada vez. El agente escribe el test, lo ve fallar, lo hace pasar y se para. La persona valida el concepto y las pruebas, y la sesión hace el commit tras su ok.
 - **Git guarda el qué; Jira muestra el quién y el cuándo.** Las tarjetas las mueve Bitbucket Pipelines a partir de lo que hay en el repositorio.
 - **Una guardia** (un hook) impide lo peligroso y mantiene a cada agente en su lado.
+- **Al cerrar cada entrega, una auditoría por muestreo** busca lo que los tests no ven y convierte cada error que puede repetirse en una regla que comprueba la máquina. La IA no aprende de una sesión a otra: lo aprendido vive en el repositorio. Está pendiente decidir si la confirma una persona al final (`audit.confirm`).
 
 **Para enseñárselo al equipo:** [`docs/esquema-orquestador.html`](docs/esquema-orquestador.html). **El porqué de cada decisión:** [`docs/propuesta.md`](docs/propuesta.md).
 
@@ -20,6 +21,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `agents/backend-builder.md` | Agente de backend (Go + PostgreSQL): el contrato o un criterio por encargo |
 | `agents/frontend-builder.md` | Agente de frontend (React, Hyliable y la plantilla Astro): un criterio por encargo, la integración |
 | `agents/reviewer.md` | Revisión independiente al cerrar una historia, solo si lleva etiqueta de riesgo |
+| `agents/auditor.md` | Auditoría por muestreo al cerrar cada entrega: lo que los tests no ven, convertido en reglas |
 | `agents/researcher.md` | Investigación de solo lectura |
 | `agents/copywriter.md`, `agents/designer.md` | Del original. Inactivos salvo que `.orchestrator.json` los configure |
 | `skills/orchestrate/` | El día a día de cada sesión: etapas, contrato, bucle en pareja, integración, merge. Git y Bitbucket en `references/git.md` |
@@ -76,6 +78,7 @@ La primera vez que cada persona abre Claude en el proyecto, su sesión le pregun
 | Identificador por actividad (`ACC-002`) | Clave de Jira (`EO-123`) |
 | Un comando de tests | Varias fuentes de tests (Go, Vitest, E2E); un criterio pasa si pasan todos sus tests |
 | Una lista de tests bloqueados | Una lista por mitad de historia, para evitar conflictos |
+| — | Auditoría por muestreo al cerrar cada entrega (`auditor`) |
 | GitHub y `gh` | Bitbucket y Bitbucket Pipelines |
 | El estado vive en `.orchestrator/state.md` | Jira es el estado compartido; `state.md` es personal |
 

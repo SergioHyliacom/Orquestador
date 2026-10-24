@@ -42,7 +42,7 @@ Overrides:
 
 ## 3. Roles and names
 
-The roster is the plugin's agents plus the project's `.claude/agents/`. `backend-builder` and `frontend-builder` are the only roles that write code; `reviewer` and `researcher` are read-only. Through the Agent tool, call plugin agents as `easyone-orchestrator:<role>` and project agents as `<role>`. An Orca worker carries its role in the spec instead (`references/harness.md`). `copywriter` joins only when `.orchestrator.json` names `copy.master`; `designer` only when it names `design`.
+The roster is the plugin's agents plus the project's `.claude/agents/`. `backend-builder` and `frontend-builder` are the only roles that write code; `reviewer`, `researcher` and `auditor` are read-only. Through the Agent tool, call plugin agents as `easyone-orchestrator:<role>` and project agents as `<role>`. An Orca worker carries its role in the spec instead (`references/harness.md`). `copywriter` joins only when `.orchestrator.json` names `copy.master`; `designer` only when it names `design`.
 
 Read `references/roles.md` before creating a role. Creating and retiring roles is your call; report it at close.
 
@@ -205,3 +205,18 @@ At the end of a block of work:
 3. A lesson enters the `Lessons` section of `CLAUDE.md` only if a real failure in this project caused it. `CLAUDE.md` is shared: propose the lesson to your human, and it goes in through a pull request.
 4. Update `.orchestrator/state.md`.
 5. Tell your human, bad news first: what was committed, what was pushed, what waits for the other side, your technical rulings, and any work that ran unsupervised.
+
+## 10. Delivery audit
+
+The tests prove that each story does what it says; they do not see how the code is built. The AI does not learn from one session to the next: what the team learns lives in the repository. So at the close of each delivery, or when the team asks, a sample of the delivery's stories gets an audit, and every finding that can recur becomes something that stops it next time. Run it from a developer's session when your human asks.
+
+1. **Sample.** From the stories merged in the delivery, pick `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, and the largest diffs. List their merge commits.
+2. **Audit.** Brief a fresh `auditor` with the sample, the previous audits in `docs/audits/` and the path of its report. It is read-only.
+3. **Read** the report (§5). A bug against a story becomes a failing criterion of that story, through §6.
+4. **Close it** according to `audit.confirm` in `.orchestrator.json`:
+   - `pending` (the default): the team has not yet decided whether a person confirms the audit at the end. Until it does, close it as `human`, and remind your human that the decision is open.
+   - `human`: show your human the findings and the prevention proposed for each; build only what they confirm, in the pair loop.
+   - `auto`: build the prevention of every RECURRING finding without asking first, committing each one when its check passes; your human sees them all in the pull request.
+
+   Either way the prevention is built on `chore/audit-<delivery>` by the builder of the side that owns it (a one-line lint setting is trivial: do it yourself), and reaches the integration branch through a pull request the humans merge. Critical findings and findings in risk areas always go to your human, whatever the setting.
+5. **Record.** In the same pull request, write `docs/audits/<delivery>.md`: the sample, each finding and what was decided for it. The next audit reads it to see the trend.

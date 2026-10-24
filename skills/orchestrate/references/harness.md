@@ -76,7 +76,7 @@ A gate is for a decision **you** own that blocks one Task while the rest of the 
 A fresh worker means a fresh terminal, not a new Git worktree.
 
 - **Writers** never share your workspace: create one with `orca worktree create --name <role>-<scope> --setup run --json` (no `--agent`). One worktree per writer, and the branch rules of `references/git.md` apply inside it.
-- **Read-only roles** (`reviewer`, `researcher`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout.
+- **Read-only roles** (`reviewer`, `researcher`, `auditor`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout.
 - **Folder workspaces are first-class.** When the workspace is a folder, there is no worktree lineage and no branch: `git.md` does not apply, and the story's evidence is the verification commands alone. Say so in the close report.
 - **Name the work:** the terminal's `--title` and the `--task-title` are both `<role>-<scope>`.
 - Pass a model only when the human named one: put `--model <id>` in the `claude` command.
@@ -120,7 +120,7 @@ The spec also carries the absolute path of the brief file, the absolute path of 
 **The spec also carries the role contract itself.** An Orca worker is a plain agent session: it never loads `agents/<role>.md`, because that file defines a Claude Code subagent, not a session. Nothing but the spec and the project's own `CLAUDE.md` reaches it. So:
 
 - For a **project role**, add its file to `Read first:` — `.claude/agents/<role>.md` is inside the workspace and the worker can read it.
-- For a **plugin role** (`backend-builder`, `frontend-builder`, `reviewer`, `researcher`, `copywriter`, `designer`), paste its Rules, its stop-and-report condition, its Output shape and the `If Orca dispatched you` block into the spec. Do not paraphrase them, and do not cite the plugin by path: the plugin lives outside the workspace and the path is not portable.
+- For a **plugin role** (`backend-builder`, `frontend-builder`, `reviewer`, `researcher`, `auditor`, `copywriter`, `designer`), paste its Rules, its stop-and-report condition, its Output shape and the `If Orca dispatched you` block into the spec. Do not paraphrase them, and do not cite the plugin by path: the plugin lives outside the workspace and the path is not portable.
 - Either way the spec ends with the lifecycle clause: `ask` for a blocking question, `check --terminal <handle>` at each checkpoint and once before finishing, exactly one `worker_done` with both lifecycle IDs, an explicit `--outcome` and `--report-path`.
 
 A worker that was not told its contract will invent one.

@@ -24,6 +24,7 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | **Diseño** | Equipo de diseño, como product owners | Escribe las historias verticales con sus estados y hace la revisión visual. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador |
 | **Revisor** | `reviewer`, solo lectura | Revisa la historia completa al cerrarla, **solo si lleva etiqueta de riesgo** |
 | **Investigador** | `researcher`, solo lectura | Resuelve dudas sin tocar nada |
+| **Auditor** | `auditor`, solo lectura | Al cerrar cada entrega, revisa una muestra de historias buscando lo que los tests no ven |
 
 `copywriter` y `designer` (del plugin original) quedan inactivos: solo actúan si el proyecto los configura.
 
@@ -141,13 +142,27 @@ El stack no sale de las historias: el esqueleto se monta antes, porque el propio
 3. **Instalación, parte 2.** Mide comandos, contrato, rutas y tests. Sus comprobaciones son el criterio de salida de los cimientos.
 4. **Primera historia, como piloto.** Pequeña, pero que pase por todas las piezas y todas las etapas. Lo que falle se corrige en el plugin antes de que entre todo el equipo.
 
-## 7. Hyliable
+## 7. Auditoría al cerrar cada entrega
+
+**La IA no aprende de vosotros.** El modelo no se reentrena con vuestro trabajo y cada sesión empieza de cero. Lo que se acumula es lo que queda escrito en el repositorio: el código (cuyos patrones la IA copia, los buenos y los malos), `CLAUDE.md`, los estándares, los tests, la guardia y los linters. La inercia cultural de la sección 1 la lleva el repositorio, y hay que cuidarla a propósito.
+
+Los tests prueban que cada historia hace lo que dice, no cómo está construido el código. Por eso, al cerrar cada entrega:
+
+1. **Muestra.** Se eligen unas cuantas historias fusionadas en la entrega (5 por defecto): al menos una de cada lado, todas las que llevan riesgo y las de diffs más grandes.
+2. **Auditoría.** El agente `auditor`, de solo lectura, busca lo que los tests y la guardia no ven: reglas incumplidas, un segundo patrón donde ya había uno, duplicación, datos personales en logs, consultas repetidas, datos de cuenta sin test de aislamiento, tests que no prueban su criterio, dependencias nuevas sin decidir.
+3. **Prevención.** Cada hallazgo que puede repetirse se convierte, por orden de preferencia, en: una comprobación de la máquina (linter, test de arquitectura, paso de la CI); una lección en `CLAUDE.md`, solo si no hay comprobación posible; o un fichero de ejemplo que citen los encargos. Un fallo de comportamiento es un criterio que falla en su historia, no una regla.
+4. **Cierre.** **Pendiente de decidir** si la auditoría la confirma una persona al final (`audit.confirm: human`) o el orquestador convierte los hallazgos que se repiten en reglas por su cuenta y abre el PR (`audit.confirm: auto`). En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. Mientras no se decida (`audit.confirm: pending`), la confirma una persona.
+5. **Registro.** El resultado queda en `docs/audits/<entrega>.md`, y la siguiente auditoría lo lee para ver si la tendencia mejora.
+
+Así la revisión de código baja de verdad con el tiempo: no porque haya que fiarse más de la IA, sino porque cada error encontrado deja de poder repetirse. Lo que no baja nunca es «cero fe» ni la revisión de las zonas de riesgo.
+
+## 8. Hyliable
 
 Hyliable es el constructor de webs que usan el equipo de diseño de Hyliacom y los clientes. **Desarrollarlo** es trabajo del lado de frontend. **Usarlo** para hacer la web de un cliente es trabajo de producción y queda fuera de este flujo.
 
 De momento Hyliable sigue en su propio repositorio, con su configuración actual (el orquestador original y sus 133 historias). Cuando todo esté definido se migrará al monorepo y a claves de Jira. La definición ya prevé integrarlo en la entrega 2.
 
-## 8. Decisiones tomadas
+## 9. Decisiones tomadas
 
 | Tema | Decisión |
 |---|---|
@@ -157,13 +172,14 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador. La aprobación es siempre el PR |
+| Auditoría | Por muestreo al cerrar cada entrega, con el agente `auditor`. **Pendiente:** si la confirma una persona al final |
 | Agentes | `backend-builder` y `frontend-builder` con Sonnet; orquestador con Opus |
 | Commits | Los hace el orquestador tras el ok de la persona |
 | Revisor | Solo en historias con riesgo, una vez al cerrar |
 | Hyliable | Lado de frontend; sigue en su repositorio hasta la migración |
 | Instalación | En dos partes: historias el día uno; desarrollo al acabar los cimientos |
 
-## 9. Qué cambia respecto a la versión 1
+## 10. Qué cambia respecto a la versión 1
 
 | Versión 1 | Versión 2 | Por qué |
 |---|---|---|
@@ -175,10 +191,11 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Cinco fases | Seis etapas, con la integración separada | La integración con la API real es un paso propio de frontend, antes de que diseño revise |
 | Sin plan de arranque | Día uno, cimientos, instalación en dos partes, historia piloto | El flujo necesita un esqueleto que funcione antes de la primera historia |
 
-## 10. Pendiente
+## 11. Pendiente
 
 - **Probar el acceso a Jira desde Claude Code** (servidor MCP de Atlassian o `acli`) y el pipeline con Jira real.
 - **Elegir el generador del contrato:** Huma (código primero) u oapi-codegen (contrato primero). Es una de las pruebas técnicas de los cimientos; oapi-codegen encaja mejor con acordar el contrato antes de escribir código.
 - **Subir el fork a Bitbucket**, para que cada miembro del equipo lo instale desde allí.
 - **Hacer la historia piloto** y corregir el plugin con lo que salga.
 - **Migrar Hyliable** al monorepo y a claves de Jira, cuando se decida.
+- **Decidir quién cierra la auditoría de cada entrega:** una persona (`audit.confirm: human`) o el orquestador por su cuenta (`auto`). Mientras tanto la confirma una persona.

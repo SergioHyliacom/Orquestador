@@ -66,7 +66,7 @@ function declaredRole() {
 const agentType = String(input.agent_type ?? "") || declaredRole();
 const inSubagent = Boolean(agentType);
 const isRole = (r) => new RegExp(`(^|:)${r}$`).test(agentType);
-const readOnlyRole = ["reviewer", "researcher", "designer"].some(isRole);
+const readOnlyRole = ["reviewer", "researcher", "designer", "auditor"].some(isRole);
 // Every role that writes code ends in -builder: backend-builder, frontend-builder.
 const builderRole = /(^|:)([a-z0-9]+-)*builder$/.test(agentType);
 // Per-role settings live in .orchestrator.json → roles, keyed by the role name without the plugin prefix.

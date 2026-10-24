@@ -105,7 +105,7 @@
   .step:not(:last-child)::after { content: "›"; position: absolute; right: -13px; top: 40%; font-size: 26px; color: var(--muted); }
   .parallel { margin-top: 12px; font-size: 14px; background: var(--design-soft); border-radius: 10px; padding: 10px 14px; }
 
-  .rules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .rules { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
   .rule { background: var(--infra-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
   .rule b { display: block; margin-bottom: 2px; }
 
@@ -132,7 +132,7 @@
   <p>Diseño, backend y frontend trabajan sobre las mismas historias de usuario. Cada persona tiene su propia sesión de Claude, que orquesta su parte del trabajo. Git guarda <b>qué</b> se construye; Jira muestra <b>a quién le toca y cuándo</b>.</p>
   <nav>
     <a href="#piezas">1 · Las piezas</a><a href="#historia">2 · Vida de una historia</a><a href="#pareja">3 · Bucle en pareja</a>
-    <a href="#ramas">4 · Ramas</a><a href="#guardia">5 · La guardia</a><a href="#arranque">6 · Arranque</a><a href="#reglas">Reglas de oro</a>
+    <a href="#ramas">4 · Ramas</a><a href="#guardia">5 · La guardia</a><a href="#arranque">6 · Arranque</a><a href="#auditoria">7 · Auditoría</a><a href="#reglas">Reglas de oro</a>
   </nav>
 </header>
 
@@ -418,6 +418,19 @@
   <p style="margin:12px 0 0;font-size:14px;color:var(--muted)">En los cimientos <b>no</b> se hacen tablas de negocio, el módulo de identidad ni un CRUD genérico «por si acaso»: eso sería construir por capas a ciegas.</p>
 </section>
 
+<!-- 7 -->
+<section id="auditoria">
+  <h2><span class="num">7</span>Al cerrar cada entrega: auditoría por muestreo</h2>
+  <p class="lead"><b>La IA no aprende de una sesión a otra: lo aprendido vive en el repositorio.</b> Los tests prueban que cada historia hace lo que dice, no cómo está construido el código. La auditoría busca lo que no ven y convierte cada error que puede repetirse en algo que lo impida.</p>
+  <div class="timeline">
+    <div class="step"><h3>1 · Muestra</h3>Unas cuantas historias fusionadas en la entrega (5 por defecto): al menos una de cada lado, todas las de riesgo y las de diffs más grandes.</div>
+    <div class="step"><h3>2 · Auditoría</h3>El agente <code>auditor</code>, de solo lectura, busca reglas incumplidas, un segundo patrón, duplicación, datos personales en logs, consultas repetidas, tests que no prueban su criterio…</div>
+    <div class="step"><h3>3 · Prevención</h3>Cada hallazgo que se repite se convierte en:<ul><li>una comprobación de la máquina (lo mejor)</li><li>una lección en <code>CLAUDE.md</code></li><li>un fichero de ejemplo</li></ul></div>
+    <div class="step"><h3>4 · Registro</h3>Queda en <code>docs/audits/</code>. La siguiente auditoría lo lee y dice si la tendencia mejora.</div>
+  </div>
+  <div class="parallel" style="background:var(--shared-soft)"><b>Pendiente de decidir: ¿la confirma una persona al final?</b> Con <code>audit.confirm: human</code>, una persona decide qué hallazgos se convierten en reglas. Con <code>auto</code>, el orquestador lo hace por su cuenta y abre el PR. En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. <b>Mientras no se decida, la confirma una persona.</b></div>
+</section>
+
 <!-- Reglas -->
 <section id="reglas">
   <h2>Reglas de oro</h2>
@@ -429,6 +442,8 @@
     <div class="rule"><b>Las tarjetas las mueve el pipeline</b>Jira refleja lo que hay en el repositorio, no lo que alguien recuerda mover.</div>
     <div class="rule"><b>Historias verticales</b>Nunca se divide por capas. Las dos mitades son dos ramas de la misma historia.</div>
     <div class="rule"><b>Un bug no es una historia nueva</b>Es un criterio que falla en la historia que ya existe.</div>
+    <div class="rule"><b>Cada error, una regla</b>La IA no aprende de una sesión a otra. Un error que puede repetirse se convierte en algo que comprueba la máquina.</div>
+    <div class="rule"><b>La revisión baja, «cero fe» no</b>Se revisa menos código porque los errores dejan de poder repetirse, no porque nos fiemos más de la IA.</div>
   </div>
 </section>
 

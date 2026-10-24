@@ -26,6 +26,7 @@
     { "a": "{{the spec file}}", "b": "{{the generated client}}", "watcher": "TEST" }
   ],
   "riskTags": ["account-isolation", "identity", "payments", "fiscal", "personal-data", "production"],
+  "audit": { "sample": 5, "confirm": "pending" },
   "jira": {
     "site": "{{JIRA_SITE: e.g. hyliacom.atlassian.net}}",
     "project": "{{JIRA_PROJECT_KEY: e.g. EO}}",
