@@ -112,9 +112,47 @@
   .step:not(:last-child)::after { content: "›"; position: absolute; right: -13px; top: 40%; font-size: 26px; color: var(--muted); }
   .parallel { margin-top: 12px; font-size: 14px; background: var(--design-soft); border-radius: 10px; padding: 10px 14px; }
 
-  .rules { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .rules { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
   .rule { background: var(--infra-soft); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
   .rule b { display: block; margin-bottom: 2px; }
+
+  /* 8-10. Dónde vive cada cosa, las reglas, cómo actuar */
+  h3.sub { margin: 22px 0 8px; font-size: 16px; }
+  p.note { margin: 0 0 10px; font-size: 14px; color: var(--muted); }
+  .principles { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .principles > div { background: var(--infra-soft); border-radius: 10px; padding: 12px 14px; font-size: 13.5px; }
+  .principles .t { display: block; margin-bottom: 4px; font-size: 14.5px; }
+  .tblwrap { overflow-x: auto; }
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .tbl th, .tbl td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  .tbl th { background: var(--infra-soft); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .tbl td:first-child { font-weight: 600; }
+  .tbl code { white-space: normal; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+  .pair > div { border-radius: 10px; padding: 12px 16px; font-size: 14px; }
+  .pair ul { margin: 6px 0 0; padding-left: 18px; }
+  .pair li { margin: 3px 0; }
+  .pair .out { background: var(--infra-soft); }
+  .pair .gone { background: #FEF2F2; border: 1px solid #FCA5A5; }
+  .tree { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .tree li { border: 1px solid var(--line); border-top: 4px solid var(--shared); border-radius: 10px; padding: 10px 12px; font-size: 13.5px; background: #fff; }
+  .tree li > b { display: block; margin-bottom: 4px; }
+  .tree .ans { display: block; margin-top: 6px; color: var(--shared); font-weight: 700; }
+  .tree li.no { border-top-color: var(--red); }
+  .tree li.no .ans { color: var(--red); }
+  .format { font: 12.5px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--infra-soft); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; margin: 0 0 8px; }
+  .rulegroups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
+  .rgroup { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; background: #fff; }
+  .rgroup h4 { margin: 0 0 4px; font-size: 15px; }
+  .rgroup .file { display: block; margin-bottom: 10px; }
+  .rgroup ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .rgroup li { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; }
+  .rid { flex: none; font: 700 12px/1 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--ink); color: #fff; padding: 4px 6px; border-radius: 6px; margin-top: 2px; }
+  .rgroup .why { display: block; color: var(--muted); margin-top: 2px; }
+  .rgroup .orig { display: block; font-size: 12px; color: var(--infra); margin-top: 2px; font-weight: 700; }
+  .g-shared { border-top: 4px solid var(--shared); }
+  .g-back { border-top: 4px solid var(--back); }
+  .g-front { border-top: 4px solid var(--front); }
 
   svg text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
   .svgwrap { overflow-x: auto; }
@@ -122,12 +160,13 @@
 
   @media (max-width: 900px) {
     .lanes { grid-template-columns: 1fr; } .lanes .rowlabel { display: none; } .down { grid-column: 1; }
-    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds, .questions, .walk, .when, .audit-steps { grid-template-columns: 1fr; }
+    .stages, .timeline, .cols, .rules, .repo, ol.steps, .kinds, .questions, .walk, .when, .audit-steps, .principles, .pair, .tree, .rulegroups { grid-template-columns: 1fr; }
     .stage::after, .step::after { display: none; }
     .flowline { grid-template-columns: 1fr; } .arrow::before { content: "↓"; }
   }
   @media print {
     body { background: #fff; } section { break-inside: avoid; border-color: #bbb; } nav { display: none; }
+    section.long { break-inside: auto; } .tbl tr, .rgroup li, .tree li, .principles > div { break-inside: avoid; }
   }
 </style>
 </head>
@@ -139,7 +178,8 @@
   <p>Diseño, backend y frontend trabajan sobre las mismas historias de usuario. Cada persona tiene su propia sesión de Claude, que orquesta su parte del trabajo. Git guarda <b>qué</b> se construye; Jira muestra <b>a quién le toca y cuándo</b>.</p>
   <nav>
     <a href="#piezas">1 · Las piezas</a><a href="#historia">2 · Vida de una historia</a><a href="#pareja">3 · Bucle en pareja</a>
-    <a href="#ramas">4 · Ramas</a><a href="#guardia">5 · La guardia</a><a href="#arranque">6 · Arranque</a><a href="#auditoria">7 · Auditoría</a><a href="#reglas">Reglas de oro</a>
+    <a href="#ramas">4 · Ramas</a><a href="#guardia">5 · La guardia</a><a href="#arranque">6 · Arranque</a><a href="#auditoria">7 · Auditoría</a>
+    <a href="#donde">8 · Dónde vive cada cosa</a><a href="#las-reglas">9 · Las reglas</a><a href="#momentos">10 · Cómo actuar</a><a href="#reglas">Reglas de oro</a>
   </nav>
 </header>
 
@@ -178,7 +218,7 @@
   <div class="band guard-band"><b>La guardia</b> vigila a todos los agentes: cada uno solo toca su lado, nadie hace push ni merge sin confirmación, nadie toca un test bloqueado. Ver el punto 5.</div>
 
   <div class="repo">
-    <div class="box"><b>Historias</b><code>product/stories/</code><br>Criterios con su marcador. Identificador = clave de Jira (<code>EO-123</code>)</div>
+    <div class="box"><b>Historias</b><code>producto/stories/</code><br>Criterios con su marcador. Identificador = clave de Jira (<code>EO-123</code>)</div>
     <div class="box"><b>Contrato</b>OpenAPI generado desde Go. El frontend genera su cliente y sus simulaciones a partir de él</div>
     <div class="box"><b>Tests</b>Go · Vitest · E2E, nombrados con el criterio: <code>[EO-123.1] …</code></div>
     <div class="box"><b>Tests bloqueados</b>Una lista por mitad: <code>.orchestrator/locked/EO-123-back.txt</code></div>
@@ -414,11 +454,15 @@
   <h2><span class="num">6</span>Cómo arrancamos</h2>
   <p class="lead">El stack no sale de las historias: el esqueleto se monta antes, porque el propio flujo lo necesita. Las funcionalidades solo llegan a través de historias.</p>
   <div class="timeline">
-    <div class="step"><h3>Día uno</h3>Repositorio, proyecto de Jira con sus 6 estados y <b>instalación, parte 1</b>: carpeta de historias, validador, pipeline mínimo.</div>
+    <div class="step"><h3>Día uno</h3>Repositorio, proyecto de Jira con sus 6 estados y <b>instalación, parte 1</b>:<ul>
+      <li>carpeta de historias, validador, pipeline mínimo</li><li>la definición en <code>docs/definicion.md</code></li>
+      <li><code>README.md</code> y <code>CLAUDE.md</code></li><li><code>docs/rules/</code> con la semilla de reglas</li>
+      <li>los pendientes técnicos, como decisiones abiertas</li></ul></div>
     <div class="step"><h3>Cimientos (entrega 0)</h3>Los responsables técnicos, con Claude y la misma disciplina:<ul>
-      <li>pruebas técnicas pendientes (◇)</li><li>monorepo, Go, panel React, PostgreSQL</li>
-      <li>un endpoint de juguete de punta a punta</li><li>reglas que no se negocian: cuenta, BD por cuenta, linters</li><li>CI en Bitbucket</li></ul></div>
-    <div class="step"><h3>Instalación, parte 2</h3>Mide comandos, contrato, rutas de cada lado y tests. Sus comprobaciones son el criterio de salida de los cimientos.</div>
+      <li>pruebas técnicas pendientes (◇), que cierran sus decisiones</li><li>monorepo, Go, panel React, PostgreSQL</li>
+      <li>un endpoint de juguete de punta a punta</li><li>reglas que no se negocian: cuenta, BD por cuenta, linters</li>
+      <li>las comprobaciones de la §12.1: SQL concatenado, gitleaks, govulncheck</li><li>el generador de módulos y un módulo de referencia</li><li>CI en Bitbucket</li></ul></div>
+    <div class="step"><h3>Instalación, parte 2</h3>Mide comandos, contrato, rutas de cada lado y tests. <b>Congela la definición</b> y escribe los patrones de cada lado. Sus comprobaciones son el criterio de salida de los cimientos.</div>
     <div class="step"><h3>Primera historia</h3>Pequeña, pero que pase por todas las piezas y todas las etapas. Sirve para probar el flujo; lo que falle se corrige en el plugin antes de que entre todo el equipo.</div>
   </div>
   <div class="parallel"><b>En paralelo, desde el día uno:</b> diseño escribe las historias de la entrega 1 (plataforma mínima). Nadie espera a nadie.</div>
@@ -435,14 +479,167 @@
     <div><b class="t">Sobre qué</b>Una muestra con regla fija: 5 historias, al menos una de cada lado, todas las de riesgo y los diffs más grandes. El auditor no elige qué mirar.</div>
   </div>
   <div class="audit-steps">
-    <div class="astep"><span class="n">1</span><div><b class="t">Audita contra la lista del equipo</b>El <code>auditor</code>, de solo lectura, comprueba <code>docs/audits/checklist.md</code>, no su gusto. Cada hallazgo dice qué regla rompe; si no rompe ninguna, va aparte como propuesta.</div></div>
+    <div class="astep"><span class="n">1</span><div><b class="t">Audita contra las reglas del equipo</b>El <code>auditor</code>, de solo lectura, comprueba las reglas de <code>docs/rules/</code>, no su gusto. Cada hallazgo cita el ID de la regla que rompe; si no rompe ninguna, va aparte como propuesta.</div></div>
     <div class="astep"><span class="n">2</span><div><b class="t">Cada hallazgo, con su prueba</b>Trae el comando que lo demuestra. Antes de que nadie lo lea, el orquestador lo repite: si no se reproduce, se descarta como falso positivo.</div></div>
     <div class="astep"><span class="n">3</span><div><b class="t">Se decide qué se convierte en regla</b>Pendiente: si lo confirma una persona o el orquestador por su cuenta (abajo).</div></div>
     <div class="astep"><span class="n">4</span><div><b class="t">La regla demuestra que funciona</b>Falla sobre el código malo que la motivó y pasa cuando se corrige. Si no, no entra.</div></div>
     <div class="astep"><span class="n">5</span><div><b class="t">Se registra</b>En <code>docs/audits/</code>: aceptado, rechazado o falso positivo, y el porcentaje de acierto. Lo rechazado no se vuelve a sacar.</div></div>
-    <div class="astep"><span class="n">6</span><div><b class="t">La lista aprende</b>Lo aceptado que la máquina no puede comprobar entra en la lista; lo que ya comprueba la máquina sale de ella.</div></div>
+    <div class="astep"><span class="n">6</span><div><b class="t">Las reglas aprenden</b>Lo aceptado que la máquina no puede comprobar entra como regla en <code>docs/rules/</code>; lo que ya comprueba la máquina pasa a «Comprobadas por la máquina».</div></div>
   </div>
   <div class="parallel" style="background:var(--shared-soft)"><b>Pendiente de decidir: ¿la confirma una persona al final?</b> Con <code>audit.confirm: human</code>, una persona decide qué hallazgos se convierten en reglas. Con <code>auto</code>, el orquestador lo hace por su cuenta y abre el PR. En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. <b>Mientras no se decida, la confirma una persona.</b> Un criterio posible: empezar así y pasar a <code>auto</code> cuando el auditor lleve varias entregas con un acierto alto.</div>
+</section>
+
+<!-- 8 -->
+<section id="donde" class="long">
+  <h2><span class="num">8</span>Dónde vive cada cosa</h2>
+  <p class="lead">Si sabes qué quieres escribir, sabes dónde va. Todo gira en torno al orquestador: el método está en el plugin (skill <code>orchestrate</code>, §11) y lo que es de EASY One, en su repositorio.</p>
+
+  <div class="principles">
+    <div><b class="t">1 · Un solo sitio</b>Cada cosa tiene un solo sitio. Lo demás enlaza; nunca copia.</div>
+    <div><b class="t">2 · La máquina antes que la prosa</b>Lo que la máquina puede comprobar no se escribe: se convierte en un linter, un test de arquitectura o un paso del pipeline, y su mensaje de error cita el ID de la regla.</div>
+    <div><b class="t">3 · Ninguna regla sin origen</b>La arquitectura de la definición, una decisión, o un fallo real o una auditoría de este proyecto. Nada «por si acaso» ni copiado de otro repo.</div>
+    <div><b class="t">4 · Lo compartido, por PR</b>Historias, decisiones, reglas y <code>CLAUDE.md</code> cambian por PR. Lo generado no se edita a mano. Lo personal no se sube.</div>
+    <div><b class="t">5 · Jira no es documentación</b>Muestra quién y cuándo; el qué está en git. Lo acordado en un comentario de una tarjeta se escribe en la historia, el contrato o una decisión en el siguiente commit.</div>
+  </div>
+
+  <h3 class="sub">En el repositorio de EASY One</h3>
+  <div class="tblwrap">
+  <table class="tbl">
+    <thead><tr><th>Qué</th><th>Dónde</th><th>Lo escribe</th><th>Lo mantiene al día</th></tr></thead>
+    <tbody>
+      <tr><td>Qué hace el producto</td><td><code>producto/stories/EO-123-….md</code></td><td><span class="tag t-design">Diseño</span>; un desarrollador si no hay pantalla</td><td><code>stories.mjs --check</code> y los tests por criterio</td></tr>
+      <tr><td>Estado de todo, bloqueos</td><td><code>producto/map.md</code></td><td>Se genera</td><td>El pipeline</td></tr>
+      <tr><td>Decisiones nuevas, de producto o de arquitectura</td><td><code>producto/decisions/DEC-031-….md</code> en adelante</td><td>Quien figura en <code>decides</code>: dirección o el responsable técnico</td><td>El validador, que las enlaza a las historias que bloquean</td></tr>
+      <tr><td>Arquitectura de partida y D1–D30</td><td><code>docs/definicion.md</code></td><td>Por PR hasta el cierre de la entrega 0; entonces se congela</td><td>Después, solo avisos de una línea que enlazan a la decisión que lo cambia</td></tr>
+      <tr><td>Contrato de la API</td><td>El OpenAPI generado desde Go</td><td><span class="tag t-back">backend-builder</span>, cuando los dos lados lo han acordado</td><td><code>generateSpec</code> y el test de la costura</td></tr>
+      <tr><td>Cliente TS y simulaciones</td><td><code>packages/api-client/</code></td><td>Se genera</td><td>El test de la costura</td></tr>
+      <tr><td>Qué declara cada módulo</td><td>Su manifiesto en <code>modules/&lt;id&gt;/</code></td><td><span class="tag t-back">Backend</span></td><td>—</td></tr>
+      <tr><td>Reglas para todos</td><td><code>docs/rules/comunes.md</code></td><td>PR</td><td>La auditoría</td></tr>
+      <tr><td>Reglas y patrones de cada lado</td><td><code>docs/rules/backend.md</code>, <code>docs/rules/frontend.md</code></td><td>PR</td><td>La auditoría</td></tr>
+      <tr><td>Estilo de Go y TS</td><td>La configuración de los linters</td><td>Entrega 0</td><td><code>verify.all</code></td></tr>
+      <tr><td>Auditorías</td><td><code>docs/audits/&lt;entrega&gt;.md</code></td><td>Orquestador y <code>auditor</code></td><td>—</td></tr>
+      <tr><td>Qué es EASY One, mapa de carpetas, arrancar en local</td><td><code>README.md</code></td><td>PR</td><td>Los comandos tienen nombre en un único fichero de tareas, que usan el README y <code>.orchestrator.json</code></td></tr>
+      <tr><td>Contexto de cada sesión</td><td><code>CLAUDE.md</code>: importa <code>@README.md</code> y <code>@docs/rules/comunes.md</code>, apunta por tema a apartados de la definición y lleva el bloque del orquestador</td><td>Instalación y PR</td><td>La instalación comprueba que no queda ningún <code>{{</code> y que las rutas existen</td></tr>
+      <tr><td>Configuración del orquestador</td><td><code>.orchestrator.json</code>, <code>.orchestrator/locked/</code></td><td>La instalación y el cierre de cada mitad</td><td>La guardia</td></tr>
+      <tr><td>Ficheros personales</td><td><code>.orchestrator/me.json</code>, <code>state.md</code>, <code>work/</code></td><td>Cada persona</td><td><code>.gitignore</code>: nunca se suben</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="pair">
+    <div class="out"><b>Fuera del repositorio</b><ul>
+      <li><b>El método</b> (skills, agentes, guardia, la propuesta y este esquema) está en el plugin. Nunca se copia al proyecto: el README lo enlaza.</li>
+      <li><b>Jira:</b> una tarjeta por historia, con su clave. Las etapas las mueve el pipeline.</li>
+      <li><b>Hyliable</b> sigue en su propio repositorio hasta que se migre.</li>
+      <li><b>Los manuales para clientes y soporte</b> quedan fuera de este sistema.</li>
+    </ul></div>
+    <div class="gone"><b>Lo que desaparece</b><ul>
+      <li><code>CONTRIBUTING.md</code>, <code>CODING_STANDARDS.md</code> y <code>docs/adr/</code></li>
+      <li>La sección <i>Lessons</i> de <code>CLAUDE.md</code>: las lecciones son reglas</li>
+      <li><code>docs/audits/checklist.md</code>: la lista del auditor son las reglas de <code>docs/rules/</code></li>
+      <li>La web de Starlight y las páginas de código escritas por IA. Si algún día hace falta una web, será solo generada</li>
+    </ul></div>
+  </div>
+
+  <h3 class="sub">¿Dónde escribo esto?</h3>
+  <p class="note">Antes de escribir nada, estas preguntas, por orden. Vale la primera que encaje.</p>
+  <ol class="tree">
+    <li><b>1 · ¿Es algo que una persona nota?</b>Un comportamiento del producto.<span class="ans">→ Un criterio de su historia, nueva o existente</span></li>
+    <li><b>2 · ¿Es una elección entre opciones?</b>Un proveedor, una librería, un alojamiento, un precio.<span class="ans">→ Una decisión</span></li>
+    <li><b>3 · ¿Es cómo se escribe el código?</b>Algo que todo el código tiene que cumplir.<span class="ans">→ Una comprobación; si la máquina no puede, una regla; si no, un patrón</span></li>
+    <li><b>4 · ¿Es cómo se instala o se arranca?</b>Comandos, datos de ejemplo, requisitos.<span class="ans">→ <code>README.md</code></span></li>
+    <li class="no"><b>5 · ¿Nada de lo anterior?</b>No es comportamiento, ni decisión, ni regla, ni arranque.<span class="ans">→ No se escribe</span></li>
+  </ol>
+
+  <div class="parallel" style="background:var(--infra-soft)"><b>La definición y su congelación.</b> <code>docs/definicion.md</code> es la arquitectura de partida. Se edita por PR hasta el cierre de la entrega 0; entonces la instalación (parte 2) la congela. Desde ahí, un cambio es una decisión que dice qué apartado cambia, y bajo ese apartado solo se añade un aviso de una línea que enlaza a la decisión. <code>CLAUDE.md</code> remite a sus apartados por tema: nunca se carga entera.</div>
+</section>
+
+<!-- 9 -->
+<section id="las-reglas" class="long">
+  <h2><span class="num">9</span>Las reglas</h2>
+  <p class="lead">Lo que todo el código tiene que cumplir y que los tests de una historia no miran. Pocas, con origen, y cada vez que se puede pasan a la máquina.</p>
+
+  <h3 class="sub" style="margin-top:0">Tres niveles, de más fuerte a más débil</h3>
+  <div class="kinds">
+    <div class="kind"><b>1 · Comprobación de la máquina</b><span class="ex">Un linter, un test de arquitectura o un paso del pipeline</span><span>Vive en su configuración, y su mensaje de error cita el ID de la regla. No depende de que nadie la lea.</span></div>
+    <div class="kind"><b>2 · Regla escrita</b><span class="ex">En <code>docs/rules/</code></span><span>Solo cuando la máquina no puede comprobarla.</span></div>
+    <div class="kind"><b>3 · Patrón</b><span class="ex">Código de referencia</span><span>Los encargos lo citan en «Read first». Cada lado los lista en la sección <i>Patrones</i> de su fichero. El principal es el generador de módulos.</span></div>
+  </div>
+
+  <h3 class="sub">Formato: una línea por regla</h3>
+  <p class="format">- **R-07** La cuenta sale de la sesión, el token o el `Host` validado, en un solo sitio; ningún handler la toma de la petición. — Se leerían datos de otra cuenta. — Definición §12.1.2.</p>
+  <p class="note">Qué, por qué y de dónde sale. El ID no se reutiliza nunca. Al final de cada fichero, <i>Comprobadas por la máquina</i>: una línea por regla que ya cubre una comprobación (<code>R-xx → .golangci.yml</code>). Los agentes no las leen: ya las comprueba la máquina.</p>
+
+  <h3 class="sub">Quién las lee</h3>
+  <div class="repo" style="margin-top:0">
+    <div class="box"><b>Cada sesión</b><code>comunes.md</code>, porque lo importa <code>CLAUDE.md</code></div>
+    <div class="box"><b>Cada builder</b><code>comunes.md</code> y el fichero de su lado, en cada encargo</div>
+    <div class="box"><b>El reviewer</b>Las de los lados que toca el diff</div>
+    <div class="box"><b>El auditor</b>Todas: son su lista</div>
+  </div>
+
+  <h3 class="sub">Ciclo de vida, siempre por PR</h3>
+  <div class="audit-steps">
+    <div class="astep"><span class="n">1</span><div><b class="t">Nace</b>De la arquitectura, de una decisión o de un fallo real. Se propone al cerrar un bloque de trabajo o en una auditoría.</div></div>
+    <div class="astep"><span class="n">2</span><div><b class="t">Pasa a la máquina</b>Si una comprobación puede expresarla. Tiene que fallar sobre el código malo y pasar cuando se corrige; entonces la línea va a «Comprobadas por la máquina».</div></div>
+    <div class="astep"><span class="n">3</span><div><b class="t">Se reescribe o se quita</b>Si en dos auditorías seguidas solo da hallazgos rechazados.</div></div>
+  </div>
+  <p class="note" style="margin-top:10px">Un comportamiento nunca es una regla: es un criterio de su historia.</p>
+
+  <h3 class="sub">Ejemplo: cómo se reparte la §12.1 de la definición</h3>
+  <div class="kinds">
+    <div class="kind"><b>Comportamiento → criterios de historias</b><span class="ex">argon2id, doble factor, cookies <code>__Host-</code>, límite de intentos, cotejo del importe en los pagos</span><span>Con sus tests, en las historias de identidad y de pagos.</span></div>
+    <div class="kind"><b>Lo que pide a la CI → la máquina</b><span class="ex">Bloquear el SQL concatenado, gitleaks, govulncheck</span><span>Se monta en la entrega 0 y entra directamente en «Comprobadas por la máquina».</span></div>
+    <div class="kind"><b>Lo que queda → reglas escritas</b><span class="ex">La cuenta en el servidor, la autorización centralizada, los scripts nunca por HTTP…</span><span>Son las de la semilla de abajo.</span></div>
+  </div>
+
+  <h3 class="sub">Semilla del día uno: 13 reglas</h3>
+  <p class="note">Solo reglas con origen; el estilo es de los linters. La de rendimiento (consultas en bucle, índices) se quitó porque aún no tiene origen en este proyecto: volverá si aparece un fallo real. Los patrones de cada lado se escriben al cerrar la entrega 0.</p>
+  <div class="rulegroups">
+    <div class="rgroup g-shared"><h4>Comunes</h4><code class="file">docs/rules/comunes.md</code><ul>
+      <li><span class="rid">R-01</span><div>Ningún dato personal ni credencial en logs, mensajes de error ni respuestas de la API.<span class="why">Lo exige el RGPD, y un secreto en un log ya es público.</span><span class="orig">Definición §12.1.13</span></div></li>
+      <li><span class="rid">R-02</span><div>Toda llamada a un modelo de IA pasa por el AI Gateway; ningún módulo ni servicio llama directamente a un proveedor, tampoco el servicio del agente de Hyliable.<span class="why">Sin el gateway no hay medición, cuotas ni redacción de datos personales.</span><span class="orig">Definición §11.1</span></div></li>
+      <li><span class="rid">R-03</span><div>Todo texto visible se escribe en castellano en el código, con el contenedor de su módulo declarado una vez por fichero.<span class="why">Es lo que la CI extrae y traduce.</span><span class="orig">D23, definición §7.7</span></div></li>
+      <li><span class="rid">R-04</span><div>Una sola forma de resolver cada problema recurrente: si ya hay un patrón, se usa; uno nuevo necesita una decisión.<span class="why">La IA copia lo que encuentra, también el segundo patrón.</span><span class="orig">Método del orquestador</span></div></li>
+      <li><span class="rid">R-05</span><div>Un test cuenta solo si una aserción observa el comportamiento de su criterio: ni solo una captura, ni «se llamó al mock», ni «no lanza error».<span class="why">Un test en verde que no prueba nada.</span><span class="orig">Método del orquestador</span></div></li>
+      <li><span class="rid">R-06</span><div>Una dependencia nueva entra solo si la nombra la historia o una decisión.<span class="why">Licencias, mantenimiento y superficie de ataque.</span><span class="orig">Definición §12.1.16</span></div></li>
+    </ul></div>
+    <div class="rgroup g-back"><h4>Backend</h4><code class="file">docs/rules/backend.md</code><ul>
+      <li><span class="rid">R-07</span><div>La cuenta sale de la sesión, el token o el <code>Host</code> validado, en un solo sitio; ningún handler la toma de la petición.<span class="why">Se leerían datos de otra cuenta.</span><span class="orig">Definición §12.1.2</span></div></li>
+      <li><span class="rid">R-08</span><div>Los datos de una cuenta se leen y escriben solo por la conexión a su BD; sin consultas cruzadas entre BDs.<span class="why">Es el aislamiento físico entre cuentas.</span><span class="orig">D2, definición §9.3</span></div></li>
+      <li><span class="rid">R-09</span><div>La autorización está centralizada y deniega por defecto: ningún endpoint sin política, y cada acceso por id comprueba la propiedad.<span class="why">Un endpoint sin política queda abierto.</span><span class="orig">Definición §12.1.3</span></div></li>
+      <li><span class="rid">R-10</span><div>Lo que la API expone de una cuenta tiene un test que prueba que otra cuenta no puede leerlo ni cambiarlo.<span class="why">Aislamiento entre cuentas.</span><span class="orig">Definición §12.1.2</span></div></li>
+      <li><span class="rid">R-11</span><div>Las migraciones son compatibles hacia atrás: expandir, desplegar, contraer.<span class="why">Se aplican cuenta a cuenta, y conviven versiones.</span><span class="orig">Definición §9.3</span></div></li>
+      <li><span class="rid">R-12</span><div>Los scripts y las tareas periódicas se lanzan solo por CLI o por la cola, nunca por HTTP.<span class="why">Un endpoint de mantenimiento es una puerta abierta.</span><span class="orig">Definición §12.1.12</span></div></li>
+    </ul></div>
+    <div class="rgroup g-front"><h4>Frontend</h4><code class="file">docs/rules/frontend.md</code><ul>
+      <li><span class="rid">R-13</span><div>A la API de Go solo se llega por el cliente generado; nunca con una petición escrita a mano.<span class="why">Si el contrato cambia, el error de tipos lo avisa.</span><span class="orig">D6, el contrato</span></div></li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 10 -->
+<section id="momentos" class="long">
+  <h2><span class="num">10</span>Cómo actuar en cada momento</h2>
+  <p class="lead">Qué se hace en cada momento del proyecto y dónde queda escrito.</p>
+  <div class="tblwrap">
+  <table class="tbl">
+    <thead><tr><th>Momento</th><th>Qué se hace</th><th>Dónde queda</th></tr></thead>
+    <tbody>
+      <tr><td>Día uno (instalación, parte 1)</td><td>La definición entra en el repositorio. Se crean <code>README.md</code>, <code>CLAUDE.md</code> y <code>docs/rules/</code> con la semilla. Los pendientes técnicos del §14 que afectan a la construcción se abren como decisiones: Huma u oapi-codegen, goose o Atlas, fosite o ZITADEL, el fichero de tareas…</td><td><code>docs/</code>, <code>producto/decisions/</code></td></tr>
+      <tr><td>Entrega 0</td><td>Las pruebas técnicas cierran decisiones. Se montan los linters, los tests de arquitectura, las comprobaciones de la §12.1, el generador de módulos y un módulo de referencia. La definición todavía se edita por PR</td><td>Decisiones, configuración, código</td></tr>
+      <tr><td>Cierre de la entrega 0 (instalación, parte 2)</td><td>Se congela la definición, se escriben los patrones de cada lado y se auditan los cimientos</td><td><code>docs/</code>, <code>docs/rules/</code>, <code>docs/audits/</code></td></tr>
+      <tr><td>Historia nueva</td><td>Como siempre: la escribe diseño, o un desarrollador si no tiene pantalla (punto 2)</td><td><code>producto/stories/</code> y su tarjeta</td></tr>
+      <tr><td>Aparece una elección que bloquea</td><td>Se crea una decisión abierta y la historia la cita en <code>blocked_by</code>. Quien decide la cierra por PR. Si cambia la definición, se añade un aviso de una línea bajo el apartado afectado</td><td><code>producto/decisions/</code></td></tr>
+      <tr><td>Arranque y contrato</td><td>Como siempre. Lo acordado en Jira termina en el commit del contrato</td><td>El OpenAPI</td></tr>
+      <tr><td>Se construye un criterio</td><td>El builder lee las reglas comunes, las de su lado y los patrones del encargo</td><td>—</td></tr>
+      <tr><td>Algo falla en el bucle o en la revisión</td><td>Si es comportamiento, es un criterio que falla. Si puede repetirse, al cerrar se propone, por este orden, comprobación, regla o patrón</td><td>PR a <code>docs/rules/</code> o a la configuración</td></tr>
+      <tr><td>Se cierra una entrega</td><td>Auditoría contra <code>docs/rules/</code> (punto 7); lo que la máquina puede comprobar pasa a ella</td><td><code>docs/audits/</code></td></tr>
+      <tr><td>Cambia algo ya hecho</td><td>Se editan los criterios de su historia, nunca una historia nueva encima</td><td>La misma historia</td></tr>
+      <tr><td>Alguien quiere documentar algo</td><td>«¿Dónde escribo esto?» (punto 8). <b>Si no encaja en nada, no se escribe</b></td><td>—</td></tr>
+    </tbody>
+  </table>
+  </div>
 </section>
 
 <!-- Reglas -->
@@ -458,10 +655,12 @@
     <div class="rule"><b>Un bug no es una historia nueva</b>Es un criterio que falla en la historia que ya existe.</div>
     <div class="rule"><b>Cada error, una regla</b>Un error que puede repetirse se convierte en algo que comprueba la máquina.</div>
     <div class="rule"><b>La revisión baja, «cero fe» no</b>Se revisa menos código porque los errores dejan de poder repetirse, no porque nos fiemos más de la IA.</div>
+    <div class="rule"><b>Cada cosa, un solo sitio</b>Lo demás enlaza. Si dos ficheros dicen lo mismo, uno de los dos sobra.</div>
+    <div class="rule"><b>Si no encaja, no se escribe</b>Historia, decisión, regla o README. Lo que no es nada de eso no se documenta.</div>
   </div>
 </section>
 
-<footer>Plugin <code>easyone-orchestrator</code>, adaptado del Orchestrator de Sydney y Claude. El detalle está en las skills <code>orchestrate</code>, <code>stories</code> e <code>install</code> del plugin.</footer>
+<footer>Plugin <code>easyone-orchestrator</code>, adaptado del Orchestrator de Sydney y Claude. El detalle está en las skills <code>orchestrate</code> (§11: dónde vive cada cosa), <code>stories</code> e <code>install</code> del plugin.</footer>
 </div>
 </body>
 </html>
