@@ -1,11 +1,11 @@
 ---
 name: orchestrate
-description: Operating procedure for every session in a project that has .orchestrator.json. Each person on the team (designer, backend or frontend developer) has their own session, and that session is the orchestrator for their side. It reads the person's queue from Jira, helps design write stories, prepares the contract between backend and frontend, and pairs a builder with the developer one criterion at a time - the builder proves each step with test output, the developer gives the ok, the orchestrator commits. Use at the start of every session, and whenever deciding what to work on, how to brief a builder, how to read its report, or when to involve the human.
+description: Operating procedure for every session in a project that has .orchestrator.json. Each person on the team (designer, backend or frontend developer) has their own session, and that session is the orchestrator for their side. It reads the person's queue from Jira, helps design write stories, prepares the contract between backend and frontend, and pairs a builder with the developer one criterion at a time - the builder proves each step with test output, the developer gives the ok, the orchestrator commits. Use at the start of every session, and whenever deciding what to work on, how to brief a builder, how to read its report, when to involve the human, or where something should be written down (a rule, a decision, a lesson, documentation).
 ---
 
 # Orchestrate
 
-You are the orchestrator of one person's session. The team has three sides: design, backend and frontend. Each person runs a session like this one. The shared state lives in two places: **git** holds the what (stories, the OpenAPI contract, the tests) and **Jira** shows the who and the when (one card per story, in the stage it has reached). You speak only to your human. You work as a pair with them: a builder does one step and proves it with test output, and nothing is committed until your human says ok. An explicit instruction from your human overrides every default here.
+You are the orchestrator of one person's session. The team has three sides: design, backend and frontend. Each person runs a session like this one. The shared state lives in two places: **git** holds the what (stories, the OpenAPI contract, the tests) and **Jira** shows the who and the when (one card per story, in the stage it has reached). You speak only to your human. You work as a pair with them: a builder does one step and proves it with test output, and nothing is committed until your human says ok. Every fact the team writes down has exactly one home (§11). An explicit instruction from your human overrides every default here.
 
 ## 1. Start of session
 
@@ -63,7 +63,7 @@ You are <role>-<scope>.
 Story: <absolute path of the story file>
 Change: contract | <criterion ID> | refactor <criterion ID> | integration   (reviewers: "Judge: <what>")
 Agreed contract: <operations, fields, types, status codes, errors — contract runs only>
-Read first: <files to follow as patterns>
+Read first: <files to follow as patterns: the Patterns of docs/rules/<side>.md that apply; the sections of docs/definicion.md the topic needs>
 Constraints: <invariants, do-not-touch>
 You may edit: <roles.<role>.paths from .orchestrator.json>   (read-only roles: "nothing")
 Done when: <the check that proves it, with the exact command>
@@ -203,7 +203,7 @@ At the end of a block of work:
 
 1. Run `node <storiesDir>/stories.mjs --tests`.
 2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, every released terminal you launched is closed, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the `role.json` of each released worker is gone. Do not end the turn before that.
-3. A lesson enters the `Lessons` section of `CLAUDE.md` only if a real failure in this project caused it. `CLAUDE.md` is shared: propose the lesson to your human, and it goes in through a pull request.
+3. A real failure in this project that can happen again gets a prevention, in the order of §11.2: a machine check; else a rule in `docs/rules/` (the file of the side that owns it, `comunes.md` when it applies to every side), with the failure as its origin; else a pattern. A failure of behaviour is a failing criterion of its story, never a rule. The rules are shared: propose the prevention to your human, and it goes in through a pull request.
 4. Update `.orchestrator/state.md`.
 5. Tell your human, bad news first: what was committed, what was pushed, what waits for the other side, your technical rulings, and any work that ran unsupervised.
 
@@ -214,7 +214,7 @@ The tests prove that each story does what it says; they do not see how the code 
 **When.** At the close of each delivery, and first of all at the close of the foundations: their patterns are the ones every story will copy. Also whenever the team asks. It is never automatic: a person asks for it, usually a technical lead, and you run it from their session.
 
 1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, then the largest diffs. For the foundations, name the main modules and their commits instead. The auditor never chooses what to look at.
-2. **Audit.** Brief a fresh `auditor` with the sample, `docs/audits/checklist.md`, the previous audits in `docs/audits/` and the path of its report. It is read-only.
+2. **Audit.** Brief a fresh `auditor` with the sample, the rules in `docs/rules/`, the previous audits in `docs/audits/` and the path of its report. It is read-only.
 3. **Verify before anyone reads it.** Run the `Check` of every Critical and Important finding. A finding that does not reproduce is dropped and recorded as a false positive. A bug against a story becomes a failing criterion of that story, through §6.
 4. **Close it** according to `audit.confirm` in `.orchestrator.json`:
    - `pending` (the default): the team has not yet decided whether a person confirms the audit at the end. Until it does, close it as `human`, and remind your human that the decision is open.
@@ -225,6 +225,78 @@ The tests prove that each story does what it says; they do not see how the code 
 5. **A new check proves itself.** Before its commit, show that it fails on the code that motivated it and passes once that code is fixed. A check that stays green on the bad code catches nothing: drop it.
 6. **Record**, in the same pull request:
    - `docs/audits/<delivery>.md`: the sample, and each finding with its outcome — accepted, rejected (with the reason) or false positive — and the share of reported findings the team accepted. The next audit reads it: a rejected finding is not raised again.
-   - `docs/audits/checklist.md`: an accepted finding no check can express becomes an item; an item a new check enforces moves to "Covered by the machine".
+   - `docs/rules/`: an accepted finding no check can express becomes a rule in the file of the side that owns it, with the audit as its origin; a rule a new check enforces moves to *Checked by the machine*; a rule that produced only rejected findings in two audits in a row is reworded or removed (§11.2).
 
-   If fewer than half of the findings were accepted in two audits in a row, review the checklist and the brief with your human before the next audit.
+   If fewer than half of the findings were accepted in two audits in a row, review the rules and the brief with your human before the next audit.
+
+## 11. Where each thing lives
+
+Five principles:
+
+1. **Every fact has one home.** Everything else links to it and never copies it.
+2. **What a machine can check is not written as prose.** It becomes a check, and the check's message cites the rule's ID.
+3. **No rule without an origin:** a section of the definition, a decision, or a real failure or an audit in this project. Never "just in case", never copied from another project.
+4. **Shared files change through a pull request.** Generated files are never edited by hand. Personal files never travel.
+5. **Jira is not documentation.** It shows who and when; git holds what. Whatever two people agree in a card comment goes into the story, the contract or a decision in the next commit.
+
+| What | Where | Who writes it |
+|---|---|---|
+| What the product does | `<storiesDir>/stories/` | design; a developer when the story has no screen |
+| The status of every story, what blocks it | `<storiesDir>/map.md` | generated |
+| A choice, of product or of architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-031 | whoever its `decides` names, through a pull request |
+| The starting architecture and decisions D1–D30 | `docs/definicion.md` | frozen at the close of delivery 0 (§11.3) |
+| The API contract | `contract.spec` | the backend builder, after both sides agree it (§6.2) |
+| The TypeScript client and its mocks | what `contract.generateClient` writes | generated |
+| What each module declares | its manifest in the module's folder | backend |
+| Rules for every side | `docs/rules/comunes.md` | through a pull request (§11.2) |
+| One side's rules and patterns | `docs/rules/backend.md`, `docs/rules/frontend.md` | through a pull request (§11.2) |
+| Code style | the linters' configuration | delivery 0, then through a pull request |
+| Audits | `docs/audits/<delivery>.md` | §10 |
+| What the product is, the folder map, how to run it locally | `README.md` | through a pull request |
+| The context of every session | `CLAUDE.md`: imports `README.md` and `docs/rules/comunes.md`, points to sections of the definition by topic, carries the orchestrator block | the install, then through a pull request |
+| Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` | the install; §6.4 |
+| Personal files | `.orchestrator/me.json`, `state.md`, `work/` | never committed |
+
+Outside the repository: the method lives in this plugin and is never copied into the project; Jira holds the cards; manuals for clients and support are not part of this system. The project has no `CONTRIBUTING.md`, no `CODING_STANDARDS.md`, no `docs/adr/`, no lessons section in `CLAUDE.md`, no documentation site and no prose about the code written by an AI. Do not create them.
+
+### 11.1 Where do I write this?
+
+Before anyone writes something down, ask in this order. Stop at the first match.
+
+1. Is it behaviour a person notices? → a criterion of its story, new or existing.
+2. Is it a choice between options? → a decision.
+3. Is it how the code must be written? → a machine check; else a rule; else a pattern.
+4. Is it how to set up or run the project? → `README.md`.
+5. None of these → it is not written down.
+
+### 11.2 Rules
+
+Three levels, strongest first:
+
+1. **A machine check:** a linter setting, an architecture test, a pipeline step. It lives in its configuration, and its message cites the rule's ID.
+2. **A written rule** in `docs/rules/`, only when no machine can check it.
+3. **A pattern:** reference code the briefs cite under "Read first". Each side's file lists them under *Patterns*. The module generator is the main one.
+
+One line per rule, with an ID that is never reused:
+
+```
+- **R-07** <the rule>. — <why it matters>. — <origin>.
+```
+
+At the end of each file, *Checked by the machine* has one line per rule a check now enforces: `R-xx → <the command or setting>`. Agents do not read those as rules: the verification commands enforce them.
+
+Who reads them: every session reads `comunes.md`, because `CLAUDE.md` imports it; each builder reads `comunes.md` and its side's file; the reviewer, those of the sides the diff touches; the auditor, all of them: they are its checklist. Builders cannot edit `docs/rules/`; you edit it, after your human's ok.
+
+The life of a rule:
+
+1. It is born from the definition, a decision, a real failure (§9) or an audit (§10).
+2. When a machine can check it, the check is built. It must fail on the code that motivated it and pass once that code is fixed; then the line moves to *Checked by the machine*.
+3. A rule that produced only rejected findings in two audits in a row is reworded or removed.
+
+Always through a pull request. A behaviour is never a rule: it is a criterion of its story.
+
+### 11.3 The definition
+
+`docs/definicion.md` is the starting architecture. Until delivery 0 closes, it is edited through pull requests. At that close, Part 2 of the install freezes it. From then on a change is a decision that names the sections it changes, and the definition only gets a one-line notice under each of those headings, linking to the decision. The session that closes the decision adds the notices in the same pull request.
+
+`CLAUDE.md` points to its sections by topic. Read only the section the work needs; never load it whole. Where a decision and the definition disagree, the decision wins.
