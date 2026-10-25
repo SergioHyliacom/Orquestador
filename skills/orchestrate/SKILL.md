@@ -94,7 +94,7 @@ Rules:
 
 | Stage in Jira | Whose turn | It leaves the stage when |
 |---|---|---|
-| Design | design, or a developer for a story with no screen | the story's pull request merges into the integration branch. That merge is the approval |
+| Design | design, or a developer for a story with no screen | the story's pull request, approved by someone other than its author, from any side, merges into the integration branch. That merge is the approval |
 | Contract | backend and frontend | `story/<ID>` exists and the spec there has every operation in the story's `operations`. The contract is agreed only when the story changes the API |
 | Build | the story's halves, in parallel | every half in the story's `sides` is merged into `story/<ID>` |
 | Integration | frontend, or backend when the story has no front half | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design. A story with nothing for a person to check stays here until the merge |
@@ -107,12 +107,14 @@ Load the `stories` skill to write or change a story.
 
 ### 6.1 Write the story (design; a developer when it has no screen)
 
-Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it; the steps are the same, and its pull request is still the approval.
+Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it, backend or frontend; the steps are the same.
+
+**Who approves.** The story's pull request is the approval, and anyone except its author approves it, from any side: whoever understands what the story asks. A developer's story with no screen is usually approved by another developer; design does not have to approve what it cannot judge. Nobody approves their own story.
 
 1. Create the story's Jira card in Design. Its key is the story's ID.
 2. Write the story with your human: the rules, the states of each screen as criteria, the designs in `screens`. Leave `operations` empty.
 3. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
-4. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. When it merges, the story is the developers'.
+4. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Ask your human who will approve it: someone other than them who understands the story. When it merges, the story is the developers'.
 
 ### 6.2 Kickoff and contract
 

@@ -21,7 +21,7 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | **Orquestador** | La sesión de Claude (Opus) de **cada persona** | Lee en Jira lo que le toca a su persona, prepara cada encargo, le enseña las pruebas, hace el commit tras su ok |
 | **Agentes que programan** | `backend-builder` y `frontend-builder` (Sonnet) | Un encargo cada vez: el contrato, un criterio o la integración. Prueban, se paran e informan |
 | **Desarrolladores** | Backend (Go) y frontend (TypeScript) | Navegan: acuerdan el contrato, validan cada paso, deciden |
-| **Diseño** | Equipo de diseño, como product owners | Escribe las historias verticales con sus estados y hace la revisión visual. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador |
+| **Diseño** | Equipo de diseño, como product owners | Escribe las historias verticales con sus estados y hace la revisión visual. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador, y las aprueba quien las entienda |
 | **Revisor** | `reviewer`, solo lectura | Revisa la historia completa al cerrarla, **solo si lleva etiqueta de riesgo** |
 | **Investigador** | `researcher`, solo lectura | Resuelve dudas sin tocar nada |
 | **Auditor** | `auditor`, solo lectura | Al cerrar cada entrega, revisa una muestra de historias buscando lo que los tests no ven |
@@ -71,7 +71,7 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 | Etapa en Jira | Le toca a | Qué pasa | Avanza cuando |
 |---|---|---|---|
-| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Crea la tarjeta y escribe la historia en `design/EO-123`: reglas, estados de cada pantalla, diseños enlazados | El PR de la historia entra en `develop`. **Es la aprobación** |
+| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Crea la tarjeta y escribe la historia en `design/EO-123`: reglas, estados de cada pantalla, diseños enlazados | El PR de la historia entra en `develop`, aprobado por otra persona de cualquier lado que la entienda. **Es la aprobación** |
 | **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
 | **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
 | **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
@@ -90,7 +90,7 @@ La pregunta clave es: **¿cambia la forma de la API?** Es decir, sus endpoints, 
 
 **Ejemplo, EO-140 · «Las facturas rectificativas usan su propia serie».** Cambia una regla, no la API, y no tiene pantalla:
 
-1. **Diseño:** la escribe un desarrollador y se aprueba con su PR.
+1. **Diseño:** la escribe un desarrollador y la aprueba otro desarrollador en su PR. Diseño no tiene que aprobar lo que no puede juzgar.
 2. **Contrato:** arranque con `sides: [back]` y sin endpoints; pasa en minutos.
 3. **Desarrollo:** solo la mitad `-back`, un criterio cada vez.
 4. **Integración:** el backend junta su mitad y pone los marcadores. La tarjeta espera aquí el merge.
@@ -296,7 +296,8 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Identificador de historia | La clave de Jira, en todas partes |
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
-| Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador. La aprobación es siempre el PR |
+| Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador, de backend o de frontend |
+| Aprobación de la historia | Su PR, aprobado por otra persona de cualquier lado que la entienda. Nadie aprueba la suya |
 | Auditoría | Por muestreo al cerrar cada entrega, con el agente `auditor`. **Pendiente:** si la confirma una persona al final |
 | Agentes | `backend-builder` y `frontend-builder` con Sonnet; orquestador con Opus |
 | Commits | Los hace el orquestador tras el ok de la persona |
