@@ -2,7 +2,7 @@
 id: DEC-000
 title: What has to be chosen
 status: Open
-decides: Who decides
+decides: Who closes it (management for product and business, the technical lead for architecture)
 date: YYYY-MM-DD
 ---
 
@@ -22,3 +22,6 @@ Open.
 
 ## Consequences
 What changes once it is taken. The map computes which stories it blocks.
+
+## What it changes in the definition
+The sections of `docs/definicion.md` this decision changes, or "Nothing". Once the definition is frozen, each one gets a one-line notice under its heading that links here.

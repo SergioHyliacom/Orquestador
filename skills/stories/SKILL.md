@@ -37,7 +37,7 @@ Sections, in order (the project uses its translated headings):
 3. **Out of scope**: what this story does not do, with the story ID that does it if one exists. Agents add unrequested features when nothing excludes them.
 4. **Verification**: the exact command that checks this story.
 5. **Open questions**: must be empty before the story is built.
-6. **Notes**: optional. Files to follow as patterns, context for the builder. Never restate the Definition of Done or the project conventions.
+6. **Notes**: optional. Files to follow as patterns, context for the builder. Never restate the Definition of Done, the project conventions or the rules in `docs/rules/`.
 
 ## Acceptance criteria
 
@@ -88,7 +88,11 @@ A bug is not a new story. Mark the criterion it breaks as failing.
 
 ## Decisions
 
-A decision is a choice that blocks stories: a provider, hosting, pricing. File: `decisions/DEC-NNN-<title>.md`. A story names it in `blocked_by`. A story blocked by an open decision cannot be built. Decisions are product calls: the human closes them.
+A decision is a choice between options, of product or of architecture: a provider, a library, hosting, pricing. It is the only place for one; there is no separate folder of architecture records. File: `decisions/DEC-NNN-<title>.md`, numbered from `DEC-031`: D1–D30 live in the definition (`docs/definicion.md`, §14) and are never rewritten as files. IDs are never reused.
+
+A story names a decision in `blocked_by`. A story blocked by an open decision cannot be built. Decisions are human calls, and `decides` names who closes it: management for product and business, the technical lead for architecture. It closes through a pull request.
+
+A decision that changes the definition names the sections it changes under *What it changes in the definition*. Once the definition is frozen, the same pull request adds a one-line notice under each of those headings, linking to the decision (`orchestrate` skill, §11.3).
 
 ## Discarding
 

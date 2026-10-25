@@ -4,7 +4,7 @@ This folder describes what the product does, what it lacks and how far it is fro
 
 - **Start with the [map](map.md).** It shows every story, its status and the progress to the first release.
 - **Stories** are in `stories/`, one per file.
-- **Open decisions** are in `decisions/`. An open decision blocks stories.
+- **Decisions**, of product and of architecture, are in `decisions/`, from DEC-031 (D1–D30 are in `docs/definicion.md`). An open decision blocks the stories that name it.
 
 ## Levels
 
