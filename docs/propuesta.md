@@ -21,7 +21,7 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | **Orquestador** | La sesión de Claude (Opus) de **cada persona** | Lee en Jira lo que le toca a su persona, prepara cada encargo, le enseña las pruebas, hace el commit tras su ok |
 | **Agentes que programan** | `backend-builder` y `frontend-builder` (Sonnet) | Un encargo cada vez: el contrato, un criterio o la integración. Prueban, se paran e informan |
 | **Desarrolladores** | Backend (Go) y frontend (TypeScript) | Navegan: acuerdan el contrato, validan cada paso, deciden |
-| **Diseño** | Equipo de diseño, como product owners | Escribe con Claude las historias verticales a partir del diseño en Figma, con Mobbin como referencia, y hace la revisión visual. Claude crea la tarjeta en Jira. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador, y las aprueba quien las entienda |
+| **Diseño** | Equipo de diseño, como product owners | Escribe con Claude las historias verticales a partir del diseño en Figma, con Mobbin como referencia, y hace la revisión visual. Claude crea la tarjeta en Jira. Las historias técnicas, sin pantalla, puede escribirlas y aprobarlas un desarrollador |
 | **Revisor** | `reviewer`, solo lectura | Revisa la historia completa al cerrarla, **solo si lleva etiqueta de riesgo** |
 | **Investigador** | `researcher`, solo lectura | Resuelve dudas sin tocar nada |
 | **Auditor** | `auditor`, solo lectura | Al cerrar cada entrega, revisa una muestra de historias buscando lo que los tests no ven |
@@ -71,7 +71,7 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 | Etapa en Jira | Le toca a | Qué pasa | Avanza cuando |
 |---|---|---|---|
-| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia en `design/EO-123`: reglas, estados de cada pantalla, enlaces a Figma | El PR de la historia entra en `develop`, aprobado por otra persona de cualquier lado que la entienda. **Es la aprobación** |
+| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia en `design/EO-123`: reglas, estados de cada pantalla, enlaces a Figma | El PR de la historia entra en `develop`. **Es la aprobación**, y puede darla quien la escribió |
 | **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
 | **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
 | **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
@@ -87,7 +87,7 @@ La diseñadora trabaja con su sesión de Claude. **Figma es el único sitio del 
 3. **La diseñadora confirma la lista:** qué historias salen, cómo se dividen y a qué actividad pertenece cada una.
 4. **Claude crea la tarjeta en Jira**, con el ok de la diseñadora sobre el texto. La tarjeta lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. **Nunca los criterios:** viven en el fichero. Su clave es el ID.
 5. **Claude escribe la historia** en `design/EO-123`, con los enlaces a las pantallas de Figma en `screens`, y la pasa por `--ready` hasta que está lista.
-6. **PR y aprobación.** Push y PR a `develop`. Claude pregunta quién lo aprueba: otra persona, de cualquier lado.
+6. **PR y aprobación.** Push y PR a `develop`. Lo aprueba la propia diseñadora, o pide a alguien que lo mire antes.
 
 El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.
 
@@ -103,7 +103,7 @@ La pregunta clave es: **¿cambia la forma de la API?** Es decir, sus endpoints, 
 
 **Ejemplo, EO-140 · «Las facturas rectificativas usan su propia serie».** Cambia una regla, no la API, y no tiene pantalla:
 
-1. **Diseño:** la escribe un desarrollador y la aprueba otro desarrollador en su PR. Diseño no tiene que aprobar lo que no puede juzgar.
+1. **Diseño:** la escribe un desarrollador y la aprueba con su PR.
 2. **Contrato:** arranque con `sides: [back]` y sin endpoints; pasa en minutos.
 3. **Desarrollo:** solo la mitad `-back`, un criterio cada vez.
 4. **Integración:** el backend junta su mitad y pone los marcadores. La tarjeta espera aquí el merge.
@@ -312,7 +312,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador, de backend o de frontend |
-| Aprobación de la historia | Su PR, aprobado por otra persona de cualquier lado que la entienda. Nadie aprueba la suya |
+| Aprobación de los PR | Cada persona puede aprobar y fusionar los suyos: no hace falta una segunda persona, para que el trabajo siga aunque alguien falte. Quien quiera, pide a otro que lo mire antes |
 | Fuente del diseño | Figma. Mobbin, como referencia; lo que se adopta se dibuja en Figma |
 | Tarjeta de Jira | La crea Claude con el ok de la diseñadora: título, frase y enlaces (Figma y el fichero). Los criterios, solo en el fichero (opción A) |
 | Auditoría | Por muestreo al cerrar cada entrega, con el agente `auditor`. **Pendiente:** si la confirma una persona al final |

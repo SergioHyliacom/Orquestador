@@ -25,7 +25,7 @@ Stories have no priority field. The release sets the order. The first release in
 - ID: the story's **Jira key**, e.g. `EO-123`. Create the Jira card first and use its key; the same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
 - Author: design writes every story with a screen. A story with no screen can be written by the developer who understands it, backend or frontend.
-- Approval: the story's pull request. Anyone except its author approves it, from any side: whoever understands what it asks.
+- Approval: the story's pull request. Its author may approve and merge it; no second person is required.
 - Sides: the `sides` field lists the halves the story has: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
 - Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story uses, existing or new. Design leaves it empty. The developers fill it at the kickoff, and the validator checks that each one is in the spec.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
@@ -125,7 +125,7 @@ Never split by layer ("API for…", "database for…", "front end of…"). A lay
 4. Add key examples where a rule is ambiguous.
 5. Fill out-of-scope and verification. Link the Figma frames in `screens`.
 6. Run `node <storiesDir>/stories.mjs --ready <ID>`.
-7. The story enters the integration branch through a pull request, approved by someone other than its author, from any side. Merging it is the approval: from then on it is the developers' turn.
+7. The story enters the integration branch through a pull request, which its author may approve and merge. Merging it is the approval: from then on it is the developers' turn.
 
 ## From a Figma design
 

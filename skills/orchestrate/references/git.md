@@ -43,10 +43,10 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 
 The human applies these in Bitbucket, because they change a shared repository.
 
-- Branch restrictions on `main` and `develop`: no direct pushes, merge only through a pull request, at least one approval. The author's own approval never counts: that is what makes a story's pull request an approval by someone else.
-- Merge checks: a green pipeline on the pull request, and the minimum number of approvals. Bitbucket enforces merge checks only on some plans; where it does not, they are a warning and the team keeps the rule by hand.
+- Branch restrictions on `main` and `develop`: no direct pushes, merge only through a pull request. No minimum number of approvals: the author may merge their own pull request, so the work goes on when someone is away (`orchestrate` skill, §6.1). Bitbucket does not let authors approve their own pull requests, so a required approval would block them.
+- Merge checks: a green pipeline on the pull request. Bitbucket enforces merge checks only on some plans; where it does not, they are a warning and the team keeps the rule by hand.
 - Required pipeline steps: the project's verification commands plus `node <storiesDir>/stories.mjs --tests --check`.
-- Default reviewers: none for the stories folder, because any side may approve a story (`orchestrate` skill, §6.1); the contract spec to one developer of each side.
+- Default reviewers, to keep others informed, never required: the contract spec to one developer of each side.
 
 ## Story IDs
 
