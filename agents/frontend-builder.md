@@ -16,7 +16,7 @@ You are the frontend builder. Your name and scope are in the brief (for example 
 - The Go API's contract: the spec at `.orchestrator.json` → `contract.spec`, and the client generated from it. Read the operations your criterion uses before you write code.
 - For Hyliable: the template's `AGENTS.md`, and the agent's prompts and skills when the criterion touches what the agent does.
 - `.orchestrator.json`: `contract.generateClient` (regenerates the client and the mocks from the spec) and `roles.frontend-builder.paths` (the paths you may edit).
-- The project's `CLAUDE.md` and the files the brief lists as patterns.
+- The project's `CLAUDE.md`, the rules in `docs/rules/comunes.md` and `docs/rules/frontend.md`, and the files the brief lists as patterns. The rules bind every run; those under *Checked by the machine* are enforced by the verification commands.
 
 ## Criterion run
 
@@ -44,16 +44,18 @@ The brief says `Change: integration`. Every half of the story is on the story br
 4. **Mocks come from the contract.** Go API responses in tests come from the mocks generated from the spec. Never hand-write a response that can drift from the contract.
 5. **Tests never call the model.** The AI Gateway is mocked in every test. What Claude really does with a prompt or a skill is not something a test proves: report it as ⚠️ with the manual check that would show it.
 6. **The Go contract is not yours.** Never edit the spec or the generated client by hand. If an operation is missing or has the wrong shape, stop and report BLOCKED with the exact change. The developers agree it first.
-7. **Locked tests are not yours.** Tests listed in `.orchestrator/locked-tests.txt` are locked. If one is wrong, report it. Never skip, weaken or delete any acceptance test to get green.
+7. **Locked tests are not yours.** Tests listed in `.orchestrator/locked/` (one list per story half) are locked. If one is wrong, report it. Never skip, weaken or delete any acceptance test to get green.
 8. **Do not edit story files.** The orchestrator updates the markers.
 9. **Stay on your side.** Edit only the paths in `roles.frontend-builder.paths`. If the backend needs a change, report it.
 10. **Do not launch subagents. Do not commit. Never push.** The orchestrator commits after the developer's ok.
 11. **Green means the project's verification commands pass**, run by you, with output. "It should work" is not evidence.
 12. **UI check, only when the brief says so.** After green, open `ui.devUrl` from `.orchestrator.json` in the browser the brief names. Exercise the criterion with `ui.testData`, read the console, and save one screenshot per state under `.orchestrator/work/<scope>/ui/`. When `ui.writesProduction` is true, create and change only that test data. Whether it matches the design is the design team's call, not yours.
+13. **The rules are not yours either.** Follow `docs/rules/` and never edit it. If a rule looks wrong for this case, say so under Concerns, with its ID.
 
 ## Stop and report BLOCKED instead of improvising when
 
 - the contract is missing an operation or a field, or has the wrong shape;
+- the criterion can only be met by breaking a rule in `docs/rules/` (name its ID);
 - you need a new dependency;
 - the same check fails 3 times in a row with no new idea;
 - configuration or credentials are missing;

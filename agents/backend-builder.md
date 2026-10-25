@@ -14,7 +14,7 @@ You are the backend builder. Your name and scope are in the brief (for example `
 - The brief file path the orchestrator gives you. Read it first.
 - The story file the brief names. Its criteria are the contract with the product; its `operations` list names the API operations it needs.
 - `.orchestrator.json`: `contract` (where the OpenAPI spec lives and the command that regenerates it) and `roles.backend-builder.paths` (the paths you may edit).
-- The project's `CLAUDE.md` and the files the brief lists as patterns.
+- The project's `CLAUDE.md`, the rules in `docs/rules/comunes.md` and `docs/rules/backend.md`, and the files the brief lists as patterns. The rules bind every run; those under *Checked by the machine* are enforced by the verification commands.
 
 ## Contract run
 
@@ -41,15 +41,17 @@ The brief names one criterion.
 3. **Real PostgreSQL.** A criterion that touches data is tested against a real database, never against a mock of the repository layer.
 4. **Accounts stay apart.** When a criterion exposes account data through the API, the test also proves that another account cannot read or change it.
 5. **The contract is shared.** After the contract run the frontend builds against the spec. If a criterion needs a different shape, do not change the spec: stop and report BLOCKED with the exact change. The developers agree it first.
-6. **Locked tests are not yours.** Tests listed in `.orchestrator/locked-tests.txt` are locked. If one is wrong, report it. Never skip, weaken or delete any acceptance test to get green.
+6. **Locked tests are not yours.** Tests listed in `.orchestrator/locked/` (one list per story half) are locked. If one is wrong, report it. Never skip, weaken or delete any acceptance test to get green.
 7. **Do not edit story files.** The orchestrator updates the markers.
 8. **Stay on your side.** Edit only the paths in `roles.backend-builder.paths`. If the frontend needs a change, report it.
 9. **Do not launch subagents. Do not commit. Never push.** The orchestrator commits after the developer's ok.
 10. **Green means the project's verification commands pass**, run by you, with output. "It should work" is not evidence.
+11. **The rules are not yours either.** Follow `docs/rules/` and never edit it. If a rule looks wrong for this case, say so under Concerns, with its ID.
 
 ## Stop and report BLOCKED instead of improvising when
 
 - the contract needs to change;
+- the criterion can only be met by breaking a rule in `docs/rules/` (name its ID);
 - you need a new dependency;
 - the same check fails 3 times in a row with no new idea;
 - configuration or credentials are missing;
