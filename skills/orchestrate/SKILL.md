@@ -165,11 +165,18 @@ When every criterion of your side is green on your half:
 2. Run `node <storiesDir>/stories.mjs --tests`. Every criterion your side tests passes.
 3. With your human's ok, merge your half into `story/<ID>` and push.
 
+**Reopen your half** when a change comes back to your side after it was merged: an end-to-end test that fails because of your side (§6.5), an adjustment from design (§6.6) or a review finding (§6.7).
+
+1. Merge `story/<ID>` into your half, so it has everything that happened since.
+2. **Unlock only what changes.** Remove from `.orchestrator/locked/<ID>-<side>.txt` the tests of the criteria that change, and commit that alone (`<ID>: unlock <side> <criterion IDs>`) before you brief the builder: the guard reads the locks from that commit.
+3. Run the pair loop (§6.3) on those criteria. When the change is in the API's shape, agree the contract first (§6.2).
+4. Lock again (step 1 above), run the tests, and merge your half into `story/<ID>` with your human's ok.
+
 ### 6.5 Integration (frontend side, or backend when the story has no front half)
 
 When every half in `sides` is on `story/<ID>`:
 
-1. **With a front half:** brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`. **Back only:** there is no screen to integrate; go on to the markers.
+1. **With a front half:** brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`. If the end-to-end test fails because of the API (a bug, a missing field, a wrong error), the frontend builder reports BLOCKED and never touches backend code: tell the backend developer the exact problem through a comment on the card, with your human's ok on the text. The backend reopens its half (§6.4), and integration resumes when it is merged. **Back only:** there is no screen to integrate; go on to the markers.
 2. Set the markers. Run `node <storiesDir>/stories.mjs --tests`. A criterion whose tests all pass there becomes `[test]`. A criterion only a person can check (how a screen looks against its design) becomes `[unverified]`: it waits for design. No criterion stays `[unbuilt]`. Commit the story (`<ID>: markers`). Builders never edit stories; this is your edit.
 3. Push. If a criterion waits for design, attach the screenshots to the card with your human's ok and tell design it is their turn. If none does, the card stays in Integration until the merge: go on to §6.7.
 
@@ -178,17 +185,19 @@ When every half in `sides` is on `story/<ID>`:
 Design compares the screenshots, and the running app when needed, with the designs. Either way the designer's session commits on `story/<ID>` and pushes:
 
 - **Approved:** the `[unverified]` criteria become `[manual YYYY-MM-DD, <designer>]`.
-- **Adjustments:** change the criteria of this same story, never a new story. The frontend runs the pair loop on them.
+- **Adjustments:** change the criteria of this same story, never a new story, and set each changed criterion back to `[unbuilt]`: the card returns to Integration, and an old test cannot pass the new criterion. Tell the developers on the card which criteria changed.
+
+An adjustment goes to the side that owns what changes, by the rule of §6.3: what the API decides (the data it returns, its order, a rule, an error message, a limit) goes to backend; what the screen shows goes to frontend; when both, to both. That side reopens its half (§6.4). When there is a screen, the frontend then integrates again (§6.5): the end-to-end test and new screenshots. The markers are set again, and the story comes back to design.
 
 ### 6.7 Risk review
 
-If the story carries a risk tag, a fresh `reviewer` judges `git diff <integration branch>...story/<ID>` against the story before the final pull request. Critical and Important findings go to the side that owns the file, as a fix in the pair loop; to the other side, through its developer. The re-review checks only the fix. After 3 rounds, the developers decide on what is left. Minor findings go to the ledger.
+If the story carries a risk tag, a fresh `reviewer` judges `git diff <integration branch>...story/<ID>` against the story before the final pull request. Critical and Important findings go to the side that owns the file, as a fix in the pair loop on its reopened half (§6.4); to the other side, through its developer. The re-review checks only the fix. After 3 rounds, the developers decide on what is left. Minor findings go to the ledger.
 
 ### 6.8 Merge
 
 Open the pull request `story/<ID>` → integration branch on Bitbucket. Body: the output of `node <storiesDir>/stories.mjs --pr <ID>`, the review summary if there was one, and any ⚠️ manual steps. The humans merge, or ask you to. The pipeline moves the card to Done.
 
-When behaviour changes later, edit the existing story's criteria. Do not write a new story on top. A bug is a failing marker on the criterion it breaks, not a new story.
+When behaviour changes later, edit the existing story's criteria and set each changed one back to `[unbuilt]`. Do not write a new story on top. A bug is a failing marker on the criterion it breaks, not a new story.
 
 ## 7. When the human is involved
 

@@ -18,7 +18,7 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 - Never commit on a protected branch (`git.protectedBranches`, default `main` and `develop`). The guard blocks it.
 - In Orca a builder works in its own worktree, inside the repo's configured worktree location. In plain Claude Code it works in your checkout: only one writer runs at a time.
 - Stage files by name. The guard blocks `git add .`, `-A` and `--all` unless `git.blockBroadAdd` is `false`.
-- One commit per criterion, after your human's ok. Message: `<criterion ID>: <the rule, short>`. The kickoff: `<ID>: kickoff`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`.
+- One commit per criterion, after your human's ok. Message: `<criterion ID>: <the rule, short>`. The kickoff: `<ID>: kickoff`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`. An unlock, when a half reopens: `<ID>: unlock <side> <criterion IDs>`, committed alone.
 - Check `git status` before staging. Unrelated changes stay out of the commit.
 - Never `--no-verify`, `reset --hard`, `clean -f` or force push. The guard blocks them.
 - Each half's locked tests live in `.orchestrator/locked/<ID>-<side>.txt`, so the two halves never touch the same list.

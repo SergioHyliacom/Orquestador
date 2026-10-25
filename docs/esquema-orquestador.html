@@ -257,12 +257,12 @@
       <dt>Avanza cuando</dt><dd>Todas sus mitades están juntas en <code>story/EO-123</code> <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--front)"></div>
       <h3>Integración</h3><div class="who"><span class="tag t-front">Frontend</span> <span class="tag t-back">Backend si no hay pantalla</span></div>
-      <dl><dt>Qué pasa</dt><dd>API real en lugar de simulaciones, prueba E2E, capturas por estado, marcadores</dd>
+      <dl><dt>Qué pasa</dt><dd>API real en lugar de simulaciones, prueba E2E, capturas por estado, marcadores. Si la E2E falla por la API, lo arregla el backend en su mitad</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
       <dt>Avanza cuando</dt><dd>Todo pasa y algo espera a diseño. Si nada espera a diseño, se queda aquí hasta el merge <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--design)"></div>
       <h3>Revisión visual</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-shared">Revisor si hay riesgo</span></div>
-      <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración)</dd>
+      <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
       <dt>Avanza cuando</dt><dd>El PR a <code>develop</code> se aprueba y se fusiona: puede hacerlo quien lo crea u otra persona <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--infra)"></div>
@@ -363,6 +363,7 @@
   </svg>
   </div>
   <p style="margin:6px 0 0;font-size:14px"><b>Cerrar tu mitad:</b> cuando todos tus criterios están en verde, se bloquean sus tests (nadie podrá debilitarlos) y tu mitad se junta en <code>story/EO-123</code>.</p>
+  <p style="margin:6px 0 0;font-size:14px"><b>Reabrir tu mitad:</b> si algo vuelve a tu lado después (una E2E que falla por tu lado, un ajuste de diseño o un hallazgo del revisor), traes <code>story/EO-123</code> a tu rama, tu sesión desbloquea solo los tests de los criterios que cambian (en un commit propio), haces el bucle, los vuelves a bloquear y juntas otra vez tu mitad.</p>
 </section>
 
 <!-- 4 -->
@@ -428,8 +429,8 @@
     <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Arranque: el lado que empieza crea la rama de la historia y anota sus mitades. Si la API cambia, se acuerda y el backend sube el contrato.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada lado de la historia abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con todas dentro, pasa a <b>Integración</b></span></div></li>
-    <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores. Sin pantalla, el backend solo pone los marcadores.<span class="st">Si algo espera a diseño, pasa a <b>Revisión visual</b>; si no, espera el merge</span></div></li>
-    <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Si hay algo que mirar: compara las capturas con su diseño y aprueba, o pide ajustes y se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
+    <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores. Si la E2E falla por la API, el agente se para y lo arregla el backend reabriendo su mitad. Sin pantalla, el backend solo pone los marcadores.<span class="st">Si algo espera a diseño, pasa a <b>Revisión visual</b>; si no, espera el merge</span></div></li>
+    <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Si hay algo que mirar: compara las capturas con su diseño y aprueba, o pide ajustes: cambia los criterios en la misma historia y los devuelve a «sin construir». Cada ajuste va al lado al que le toca (pantalla, frontend; datos, reglas o errores de la API, backend), que reabre su mitad; luego se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
     <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code>. Lo aprueba y hace el merge quien lo crea u otra persona.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
   </ol>
 </section>

@@ -74,8 +74,8 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 | **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia en `design/EO-123`: reglas, estados de cada pantalla, enlaces a Figma | El PR de la historia entra en `develop`. **Es la aprobación**, y puede darla quien la escribió |
 | **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
 | **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
-| **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
-| **Revisión visual** | Diseño; después el revisor si hay riesgo, y el merge | Solo historias con algo que mirar. Diseño compara capturas y app con su diseño: aprueba o pide ajustes en la misma historia (vuelve a Integración) | Las personas hacen el merge del PR a `develop` |
+| **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Si la E2E falla por la API, lo arregla el backend reabriendo su mitad. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
+| **Revisión visual** | Diseño; después el revisor si hay riesgo, y el merge | Solo historias con algo que mirar. Diseño compara capturas y app con su diseño: aprueba o pide ajustes en la misma historia (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend | El PR a `develop` lo aprueba y fusiona quien lo crea u otra persona |
 | **Hecha** | — | La historia está en `develop` con todos sus criterios verificados | — |
 
 ### Cómo nace una historia de diseño
@@ -125,6 +125,17 @@ Los desarrolladores lo deciden en el arranque, leyendo la historia. El pipeline 
 7. Siguiente criterio cuando digas «sigue».
 
 Si el agente se bloquea (por ejemplo, al contrato le falta algo), se para. Tu sesión lo lleva al otro lado con un comentario en la tarjeta, que tú apruebas. El agente nunca improvisa.
+
+### Cuando algo vuelve atrás
+
+Una mitad ya juntada puede tener que reabrirse: la E2E de la integración falla por la API, diseño pide un ajuste o el revisor encuentra algo. **Cada cambio va al lado al que le toca**, con la misma regla que al construir: lo que decide la API (los datos que devuelve, su orden, una regla, un mensaje de error, un límite) es de backend; lo que muestra la pantalla, de frontend; si toca a los dos, a los dos. El frontend nunca arregla código de backend, ni al revés.
+
+1. Si es un ajuste de diseño, diseño cambia los criterios en la misma historia y los devuelve a «sin construir», para que un test antiguo no los dé por buenos. La tarjeta vuelve a Integración.
+2. El lado al que le toca trae `story/EO-123` a su mitad.
+3. Su sesión desbloquea solo los tests de los criterios que cambian, en un commit propio (`EO-123: unlock back EO-123.3`).
+4. Bucle en pareja sobre esos criterios. Si cambia la forma de la API, antes se acuerda el contrato.
+5. Vuelve a bloquear los tests y junta otra vez su mitad.
+6. Si hay pantalla, el frontend repite la integración (E2E y capturas), se ponen los marcadores y la historia vuelve a diseño.
 
 ## 5. Git y Bitbucket
 
