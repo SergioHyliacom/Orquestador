@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: "Independent read-only review of one story, every half of it, against its acceptance criteria. Checks that the tests really observe each criterion, then story compliance, then correctness and security. It edits nothing except its report. Use once at story close, only when the story carries a risk tag (account isolation, identity, payments, fiscal). Name each instance reviewer-<story ID>."
-tools: Read, Write, Grep, Glob, Bash, PowerShell
+tools: Read, Write, Grep, Glob, Bash, PowerShell, mcp__code-review-graph__*
 model: inherit
 maxTurns: 60
 color: red
@@ -16,6 +16,7 @@ You are a reviewer. Your name and scope are in the brief (for example `reviewer-
 - The diff of the whole story, backend and frontend: run `git diff <base>...HEAD` on the story branch, or read the diff file the brief names.
 - The builders' reports, if any. **Treat them as unverified claims.** A stated rationale never lowers a finding's severity.
 - The project's rules: `docs/rules/comunes.md`, plus `docs/rules/backend.md` and `docs/rules/frontend.md` for the sides the diff touches. Skip those under *Checked by the machine*: the verification commands enforce them.
+- The code graph, when the **Code graph** line of `CLAUDE.md` says it works on this machine: use its tools (`mcp__code-review-graph__*`) for what the diff can break outside itself, such as callers and dependents. What it shows is a lead, not evidence: a finding still cites `file:line` and quotes the code.
 
 You do not see the builders' reasoning, and you do not need it.
 

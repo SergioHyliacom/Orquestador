@@ -138,10 +138,11 @@ El stack no sale de las historias: el esqueleto se monta antes, porque el propio
    - las reglas que no se negocian: la cuenta se resuelve en el servidor, una base de datos por cuenta, límites entre módulos, linters;
    - las comprobaciones que pide la §12.1 de la definición: bloquear el SQL concatenado, gitleaks, govulncheck;
    - el generador de módulos y un módulo de referencia, que serán los patrones;
+   - el grafo de código (code-review-graph), con su configuración en el repositorio;
    - la CI en Bitbucket.
 
    **No** se hacen tablas de negocio, el módulo de identidad ni un CRUD genérico «por si acaso».
-3. **Instalación, parte 2.** Mide comandos, contrato, rutas y tests. **Congela la definición** y escribe los patrones de cada lado. Sus comprobaciones son el criterio de salida de los cimientos.
+3. **Instalación, parte 2.** Mide comandos, contrato, rutas y tests. Comprueba que los agentes llegan al grafo de código y que sus hooks conviven con la guardia. **Congela la definición** y escribe los patrones de cada lado. Sus comprobaciones son el criterio de salida de los cimientos.
 4. **Primera historia, como piloto.** Pequeña, pero que pase por todas las piezas y todas las etapas. Lo que falle se corrige en el plugin antes de que entre todo el equipo.
 
 ## 7. Auditoría al cerrar cada entrega
@@ -192,6 +193,7 @@ Todo gira en torno al orquestador. El método está en el plugin (skill `orchest
 | Reglas para todos | `docs/rules/comunes.md` | PR | La auditoría |
 | Reglas y patrones de cada lado | `docs/rules/backend.md`, `docs/rules/frontend.md` | PR | La auditoría |
 | Estilo de Go y TS | La configuración de los linters | Entrega 0 | `verify.all` |
+| Grafo de código (code-review-graph) | Su configuración, en el repositorio: servidor MCP en `.mcp.json` con el nombre `code-review-graph`, hooks, skills, versión fijada. El grafo, en el equipo de cada uno | Entrega 0; el grafo se genera | La instalación, parte 2: los agentes llegan a él y la guardia sigue funcionando. Nunca entra en git |
 | Auditorías | `docs/audits/<entrega>.md` | Orquestador y `auditor` | — |
 | Qué es EASY One, mapa de carpetas, arrancar en local | `README.md` | PR | Los comandos tienen nombre en un único fichero de tareas, que usan el README y `.orchestrator.json` |
 | Contexto de cada sesión | `CLAUDE.md`: importa `@README.md` y `@docs/rules/comunes.md`, apunta por tema a apartados de la definición y lleva el bloque del orquestador | Instalación y PR | La instalación comprueba que no queda ningún `{{` y que las rutas existen |

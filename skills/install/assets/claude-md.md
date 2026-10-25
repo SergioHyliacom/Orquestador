@@ -35,4 +35,5 @@ This project uses the easyone-orchestrator plugin. Every session follows the `ea
 - **Delegation:** {{HARNESS_STATUS: in Orca, supervised workers under one Run; the Agent tool only for short read-only lookups. Plain Claude Code: the Agent tool. Measured on this machine: ...}}
 - **Jira on this machine:** {{JIRA_ACCESS: the tool that reads the cards, or "none: ask the human for the queue"}}
 - **Hooks on this machine:** {{HOOKS_STATUS}}
+- **Code graph:** {{CODE_GRAPH: "code-review-graph, MCP server `code-review-graph`, built with <the README's command>; agents reach it as mcp__code-review-graph__*" or what does not work on this machine}}
 <!-- ORCHESTRATOR:END -->

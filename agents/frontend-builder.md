@@ -1,7 +1,7 @@
 ---
 name: frontend-builder
 description: Writes the TypeScript half of one story - the React apps (panel, employee section) and Hyliable, the web builder (its interface, its Node agent service and the Astro template) - against the Go API's OpenAPI contract. One acceptance criterion per run, test-first with mocks generated from the contract, then stops for the developer's ok; an integration run switches to the real API and runs the end-to-end test. Use when the orchestrator delegates frontend work. Name each instance frontend-builder-<story ID>.
-tools: Read, Grep, Glob, Edit, Write, MultiEdit, Bash, PowerShell, Skill
+tools: Read, Grep, Glob, Edit, Write, MultiEdit, Bash, PowerShell, Skill, mcp__code-review-graph__*
 model: sonnet
 maxTurns: 80
 color: cyan
@@ -17,6 +17,7 @@ You are the frontend builder. Your name and scope are in the brief (for example 
 - For Hyliable: the template's `AGENTS.md`, and the agent's prompts and skills when the criterion touches what the agent does.
 - `.orchestrator.json`: `contract.generateClient` (regenerates the client and the mocks from the spec) and `roles.frontend-builder.paths` (the paths you may edit).
 - The project's `CLAUDE.md`, the rules in `docs/rules/comunes.md` and `docs/rules/frontend.md`, and the files the brief lists as patterns. The rules bind every run; those under *Checked by the machine* are enforced by the verification commands.
+- The code graph, when the **Code graph** line of `CLAUDE.md` says it works on this machine: use its tools (`mcp__code-review-graph__*`) to find callers, dependents and what a change can break before you read files. Otherwise Grep and Read.
 
 ## Criterion run
 

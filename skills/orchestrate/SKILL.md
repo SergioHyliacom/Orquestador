@@ -251,6 +251,7 @@ Five principles:
 | Rules for every side | `docs/rules/comunes.md` | through a pull request (§11.2) |
 | One side's rules and patterns | `docs/rules/backend.md`, `docs/rules/frontend.md` | through a pull request (§11.2) |
 | Code style | the linters' configuration | delivery 0, then through a pull request |
+| The code graph (code-review-graph) | its configuration in the repository, the same for everyone, with the version pinned: the MCP server in `.mcp.json` under the name `code-review-graph`, its hooks, its skills, what is not indexed. The graph itself on each machine, never committed | delivery 0; the graph is generated |
 | Audits | `docs/audits/<delivery>.md` | §10 |
 | What the product is, the folder map, how to run it locally | `README.md` | through a pull request |
 | The context of every session | `CLAUDE.md`: imports `README.md` and `docs/rules/comunes.md`, points to sections of the definition by topic, carries the orchestrator block | the install, then through a pull request |

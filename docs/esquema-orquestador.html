@@ -461,8 +461,8 @@
     <div class="step"><h3>Cimientos (entrega 0)</h3>Los responsables técnicos, con Claude y la misma disciplina:<ul>
       <li>pruebas técnicas pendientes (◇), que cierran sus decisiones</li><li>monorepo, Go, panel React, PostgreSQL</li>
       <li>un endpoint de juguete de punta a punta</li><li>reglas que no se negocian: cuenta, BD por cuenta, linters</li>
-      <li>las comprobaciones de la §12.1: SQL concatenado, gitleaks, govulncheck</li><li>el generador de módulos y un módulo de referencia</li><li>CI en Bitbucket</li></ul></div>
-    <div class="step"><h3>Instalación, parte 2</h3>Mide comandos, contrato, rutas de cada lado y tests. <b>Congela la definición</b> y escribe los patrones de cada lado. Sus comprobaciones son el criterio de salida de los cimientos.</div>
+      <li>las comprobaciones de la §12.1: SQL concatenado, gitleaks, govulncheck</li><li>el generador de módulos y un módulo de referencia</li><li>el grafo de código (code-review-graph), con su configuración en el repositorio</li><li>CI en Bitbucket</li></ul></div>
+    <div class="step"><h3>Instalación, parte 2</h3>Mide comandos, contrato, rutas de cada lado y tests. Comprueba que los agentes llegan al grafo de código y que sus hooks conviven con la guardia. <b>Congela la definición</b> y escribe los patrones de cada lado. Sus comprobaciones son el criterio de salida de los cimientos.</div>
     <div class="step"><h3>Primera historia</h3>Pequeña, pero que pase por todas las piezas y todas las etapas. Sirve para probar el flujo; lo que falle se corrige en el plugin antes de que entre todo el equipo.</div>
   </div>
   <div class="parallel"><b>En paralelo, desde el día uno:</b> diseño escribe las historias de la entrega 1 (plataforma mínima). Nadie espera a nadie.</div>
@@ -517,6 +517,7 @@
       <tr><td>Reglas para todos</td><td><code>docs/rules/comunes.md</code></td><td>PR</td><td>La auditoría</td></tr>
       <tr><td>Reglas y patrones de cada lado</td><td><code>docs/rules/backend.md</code>, <code>docs/rules/frontend.md</code></td><td>PR</td><td>La auditoría</td></tr>
       <tr><td>Estilo de Go y TS</td><td>La configuración de los linters</td><td>Entrega 0</td><td><code>verify.all</code></td></tr>
+      <tr><td>Grafo de código (code-review-graph)</td><td>Su configuración, en el repositorio: servidor MCP en <code>.mcp.json</code> con el nombre <code>code-review-graph</code>, hooks, skills, versión fijada. El grafo, en el equipo de cada uno</td><td>Entrega 0; el grafo se genera</td><td>La instalación, parte 2: los agentes llegan a él y la guardia sigue funcionando. Nunca entra en git</td></tr>
       <tr><td>Auditorías</td><td><code>docs/audits/&lt;entrega&gt;.md</code></td><td>Orquestador y <code>auditor</code></td><td>—</td></tr>
       <tr><td>Qué es EASY One, mapa de carpetas, arrancar en local</td><td><code>README.md</code></td><td>PR</td><td>Los comandos tienen nombre en un único fichero de tareas, que usan el README y <code>.orchestrator.json</code></td></tr>
       <tr><td>Contexto de cada sesión</td><td><code>CLAUDE.md</code>: importa <code>@README.md</code> y <code>@docs/rules/comunes.md</code>, apunta por tema a apartados de la definición y lleva el bloque del orquestador</td><td>Instalación y PR</td><td>La instalación comprueba que no queda ningún <code>{{</code> y que las rutas existen</td></tr>
