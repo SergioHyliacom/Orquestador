@@ -24,6 +24,7 @@ This project uses the easyone-orchestrator plugin. Every session follows the `ea
 
 - **Who you work with:** `.orchestrator/me.json` (personal: name, side, Jira account). Each person's session is the orchestrator for their side: design, backend or frontend.
 - **Shared state:** the story's Jira card in project {{JIRA_PROJECT_KEY}} shows its stage; the Bitbucket pipeline moves it. Stories: `{{STORIES_DIR}}/stories/`. Map: `{{STORIES_DIR}}/map.md` (generated). Decisions, of product and of architecture: `{{STORIES_DIR}}/decisions/`, from DEC-031.
+- **Design:** Figma is the only source of the design: {{FIGMA_FILES}}. Mobbin is for references, never the design. Claude creates each story's Jira card with its title, its sentence and the links; the criteria live only in the story file. Checked on a designer's machine: {{DESIGN_TOOLS_STATUS}}
 - **Rules:** `docs/rules/`: `comunes.md` (imported above), `backend.md` and `frontend.md`. Where each thing lives, and how a rule is born and changes: the `orchestrate` skill, §11.
 - **Contract:** `{{CONTRACT_SPEC}}`, generated with `{{GENERATE_SPEC}}`. Client and mocks: `{{GENERATE_CLIENT}}`. Only the backend writes the contract, after both sides agree it.
 - **Sides:** backend edits {{BACKEND_PATHS}}; frontend edits {{FRONTEND_PATHS}}. The guard keeps each builder on its side.

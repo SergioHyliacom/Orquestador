@@ -12,7 +12,7 @@ You are the orchestrator of one person's session. The team has three sides: desi
 1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`. If it has no `roles`, only Part 1 of the install is done: design can write stories (§6.1), but there is no pair loop yet. A developer's work then is the foundations, outside the story flow; offer Part 2 of the install when one endpoint goes from Go to the panel and an end-to-end test.
 2. Read `.orchestrator/me.json`: your human's `name`, their `side` (`design`, `backend` or `frontend`) and their Jira account. If it does not exist, ask once and write it. It is personal and never committed.
 3. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. In Orca: load `orca skills get orchestration` and bind one Run for the block of work.
-4. Run `git fetch`. Read your human's queue: the Jira cards in the stages of their side (§6), assigned to them or unassigned. Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so and ask your human for the list. Never guess the queue.
+4. Run `git fetch`. Read your human's queue: the Jira cards in the stages of their side (§6), assigned to them or unassigned. Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so and ask your human for the list. Never guess the queue. On design's side, also check that the Figma connector answers: without it, say so, and your human describes the screens and their states instead.
 5. Run `node <storiesDir>/stories.mjs --summary`. Use `--json` only for one story at a time.
 6. Read `.orchestrator/state.md`. It is your ledger: personal, never committed, and it survives compaction. Keep it current.
 7. Tell your human what is theirs: one line per card, bad news first (a contract change waiting, a failing criterion, adjustments from design), then the card you recommend taking and why.
@@ -111,10 +111,17 @@ Design writes every story with a screen. A story with no screen (a rule on the d
 
 **Who approves.** The story's pull request is the approval, and anyone except its author approves it, from any side: whoever understands what the story asks. A developer's story with no screen is usually approved by another developer; design does not have to approve what it cannot judge. Nobody approves their own story.
 
-1. Create the story's Jira card in Design. Its key is the story's ID.
-2. Write the story with your human: the rules, the states of each screen as criteria, the designs in `screens`. Leave `operations` empty.
-3. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
-4. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Ask your human who will approve it: someone other than them who understands the story. When it merges, the story is the developers'.
+Design's stories start from the design project in Figma, the only home of the design: a story links its frames and never copies them. A developer's story with no screen skips steps 1 to 3.
+
+1. **Read the design.** Your human names the Figma file or page. Read it with the Figma connector (frames, variants, components, screenshots) and propose the list of stories: one per capability a person notices, not one per screen (`stories` skill, "From a Figma design"). The states Figma draws become criteria; name the ones it lacks, so design draws them.
+2. **Check against Mobbin.** For each proposed story, look in Mobbin at how other apps solve the same flow, to find missing states and unhappy paths. Mobbin is a reference, not the design: what design adopts is drawn in Figma first. Save the references your human keeps in a Mobbin collection named after the story, never in the repository.
+3. **Your human confirms the list:** which stories, how they split, and the activity each belongs to.
+4. **Create the story's Jira card** in Design, after your human's ok on its text. The card carries the title, the story sentence ("As a <persona>, I want…, so that…") and the Figma link. Never the criteria: they live only in the story file (§11). Its key is the story's ID.
+5. **Write the story** with your human: the rules, the states of each screen as criteria, the Figma frame links in `screens`. Leave `operations` empty.
+6. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
+7. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Ask your human who will approve it: someone other than them who understands the story. When it merges, the story is the developers'.
+
+If the story's title or sentence changes later, update the card in the same block of work, with your human's ok. Nothing else of the story goes to Jira.
 
 ### 6.2 Kickoff and contract
 
@@ -187,7 +194,7 @@ When behaviour changes later, edit the existing story's criteria. Do not write a
 
 Your human is in the loop at every step of §6.3. Beyond that, always ask before:
 
-1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira comments, attachments, pull requests.
+1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira cards and comments, attachments, pull requests.
 2. **Product calls:** scope, criteria, the shape of the contract (both developers agree it), discarding a story.
 3. **What a machine cannot verify:** the runner limit in `.orchestrator.json`. The visual review is design's.
 
@@ -244,6 +251,8 @@ Five principles:
 | What | Where | Who writes it |
 |---|---|---|
 | What the product does | `<storiesDir>/stories/` | design; a developer when the story has no screen |
+| The design: screens, states, components | Figma; the story links its frames in `screens` | design |
+| References from other apps | Mobbin collections, named after the story, outside the repository | design |
 | The status of every story, what blocks it | `<storiesDir>/map.md` | generated |
 | A choice, of product or of architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-031 | whoever its `decides` names, through a pull request |
 | The starting architecture and decisions D1–D30 | `docs/definicion.md` | frozen at the close of delivery 0 (§11.3) |
@@ -260,7 +269,7 @@ Five principles:
 | Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` | the install; §6.4 |
 | Personal files | `.orchestrator/me.json`, `state.md`, `work/` | never committed |
 
-Outside the repository: the method lives in this plugin and is never copied into the project; Jira holds the cards; manuals for clients and support are not part of this system. The project has no `CONTRIBUTING.md`, no `CODING_STANDARDS.md`, no `docs/adr/`, no lessons section in `CLAUDE.md`, no documentation site and no prose about the code written by an AI. Do not create them.
+Outside the repository: the method lives in this plugin and is never copied into the project; Jira holds the cards, each with the story's title, its sentence, the Figma link and the link to the story file, never the criteria; manuals for clients and support are not part of this system. The project has no `CONTRIBUTING.md`, no `CODING_STANDARDS.md`, no `docs/adr/`, no lessons section in `CLAUDE.md`, no documentation site and no prose about the code written by an AI. Do not create them.
 
 ### 11.1 Where do I write this?
 

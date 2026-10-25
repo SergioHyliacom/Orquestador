@@ -34,7 +34,8 @@ Ask the human, all at once:
 - the risk tags that matter (the template lists account isolation, identity, payments, fiscal, personal data and production);
 - the name of the integration branch (default `develop`);
 - the path of the project's definition document (for EASY One, `Definición EASY One.md`);
-- who closes each kind of decision: product and business (usually management) and architecture (the technical lead).
+- who closes each kind of decision: product and business (usually management) and architecture (the technical lead);
+- the design project's Figma files, and whether the design team uses Mobbin for references.
 
 ### 1.2 Write `.orchestrator.json`
 
@@ -86,6 +87,7 @@ Write the root `CLAUDE.md` from `assets/claude-md.md`, filled and translated. It
 - Every `@` import in `CLAUDE.md` resolves to a file, and every section the pointers and the rules cite exists in `docs/definicion.md`.
 - `node <storiesDir>/stories.mjs` runs clean, with the open decisions in the map.
 - **Jira answers.** Read one card of the project with the Jira tools this machine has (the Atlassian MCP server or `acli`), and check that each status in `jira.statuses` exists in the project's workflow. If no tool works, record it in the `CLAUDE.md` block: sessions will ask the human for the queue.
+- **Design's machines can do their part.** On the machine of at least one designer, without creating anything: the Jira account may create and edit issues in the project (Jira's permissions query for the project: `CREATE_ISSUES`, `EDIT_ISSUES`); the Figma connector reads each Figma file of the project; Mobbin answers one search, if the team uses it. Record the files and the result in the `CLAUDE.md` block's **Design** line. Each designer's session checks its own machine at start (`orchestrate` skill, §1).
 - `node <storiesDir>/jira-sync.mjs --dry-run` reads the configuration without errors.
 - The guard is active: ask the human to try `git push --force` in a fresh session and confirm it is blocked.
 

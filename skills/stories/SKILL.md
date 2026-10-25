@@ -120,12 +120,23 @@ Never split by layer ("API for…", "database for…", "front end of…"). A lay
 ## Turning a request into stories
 
 1. Find the activity. If none fits, propose a new one to the human; activities are product calls.
-2. Create the story's Jira card, in the design status, and take its key as the ID.
+2. Create the story's Jira card, in the design status, after the human's ok on its text, and take its key as the ID. The card carries the title, the story sentence and the Figma link; never the criteria.
 3. Write the story and its rules. Ask the human only what you cannot infer, all at once.
 4. Add key examples where a rule is ambiguous.
-5. Fill out-of-scope and verification. Link the designs in `screens`.
+5. Fill out-of-scope and verification. Link the Figma frames in `screens`.
 6. Run `node <storiesDir>/stories.mjs --ready <ID>`.
 7. The story enters the integration branch through a pull request, approved by someone other than its author, from any side. Merging it is the approval: from then on it is the developers' turn.
+
+## From a Figma design
+
+Design's stories start from the design project in Figma (`orchestrate` skill, §6.1). Figma is the only home of the design: the story links its frames and never copies images, measurements or colours.
+
+- **A story is a capability, not a screen.** One screen can hold several stories (a list, its filter, its export); one story can cross several screens (a sign-up in three steps). Split by what a person achieves, with the patterns in *Splitting a story*.
+- **Each drawn state is a criterion:** loading, empty, error, success, permission denied, a limit reached. A state the story needs and Figma does not draw goes under Open questions until design draws it: the story is not ready.
+- **`screens`** holds one link per frame the story uses: the Figma URL with its `node-id`, in the order of the flow.
+- **How it looks against the frame** is the criterion design checks in the visual review (`[manual YYYY-MM-DD, who]`). Do not restate spacing, colours or type in criteria: Figma holds them.
+- **Mobbin is a reference.** Use it to find the states and unhappy paths that similar flows in other apps handle and this design does not. It never becomes a criterion directly: what design adopts is drawn in Figma first. The references design keeps go to a Mobbin collection named after the story, never into the repository.
+- **The activity** comes from where the flow sits in the product's journey (`activities.json`), not from the Figma page it was drawn on.
 
 ## What the validator flags
 
