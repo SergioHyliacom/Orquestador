@@ -21,7 +21,7 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | **Orquestador** | La sesión de Claude (Opus) de **cada persona** | Lee en Jira lo que le toca a su persona, prepara cada encargo, le enseña las pruebas, hace el commit tras su ok |
 | **Agentes que programan** | `backend-builder` y `frontend-builder` (Sonnet) | Un encargo cada vez: el contrato, un criterio o la integración. Prueban, se paran e informan |
 | **Desarrolladores** | Backend (Go) y frontend (TypeScript) | Navegan: acuerdan el contrato, validan cada paso, deciden |
-| **Diseño** | Equipo de diseño, como product owners | Escribe las historias verticales con sus estados y hace la revisión visual. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador, y las aprueba quien las entienda |
+| **Diseño** | Equipo de diseño, como product owners | Escribe con Claude las historias verticales a partir del diseño en Figma, con Mobbin como referencia, y hace la revisión visual. Claude crea la tarjeta en Jira. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador, y las aprueba quien las entienda |
 | **Revisor** | `reviewer`, solo lectura | Revisa la historia completa al cerrarla, **solo si lleva etiqueta de riesgo** |
 | **Investigador** | `researcher`, solo lectura | Resuelve dudas sin tocar nada |
 | **Auditor** | `auditor`, solo lectura | Al cerrar cada entrega, revisa una muestra de historias buscando lo que los tests no ven |
@@ -71,12 +71,25 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 | Etapa en Jira | Le toca a | Qué pasa | Avanza cuando |
 |---|---|---|---|
-| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Crea la tarjeta y escribe la historia en `design/EO-123`: reglas, estados de cada pantalla, diseños enlazados | El PR de la historia entra en `develop`, aprobado por otra persona de cualquier lado que la entienda. **Es la aprobación** |
+| **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia en `design/EO-123`: reglas, estados de cada pantalla, enlaces a Figma | El PR de la historia entra en `develop`, aprobado por otra persona de cualquier lado que la entienda. **Es la aprobación** |
 | **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
 | **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
 | **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
 | **Revisión visual** | Diseño; después el revisor si hay riesgo, y el merge | Solo historias con algo que mirar. Diseño compara capturas y app con su diseño: aprueba o pide ajustes en la misma historia (vuelve a Integración) | Las personas hacen el merge del PR a `develop` |
 | **Hecha** | — | La historia está en `develop` con todos sus criterios verificados | — |
+
+### Cómo nace una historia de diseño
+
+La diseñadora trabaja con su sesión de Claude. **Figma es el único sitio del diseño**; Mobbin solo da referencias.
+
+1. **Leer el diseño en Figma.** La diseñadora le pasa a su sesión el fichero o la página. Claude lo lee con el conector de Figma (pantallas, variantes, componentes, capturas) y propone la lista de historias: **una por cada cosa que una persona puede hacer, no una por pantalla**. Los estados dibujados (cargando, vacío, error) se convierten en criterios; los que faltan, los señala para que se dibujen.
+2. **Contrastar con Mobbin.** Cómo resuelven ese flujo otras apps, para encontrar estados y casos de error que falten. Es referencia, no diseño: lo que se adopta se dibuja primero en Figma. Las referencias que se quedan van a una colección de Mobbin con el nombre de la historia, nunca al repositorio.
+3. **La diseñadora confirma la lista:** qué historias salen, cómo se dividen y a qué actividad pertenece cada una.
+4. **Claude crea la tarjeta en Jira**, con el ok de la diseñadora sobre el texto. La tarjeta lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. **Nunca los criterios:** viven en el fichero. Su clave es el ID.
+5. **Claude escribe la historia** en `design/EO-123`, con los enlaces a las pantallas de Figma en `screens`, y la pasa por `--ready` hasta que está lista.
+6. **PR y aprobación.** Push y PR a `develop`. Claude pregunta quién lo aprueba: otra persona, de cualquier lado.
+
+El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.
 
 ### No todas las historias tienen las dos mitades
 
@@ -185,6 +198,8 @@ Todo gira en torno al orquestador. El método está en el plugin (skill `orchest
 |---|---|---|---|
 | Qué hace el producto | `producto/stories/EO-123-….md` | Diseño; un desarrollador si no hay pantalla | `stories.mjs --check` y los tests por criterio |
 | Estado de todo, bloqueos | `producto/map.md` | Se genera | El pipeline |
+| El diseño: pantallas, estados, componentes | Figma, fuera del repositorio. La historia enlaza sus pantallas en `screens` | Diseño | La revisión visual compara lo construido con Figma |
+| Referencias de otras apps | Colecciones de Mobbin con el nombre de la historia, fuera del repositorio | Diseño, con Claude | — (son referencia, no diseño) |
 | Decisiones nuevas, de producto o de arquitectura | `producto/decisions/DEC-031-….md` en adelante (las D1–D30 siguen en la definición) | Quien figura en `decides`: dirección o el responsable técnico | El validador, que las enlaza a las historias que bloquean |
 | Arquitectura de partida y D1–D30 | `docs/definicion.md` | Por PR hasta el cierre de la entrega 0; entonces se congela | Después, solo avisos de una línea que enlazan a la decisión que lo cambia |
 | Contrato de la API | El OpenAPI generado desde Go | `backend-builder`, cuando los dos lados lo han acordado | `generateSpec` y el test de la costura |
@@ -200,7 +215,7 @@ Todo gira en torno al orquestador. El método está en el plugin (skill `orchest
 | Configuración del orquestador | `.orchestrator.json`, `.orchestrator/locked/` | La instalación y el cierre de cada mitad | La guardia |
 | Ficheros personales | `.orchestrator/me.json`, `state.md`, `work/` | Cada persona | `.gitignore`: nunca se suben |
 
-**Fuera del repositorio:** el método (skills, agentes, guardia, esta propuesta y el esquema), en el plugin; el README del proyecto lo enlaza. Jira, una tarjeta por historia, cuyas etapas mueve el pipeline. Hyliable, en su propio repositorio hasta que se migre. Los manuales para clientes y soporte quedan fuera de este sistema.
+**Fuera del repositorio:** el método (skills, agentes, guardia, esta propuesta y el esquema), en el plugin; el README del proyecto lo enlaza. Jira, una tarjeta por historia, cuyas etapas mueve el pipeline; lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia, nunca los criterios. Figma, el único sitio del diseño, y Mobbin, el de las referencias. Hyliable, en su propio repositorio hasta que se migre. Los manuales para clientes y soporte quedan fuera de este sistema.
 
 **Lo que desaparece:** `CONTRIBUTING.md`, `CODING_STANDARDS.md` y `docs/adr/`; la sección *Lessons* de `CLAUDE.md` (las lecciones son reglas); `docs/audits/checklist.md` (la lista del auditor son las reglas de `docs/rules/`); la web de Starlight y las páginas de código escritas por IA. Si algún día hace falta una web, será solo generada.
 
@@ -298,6 +313,8 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador, de backend o de frontend |
 | Aprobación de la historia | Su PR, aprobado por otra persona de cualquier lado que la entienda. Nadie aprueba la suya |
+| Fuente del diseño | Figma. Mobbin, como referencia; lo que se adopta se dibuja en Figma |
+| Tarjeta de Jira | La crea Claude con el ok de la diseñadora: título, frase y enlaces (Figma y el fichero). Los criterios, solo en el fichero (opción A) |
 | Auditoría | Por muestreo al cerrar cada entrega, con el agente `auditor`. **Pendiente:** si la confirma una persona al final |
 | Agentes | `backend-builder` y `frontend-builder` con Sonnet; orquestador con Opus |
 | Commits | Los hace el orquestador tras el ok de la persona |

@@ -200,7 +200,7 @@
     <div class="cell c-front"><b>Desarrolladores TypeScript</b><small>Navegan: deciden, validan cada paso</small></div>
 
     <div class="rowlabel">Sesión de Claude</div>
-    <div class="cell c-design"><b>Orquestador · Opus</b><small>Usa la skill de historias. Crea la tarjeta en Jira</small></div>
+    <div class="cell c-design"><b>Orquestador · Opus</b><small>Lee el diseño en Figma, lo contrasta con Mobbin, crea la tarjeta en Jira y escribe la historia</small></div>
     <div class="cell c-back"><b>Orquestador · Opus</b><small>Prepara el encargo, enseña las pruebas, hace el commit tras tu ok</small></div>
     <div class="cell c-front"><b>Orquestador · Opus</b><small>Prepara el encargo, enseña las pruebas, hace el commit tras tu ok</small></div>
 
@@ -242,7 +242,7 @@
   <div class="stages">
     <div class="stage"><div class="bar" style="background:var(--design)"></div>
       <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-back">Desarrollo si no hay pantalla</span></div>
-      <dl><dt>Qué pasa</dt><dd>Se crea la tarjeta; se escribe la historia con sus estados y se enlaza el diseño</dd>
+      <dl><dt>Qué pasa</dt><dd>Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia con sus estados y los enlaces a Figma</dd>
       <dt>Rama</dt><dd><code>design/EO-123</code></dd>
       <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>, aprobado por otra persona de cualquier lado: es la aprobación <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:linear-gradient(90deg,var(--back) 50%,var(--front) 50%)"></div>
@@ -270,6 +270,17 @@
       <dl><dt>Qué pasa</dt><dd>La historia está en <code>develop</code> con todos sus criterios verificados</dd>
       <dt>Después</dt><dd>Si algo cambia, se edita esta historia. Un bug es un criterio que falla, no una historia nueva</dd></dl></div>
   </div>
+  <h3 style="margin:22px 0 8px;font-size:16px">Cómo nace una historia de diseño</h3>
+  <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">La diseñadora trabaja con su sesión de Claude. <b>Figma es el único sitio del diseño</b>; Mobbin solo da referencias. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.</p>
+  <div class="audit-steps">
+    <div class="astep"><span class="n" style="background:var(--design)">1</span><div><b class="t">Leer el diseño en Figma</b>La diseñadora le pasa a su sesión el fichero o la página. Claude lo lee con el conector de Figma (pantallas, variantes, componentes, capturas) y propone las historias: <b>una por cada cosa que una persona puede hacer, no una por pantalla</b>. Los estados dibujados (cargando, vacío, error) son criterios; los que faltan, los señala para que se dibujen.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">2</span><div><b class="t">Contrastar con Mobbin</b>Cómo resuelven ese flujo otras apps, para encontrar estados y casos de error que falten. Es referencia, no diseño: lo que se adopta se dibuja primero en Figma. Las referencias que se quedan van a una colección de Mobbin con el nombre de la historia, nunca al repositorio.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">3</span><div><b class="t">La diseñadora confirma la lista</b>Qué historias salen, cómo se dividen y a qué actividad pertenece cada una.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">4</span><div><b class="t">Claude crea la tarjeta en Jira</b>Con el ok de la diseñadora sobre el texto. Lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. <b>Nunca los criterios</b>: viven en el fichero. Su clave es el ID: <code>EO-123</code>.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">5</span><div><b class="t">Claude escribe la historia</b>En <code>design/EO-123</code>, con los enlaces a las pantallas de Figma en <code>screens</code>. La pasa por <code>--ready</code> hasta que está lista.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>. Claude pregunta quién lo aprueba: otra persona, de cualquier lado. Cuando entra, la tarjeta pasa a Contrato.</div></div>
+  </div>
+  <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave.</p>
   <h3 style="margin:22px 0 8px;font-size:16px">No todas las historias tienen las dos mitades</h3>
   <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">En el arranque (columna Contrato), los desarrolladores leen la historia y responden dos preguntas. Lo anotan en la propia historia: sus mitades (<code>sides</code>) y los endpoints que usa (<code>operations</code>). El pipeline espera a las mitades que diga la historia.</p>
   <div class="questions">
@@ -412,7 +423,7 @@
   </svg>
   </div>
   <ol class="steps">
-    <li><span class="n" style="background:var(--design)">1</span><div><span class="tag t-design">Diseño</span> Escribe la historia en su rama: reglas, estados de cada pantalla, diseños enlazados.<span class="st">Tarjeta en <b>Diseño</b></span></div></li>
+    <li><span class="n" style="background:var(--design)">1</span><div><span class="tag t-design">Diseño</span> Con Claude, desde Figma: crea la tarjeta y escribe la historia en su rama, con reglas, estados de cada pantalla y enlaces a Figma.<span class="st">Tarjeta en <b>Diseño</b></span></div></li>
     <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Lo aprueba otra persona, de cualquier lado, que entienda la historia; nadie aprueba la suya. Cuando entra, la historia está aprobada.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
     <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Arranque: el lado que empieza crea la rama de la historia y anota sus mitades. Si la API cambia, se acuerda y el backend sube el contrato.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada lado de la historia abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
@@ -509,6 +520,8 @@
     <tbody>
       <tr><td>Qué hace el producto</td><td><code>producto/stories/EO-123-….md</code></td><td><span class="tag t-design">Diseño</span>; un desarrollador si no hay pantalla</td><td><code>stories.mjs --check</code> y los tests por criterio</td></tr>
       <tr><td>Estado de todo, bloqueos</td><td><code>producto/map.md</code></td><td>Se genera</td><td>El pipeline</td></tr>
+      <tr><td>El diseño: pantallas, estados, componentes</td><td>Figma, fuera del repositorio. La historia enlaza sus pantallas en <code>screens</code></td><td><span class="tag t-design">Diseño</span></td><td>La revisión visual compara lo construido con Figma</td></tr>
+      <tr><td>Referencias de otras apps</td><td>Colecciones de Mobbin con el nombre de la historia, fuera del repositorio</td><td><span class="tag t-design">Diseño</span>, con Claude</td><td>— (son referencia, no diseño)</td></tr>
       <tr><td>Decisiones nuevas, de producto o de arquitectura</td><td><code>producto/decisions/DEC-031-….md</code> en adelante</td><td>Quien figura en <code>decides</code>: dirección o el responsable técnico</td><td>El validador, que las enlaza a las historias que bloquean</td></tr>
       <tr><td>Arquitectura de partida y D1–D30</td><td><code>docs/definicion.md</code></td><td>Por PR hasta el cierre de la entrega 0; entonces se congela</td><td>Después, solo avisos de una línea que enlazan a la decisión que lo cambia</td></tr>
       <tr><td>Contrato de la API</td><td>El OpenAPI generado desde Go</td><td><span class="tag t-back">backend-builder</span>, cuando los dos lados lo han acordado</td><td><code>generateSpec</code> y el test de la costura</td></tr>
@@ -530,7 +543,8 @@
   <div class="pair">
     <div class="out"><b>Fuera del repositorio</b><ul>
       <li><b>El método</b> (skills, agentes, guardia, la propuesta y este esquema) está en el plugin. Nunca se copia al proyecto: el README lo enlaza.</li>
-      <li><b>Jira:</b> una tarjeta por historia, con su clave. Las etapas las mueve el pipeline.</li>
+      <li><b>Jira:</b> una tarjeta por historia, con su clave. Lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia; <b>nunca los criterios</b>. Las etapas las mueve el pipeline.</li>
+      <li><b>Figma</b> es el único sitio del diseño; <b>Mobbin</b>, el de las referencias.</li>
       <li><b>Hyliable</b> sigue en su propio repositorio hasta que se migre.</li>
       <li><b>Los manuales para clientes y soporte</b> quedan fuera de este sistema.</li>
     </ul></div>
@@ -630,7 +644,7 @@
       <tr><td>Día uno (instalación, parte 1)</td><td>La definición entra en el repositorio. Se crean <code>README.md</code>, <code>CLAUDE.md</code> y <code>docs/rules/</code> con la semilla. Los pendientes técnicos del §14 que afectan a la construcción se abren como decisiones: Huma u oapi-codegen, goose o Atlas, fosite o ZITADEL, el fichero de tareas…</td><td><code>docs/</code>, <code>producto/decisions/</code></td></tr>
       <tr><td>Entrega 0</td><td>Las pruebas técnicas cierran decisiones. Se montan los linters, los tests de arquitectura, las comprobaciones de la §12.1, el generador de módulos y un módulo de referencia. La definición todavía se edita por PR</td><td>Decisiones, configuración, código</td></tr>
       <tr><td>Cierre de la entrega 0 (instalación, parte 2)</td><td>Se congela la definición, se escriben los patrones de cada lado y se auditan los cimientos</td><td><code>docs/</code>, <code>docs/rules/</code>, <code>docs/audits/</code></td></tr>
-      <tr><td>Historia nueva</td><td>Como siempre: la escribe diseño, o un desarrollador si no tiene pantalla, y la aprueba en su PR otra persona de cualquier lado (punto 2)</td><td><code>producto/stories/</code> y su tarjeta</td></tr>
+      <tr><td>Historia nueva</td><td>Diseño, con Claude: lee Figma, contrasta con Mobbin, confirma la lista; Claude crea la tarjeta y escribe la historia. Un desarrollador escribe las que no tienen pantalla. La aprueba en su PR otra persona de cualquier lado (punto 2)</td><td><code>producto/stories/</code> y su tarjeta</td></tr>
       <tr><td>Aparece una elección que bloquea</td><td>Se crea una decisión abierta y la historia la cita en <code>blocked_by</code>. Quien decide la cierra por PR. Si cambia la definición, se añade un aviso de una línea bajo el apartado afectado</td><td><code>producto/decisions/</code></td></tr>
       <tr><td>Arranque y contrato</td><td>Como siempre. Lo acordado en Jira termina en el commit del contrato</td><td>El OpenAPI</td></tr>
       <tr><td>Se construye un criterio</td><td>El builder lee las reglas comunes, las de su lado y los patrones del encargo</td><td>—</td></tr>

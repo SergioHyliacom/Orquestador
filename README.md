@@ -5,7 +5,7 @@ Plugin de Claude Code con el que el equipo de Hyliacom desarrolla EASY One. Es u
 Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 
 - **Cada persona tiene su propia sesión de Claude (Opus)**, que orquesta su parte del trabajo. Al empezar, lee en Jira lo que le toca a esa persona.
-- **Diseño escribe las historias** con sus criterios, incluidos los estados de cada pantalla, y al final hace la revisión visual.
+- **Diseño escribe las historias con Claude**, a partir del diseño en Figma y con Mobbin como referencia: sus criterios, incluidos los estados de cada pantalla. Claude crea la tarjeta en Jira, con el título, la frase y los enlaces; los criterios viven solo en el fichero. Al final, diseño hace la revisión visual.
 - **Backend y frontend acuerdan el contrato** (el OpenAPI generado desde Go) y desarrollan sus dos mitades en paralelo.
 - **Cada desarrollador trabaja en pareja con su agente (Sonnet)**, un criterio cada vez. El agente escribe el test, lo ve fallar, lo hace pasar y se para. La persona valida el concepto y las pruebas, y la sesión hace el commit tras su ok.
 - **Git guarda el qué; Jira muestra el quién y el cuándo.** Las tarjetas las mueve Bitbucket Pipelines a partir de lo que hay en el repositorio.
