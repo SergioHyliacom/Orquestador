@@ -244,7 +244,7 @@
       <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-back">Desarrollo si no hay pantalla</span></div>
       <dl><dt>Qué pasa</dt><dd>Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia con sus estados y los enlaces a Figma</dd>
       <dt>Rama</dt><dd><code>design/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación. Puede aprobarlo quien la escribió <span class="human">· humano</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>Quien crea el PR de la historia lo aprueba y lo fusiona en <code>develop</code>: es la aprobación <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:linear-gradient(90deg,var(--back) 50%,var(--front) 50%)"></div>
       <h3>Contrato</h3><div class="who"><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></div>
       <dl><dt>Qué pasa</dt><dd>Arranque: se anota qué mitades tiene la historia. <b>Solo si cambia la API</b>, los dos la acuerdan y el backend la escribe</dd>
@@ -264,7 +264,7 @@
       <h3>Revisión visual</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-shared">Revisor si hay riesgo</span></div>
       <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración)</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>Las personas hacen el merge del PR a <code>develop</code> <span class="human">· humano</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>Quien crea el PR a <code>develop</code> lo aprueba y hace el merge <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--infra)"></div>
       <h3>Hecha</h3><div class="who"><span class="tag t-infra">—</span></div>
       <dl><dt>Qué pasa</dt><dd>La historia está en <code>develop</code> con todos sus criterios verificados</dd>
@@ -430,7 +430,7 @@
     <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con todas dentro, pasa a <b>Integración</b></span></div></li>
     <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores. Sin pantalla, el backend solo pone los marcadores.<span class="st">Si algo espera a diseño, pasa a <b>Revisión visual</b>; si no, espera el merge</span></div></li>
     <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Si hay algo que mirar: compara las capturas con su diseño y aprueba, o pide ajustes y se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
-    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code> y merge.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
+    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Quien abre el PR</span> PR de la rama de la historia a <code>develop</code>; quien lo crea lo aprueba y hace el merge.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
   </ol>
 </section>
 
