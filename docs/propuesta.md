@@ -87,7 +87,7 @@ La diseñadora trabaja con su sesión de Claude. **Figma es el único sitio del 
 3. **La diseñadora confirma la lista:** qué historias salen, cómo se dividen y a qué actividad pertenece cada una.
 4. **Claude crea la tarjeta en Jira**, con el ok de la diseñadora sobre el texto. La tarjeta lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. **Nunca los criterios:** viven en el fichero. Su clave es el ID.
 5. **Claude escribe la historia** en `design/EO-123`, con los enlaces a las pantallas de Figma en `screens`, y la pasa por `--ready` hasta que está lista.
-6. **PR y aprobación.** Push y PR a `develop`. Lo aprueba la propia diseñadora, o pide a alguien que lo mire antes.
+6. **PR y aprobación.** Push y PR a `develop`. Lo puede aprobar la propia diseñadora u otra persona.
 
 El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.
 
@@ -103,7 +103,7 @@ La pregunta clave es: **¿cambia la forma de la API?** Es decir, sus endpoints, 
 
 **Ejemplo, EO-140 · «Las facturas rectificativas usan su propia serie».** Cambia una regla, no la API, y no tiene pantalla:
 
-1. **Diseño:** la escribe un desarrollador y la aprueba con su PR.
+1. **Diseño:** la escribe un desarrollador; su PR lo aprueba él mismo u otra persona.
 2. **Contrato:** arranque con `sides: [back]` y sin endpoints; pasa en minutos.
 3. **Desarrollo:** solo la mitad `-back`, un criterio cada vez.
 4. **Integración:** el backend junta su mitad y pone los marcadores. La tarjeta espera aquí el merge.
@@ -312,7 +312,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador, de backend o de frontend |
-| Aprobación de los PR | Cada persona puede aprobar y fusionar los suyos: no hace falta una segunda persona, para que el trabajo siga aunque alguien falte. Quien quiera, pide a otro que lo mire antes |
+| Aprobación de los PR | Los aprueba y fusiona quien los crea u otra persona. No hace falta una segunda persona, para que el trabajo siga aunque alguien falte |
 | Fuente del diseño | Figma. Mobbin, como referencia; lo que se adopta se dibuja en Figma |
 | Tarjeta de Jira | La crea Claude con el ok de la diseñadora: título, frase y enlaces (Figma y el fichero). Los criterios, solo en el fichero (opción A) |
 | Auditoría | Por muestreo al cerrar cada entrega, con el agente `auditor`. **Pendiente:** si la confirma una persona al final |
