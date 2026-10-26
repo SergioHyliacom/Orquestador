@@ -206,8 +206,8 @@
 
     <div class="rowlabel">Agente que programa</div>
     <div class="cell c-design"><b>—</b><small>Diseño no programa: escribe criterios que se pueden comprobar</small></div>
-    <div class="cell c-back"><b>backend-builder · Sonnet</b><small>Go + PostgreSQL. Escribe el contrato y un criterio cada vez</small></div>
-    <div class="cell c-front"><b>frontend-builder · Sonnet</b><small>React (panel, empleados) + Hyliable. Un criterio cada vez</small></div>
+    <div class="cell c-back"><b>backend-builder · Sonnet</b><small>Go + PostgreSQL. Escribe el contrato y un criterio cada vez; también los arreglos y tareas de su lado</small></div>
+    <div class="cell c-front"><b>frontend-builder · Sonnet</b><small>React (panel, empleados) + Hyliable. Un criterio cada vez; también los arreglos y tareas de su lado</small></div>
 
     <div class="rowlabel">Qué le toca</div>
     <div class="cell c-design">Historias, estados de cada pantalla, revisión visual</div>
@@ -229,16 +229,23 @@
     <div class="arrow">cada push</div>
     <div class="box"><b>Bitbucket Pipelines</b>Verifica, ejecuta los tests y calcula la etapa de la historia</div>
     <div class="arrow">mueve la tarjeta</div>
-    <div class="box"><b>Jira</b>Una tarjeta por historia, en una de 6 etapas. Al abrir Claude, tu sesión lee aquí lo que te toca</div>
+    <div class="box"><b>Jira</b>Una tarjeta por historia, en una de 6 etapas o en «Descartada». Al abrir Claude, tu sesión lee aquí lo que te toca</div>
   </div>
 
-  <p class="readonly"><b>Agentes de solo lectura:</b> <code>reviewer</code> revisa la historia completa al cerrarla, solo si tiene etiqueta de riesgo (aislamiento entre cuentas, identidad, pagos, fiscal). <code>researcher</code> investiga dudas sin tocar nada. <b>Hyliable</b> es trabajo de frontend; de momento sigue en su propio repositorio.</p>
+  <p class="readonly"><b>Agentes de solo lectura:</b> <code>reviewer</code> revisa la historia completa al cerrarla, solo si tiene etiqueta de riesgo (aislamiento entre cuentas, identidad, pagos, fiscal, datos personales, producción). La etiqueta (<code>tags</code>) la pone quien escribe la historia, y un desarrollador la añade en el arranque si falta. <code>researcher</code> investiga dudas sin tocar nada. <code>auditor</code> revisa una muestra de historias al cerrar cada entrega (punto 7). <b>Hyliable</b> es trabajo de frontend; de momento sigue en su propio repositorio.</p>
+
+  <h3 class="sub">Tu primer día</h3>
+  <div class="kinds">
+    <div class="kind"><b>Todos</b><span class="ex">Instala el plugin y reinicia Claude Code (no basta con <code>/clear</code>). Node 20 o posterior.</span><span>La primera sesión te pregunta quién eres y de qué lado trabajas, y lo guarda en <code>.orchestrator/me.json</code>, que es personal. Necesita leer Jira con el servidor MCP de Atlassian o con <code>acli</code>; si no puede, te pide la lista.</span></div>
+    <div class="kind"><b>Diseño</b><span class="ex">El conector de Figma, con acceso a los ficheros del proyecto, y Mobbin si lo usáis.</span><span>Tu cuenta de Jira tiene que poder crear y editar tarjetas. Si Figma no responde, la sesión te lo dice y describes tú las pantallas.</span></div>
+    <div class="kind"><b>Cada vez que abres Claude</b><span class="ex">Tu sesión hace <code>git fetch --prune</code> y lee tu cola.</span><span>Las tarjetas de tu lado, asignadas a ti o sin asignar: primero las malas noticias (un contrato que cambia, un criterio que falla, ajustes de diseño) y después la que te recomienda coger y por qué.</span></div>
+  </div>
 </section>
 
 <!-- 2 -->
 <section id="historia">
   <h2><span class="num">2</span>Vida de una historia</h2>
-  <p class="lead">Seis etapas, que son las columnas del tablero de Jira. Las tarjetas <b>solo las mueve el pipeline</b>, a partir de lo que hay en el repositorio. Las personas solo deciden lo que una máquina no puede decidir.</p>
+  <p class="lead">Seis etapas, que son las columnas del tablero de Jira, y una séptima aparte, «Descartada». Las tarjetas <b>solo las mueve el pipeline</b>, a partir de lo que hay en el repositorio. Las personas solo deciden lo que una máquina no puede decidir.</p>
   <div class="stages">
     <div class="stage"><div class="bar" style="background:var(--design)"></div>
       <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-back">Desarrollo si no hay pantalla</span></div>
@@ -257,30 +264,31 @@
       <dt>Avanza cuando</dt><dd>Todas sus mitades están juntas en <code>story/EO-123</code> <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--front)"></div>
       <h3>Integración</h3><div class="who"><span class="tag t-front">Frontend</span> <span class="tag t-back">Backend si no hay pantalla</span></div>
-      <dl><dt>Qué pasa</dt><dd>API real en lugar de simulaciones, prueba E2E, capturas por estado, marcadores. Si la E2E falla por la API, lo arregla el backend en su mitad</dd>
+      <dl><dt>Qué pasa</dt><dd>API real en lugar de simulaciones, prueba E2E, capturas por estado, marcadores. Si la E2E falla por la API, lo arregla el backend en su mitad. Lo que solo una persona puede comprobar y no es visual (un correo, un servicio real, el agente de Hyliable) lo comprueba aquí el desarrollador de su lado</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
       <dt>Avanza cuando</dt><dd>Todo pasa y algo espera a diseño. Si nada espera a diseño, se queda aquí hasta el merge <span class="auto">· automático</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--design)"></div>
       <h3>Revisión visual</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-shared">Revisor si hay riesgo</span></div>
-      <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend</dd>
+      <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba (su sesión marca esos criterios <code>[manual fecha, nombre]</code> y hace push) o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend. Después, el lado que integra pasa el revisor si hay riesgo y abre el PR</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>El PR a <code>develop</code> se aprueba y se fusiona: lo aprueba al menos una persona distinta de quien lo crea <span class="human">· humano</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>El PR a <code>develop</code> se aprueba y se fusiona: lo aprueba al menos una persona distinta de quien lo crea. Solo se abre cuando todos los criterios pasan o los ha comprobado una persona <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--infra)"></div>
       <h3>Hecha</h3><div class="who"><span class="tag t-infra">—</span></div>
       <dl><dt>Qué pasa</dt><dd>La historia está en <code>develop</code> con todos sus criterios verificados</dd>
-      <dt>Después</dt><dd>Si algo cambia, se edita esta historia. Un bug es un criterio que falla, no una historia nueva</dd></dl></div>
+      <dt>Después</dt><dd>Si cambia o aparece un bug, <b>se reabre la misma historia</b> y la tarjeta vuelve a Integración (abajo). Nunca una historia nueva encima</dd></dl></div>
   </div>
+  <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)"><b>Descartada</b> queda fuera de las columnas: la tarjeta llega desde cualquier etapa cuando el descarte entra en <code>develop</code> (abajo). <b>Cómo se avisan los lados:</b> con un comentario en la tarjeta, cuyo texto apruebas tú; diseño recibe las capturas adjuntas a la tarjeta y un aviso de que le toca; el otro lado empieza su mitad cuando la tarjeta pasa a Desarrollo o cuando el primero se lo dice en la tarjeta.</p>
   <h3 style="margin:22px 0 8px;font-size:16px">Cómo nace una historia de diseño</h3>
   <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">La diseñadora trabaja con su sesión de Claude. <b>Figma es el único sitio del diseño</b>; Mobbin solo da referencias. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.</p>
   <div class="audit-steps">
     <div class="astep"><span class="n" style="background:var(--design)">1</span><div><b class="t">Leer el diseño en Figma</b>La diseñadora le pasa a su sesión el fichero o la página. Claude lo lee con el conector de Figma (pantallas, variantes, componentes, capturas) y propone las historias: <b>una por cada cosa que una persona puede hacer, no una por pantalla</b>. Los estados dibujados (cargando, vacío, error) son criterios; los que faltan, los señala para que se dibujen.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">2</span><div><b class="t">Contrastar con Mobbin</b>Cómo resuelven ese flujo otras apps, para encontrar estados y casos de error que falten. Es referencia, no diseño: lo que se adopta se dibuja primero en Figma. Las referencias que se quedan van a una colección de Mobbin con el nombre de la historia, nunca al repositorio.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">3</span><div><b class="t">La diseñadora confirma la lista</b>Qué historias salen, cómo se dividen y a qué actividad pertenece cada una.</div></div>
-    <div class="astep"><span class="n" style="background:var(--design)">4</span><div><b class="t">Claude crea la tarjeta en Jira</b>Con el ok de la diseñadora sobre el texto. Lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. <b>Nunca los criterios</b>: viven en el fichero. Su clave es el ID: <code>EO-123</code>.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">4</span><div><b class="t">Claude crea la tarjeta en Jira</b>Con el ok de la diseñadora sobre el texto. Lleva solo el título, la frase «Como… quiero… para…» y el enlace a Figma. <b>Nunca los criterios</b>: viven en el fichero. Su clave es el ID: <code>EO-123</code>.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">5</span><div><b class="t">Claude escribe la historia</b>En <code>design/EO-123</code>, con los enlaces a las pantallas de Figma en <code>screens</code>. La pasa por <code>--ready</code> hasta que está lista.</div></div>
-    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>. Lo aprueba al menos una persona distinta de quien lo abre. Cuando entra, la tarjeta pasa a Contrato.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>. Claude añade a la tarjeta el enlace al fichero de la historia. Lo aprueba al menos una persona distinta de quien lo abre. Cuando entra, la tarjeta pasa a Contrato.</div></div>
   </div>
-  <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave.</p>
+  <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">Si después cambian el título o la frase, Claude actualiza la tarjeta con tu ok; nada más de la historia va a Jira. El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave.</p>
   <h3 style="margin:22px 0 8px;font-size:16px">No todas las historias tienen las dos mitades</h3>
   <p style="margin:0 0 10px;font-size:14px;color:var(--muted)">En el arranque (columna Contrato), los desarrolladores leen la historia y responden dos preguntas. Lo anotan en la propia historia: sus mitades (<code>sides</code>) y los endpoints que usa (<code>operations</code>). El pipeline espera a las mitades que diga la historia.</p>
   <div class="questions">
@@ -289,7 +297,7 @@
   </div>
   <div class="kinds">
     <div class="kind"><b>Cambia la API</b><span class="ex">Un endpoint nuevo, un campo nuevo o renombrado, un error nuevo</span><span><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></span><span class="ex">Se acuerda el contrato y lo escribe el backend. Si ninguna pantalla lo usa todavía, solo backend, pero con contrato</span></div>
-    <div class="kind"><b>Solo frontend</b><span class="ex">Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable</span><span><span class="tag t-front">Frontend</span></span><span class="ex">Sin contrato. Integra frontend; revisión visual si hay algo que mirar</span></div>
+    <div class="kind"><b>Solo frontend</b><span class="ex">Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable (cuando se migre al monorepo)</span><span><span class="tag t-front">Frontend</span></span><span class="ex">Sin contrato. Integra frontend; revisión visual si hay algo que mirar</span></div>
     <div class="kind"><b>Solo backend</b><span class="ex">Sin pantalla: una regla sobre los datos, una tarea periódica, el envío de correos, un importador, corregir datos guardados</span><span><span class="tag t-back">Backend</span></span><span class="ex">Sin contrato salvo que cambie la API. La puede escribir un desarrollador, y la aprueba al menos otra persona. Integra el backend y no pasa por revisión visual</span></div>
   </div>
 
@@ -304,6 +312,18 @@
     <div class="cell"><b>Hecha</b>PR de <code>story/EO-140</code> a <code>develop</code> y merge</div>
   </div>
   <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">Si la historia corrige datos ya guardados, eso es una migración: el agente se para antes de ejecutarla en una base de datos compartida, y la decides tú.</p>
+
+  <h3 class="sub">Cuando una historia hecha cambia o falla</h3>
+  <p class="note">Se reabre la misma historia; nunca se escribe una nueva encima. Un bug urgente en producción va primero por un <code>hotfix/</code> (punto 4).</p>
+  <div class="audit-steps">
+    <div class="astep"><span class="n" style="background:var(--design)">1</span><div><b class="t">Quién</b>Diseño, si cambia el comportamiento. Si es un bug, el desarrollador del lado al que le toca lo que falla.</div></div>
+    <div class="astep"><span class="n" style="background:var(--shared)">2</span><div><b class="t">Se reabre</b>Crea otra vez <code>story/EO-123</code> desde <code>develop</code>. Lo que cambia vuelve a «sin construir»; el criterio que rompe el bug pasa a <code>[failing: qué falla]</code>. Commit <code>EO-123: reopen EO-123.2</code> y push: la tarjeta sale de Hecha y vuelve a Integración.</div></div>
+    <div class="astep"><span class="n" style="background:var(--ink)">3</span><div><b class="t">Se arregla</b>El lado al que le toca reabre su mitad, que sigue ahí: por eso las mitades nunca se borran. En un bug, el agente escribe primero un test que lo reproduce y lo ve fallar.</div></div>
+    <div class="astep"><span class="n" style="background:var(--infra)">4</span><div><b class="t">Como siempre</b>Integración, revisión visual si hay algo que mirar, revisor si hay riesgo y PR.</div></div>
+  </div>
+
+  <h3 class="sub">Descartar una historia</h3>
+  <p class="note">Es una decisión de producto. Quien la toma crea <code>design/EO-123</code> desde <code>develop</code>, pone <code>discarded: true</code> y el motivo, y abre el PR, que aprueba otra persona. Cuando entra, el pipeline mueve la tarjeta a <b>Descartada</b>, esté donde esté. La rama de la historia y sus mitades no se fusionan nunca (tienen trabajo sin terminar): se borran después, y las listas de bloqueo que solo vivían en ellas, también. Si la historia ya estaba hecha, su código, sus tests y sus listas de bloqueo siguen en <code>develop</code>; quitarlos es una tarea aparte, que desbloquea sus tests antes de borrarlos.</p>
 </section>
 
 <!-- 3 -->
@@ -359,16 +379,17 @@
     <!-- next criterion loop -->
     <path d="M1045,106 L1045,225 L80,225 L80,108" stroke="#5B6B7F" stroke-width="1.6" fill="none" marker-end="url(#ahm)"/>
     <text x="562" y="218" text-anchor="middle" font-size="12.5" fill="#5B6B7F">siguiente criterio, cuando digas «sigue»</text>
-    <text x="562" y="252" text-anchor="middle" font-size="12.5" fill="#B91C1C">Si el agente se BLOQUEA (por ejemplo, al contrato le falta algo), se para y tu sesión lo lleva al otro lado: nunca improvisa.</text>
+    <text x="562" y="252" text-anchor="middle" font-size="12.5" fill="#B91C1C">Si el agente se BLOQUEA (por ejemplo, al contrato le falta algo), se para y tu sesión lo lleva al otro lado en un comentario de la tarjeta que apruebas tú: nunca improvisa.</text>
   </svg>
   </div>
-  <p style="margin:6px 0 0;font-size:14px"><b>Cerrar tu mitad:</b> cuando todos tus criterios están en verde, se bloquean sus tests (nadie podrá debilitarlos) y tu mitad se junta en <code>story/EO-123</code>.</p>
+  <p style="margin:6px 0 0;font-size:14px"><b>Cerrar tu mitad:</b> cuando todos tus criterios están en verde, se bloquean sus tests en un commit propio (nadie podrá debilitarlos) y tu mitad se junta en <code>story/EO-123</code>. La mitad no se borra nunca.</p>
+  <p style="margin:6px 0 0;font-size:14px"><b>Arreglos y tareas</b> (<code>fix/</code>, <code>chore/</code>, punto 4): el mismo bucle, con el agente del lado al que pertenecen los ficheros. El encargo es una tarea, no un criterio: dice qué cambia y qué comandos lo demuestran; si cambia algo que un test puede mostrar, primero el test en rojo.</p>
   <p style="margin:6px 0 0;font-size:14px"><b>Reabrir tu mitad:</b> si algo vuelve a tu lado después (una E2E que falla por tu lado, un ajuste de diseño o un hallazgo del revisor), traes <code>story/EO-123</code> a tu rama, tu sesión desbloquea solo los tests de los criterios que cambian (en un commit propio), haces el bucle, los vuelves a bloquear y juntas otra vez tu mitad.</p>
 </section>
 
 <!-- 4 -->
-<section id="ramas">
-  <h2><span class="num">4</span>Ramas de una historia</h2>
+<section id="ramas" class="long">
+  <h2><span class="num">4</span>Ramas</h2>
   <p class="lead">Cada línea es una rama de git. La gris es <code>develop</code>, la rama común del equipo. La <b style="color:var(--shared)">naranja</b> es la <b>rama de la historia</b>: ahí se arranca, ahí se juntan las mitades y ahí se integra y revisa diseño. Sigue los números. El dibujo es una historia con las dos mitades; si solo tiene una, falta la otra rama.</p>
   <div class="svgwrap">
   <svg viewBox="0 0 1110 390" width="100%" role="img" aria-label="Ramas de una historia, en ocho pasos">
@@ -431,8 +452,59 @@
     <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con todas dentro, pasa a <b>Integración</b></span></div></li>
     <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores. Si la E2E falla por la API, el agente se para y lo arregla el backend reabriendo su mitad. Sin pantalla, el backend solo pone los marcadores.<span class="st">Si algo espera a diseño, pasa a <b>Revisión visual</b>; si no, espera el merge</span></div></li>
     <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Si hay algo que mirar: compara las capturas con su diseño y aprueba, o pide ajustes: cambia los criterios en la misma historia y los devuelve a «sin construir». Cada ajuste va al lado al que le toca (pantalla, frontend; datos, reglas o errores de la API, backend), que reabre su mitad; luego se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
-    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code>. Lo aprueba al menos una persona distinta de quien lo crea, y se hace el merge.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
+    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code>, cuando todos sus criterios están verificados. Lo aprueba al menos una persona distinta de quien lo crea, y se hace el merge. Se borra la rama de la historia; las mitades se quedan.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
   </ol>
+
+  <h3 class="sub">Todas las ramas</h3>
+  <div class="tblwrap">
+  <table class="tbl">
+    <thead><tr><th>Rama</th><th>Para qué</th><th>Quién</th></tr></thead>
+    <tbody>
+      <tr><td><code>main</code></td><td>Lo que está en producción. Solo recibe PR desde <code>develop</code> o desde un <code>hotfix/</code></td><td>Nadie directamente</td></tr>
+      <tr><td><code>develop</code></td><td>Integración: aquí se juntan las historias y los arreglos terminados</td><td>Nadie directamente</td></tr>
+      <tr><td><code>design/EO-123</code></td><td>La historia nueva, reescribirla antes del arranque, o descartarla, esté en la etapa que esté. Sale de <code>develop</code> y vuelve a <code>develop</code></td><td>Diseño, o quien escribe o descarta la historia</td></tr>
+      <tr><td><code>story/EO-123</code></td><td>La rama de la historia: arranque, contrato si cambia la API, integración, marcadores y revisión visual. Sale de <code>develop</code> y vuelve a <code>develop</code>. Se crea otra vez para reabrir una historia hecha</td><td>El lado que arranca, el que integra, diseño en la revisión visual y quien reabre una historia hecha</td></tr>
+      <tr><td><code>story/EO-123-back</code> / <code>-front</code></td><td>Las mitades que tenga la historia. Salen de <code>story/EO-123</code> y vuelven a ella, sin PR. No se borran nunca</td><td>Backend / frontend</td></tr>
+      <tr><td><code>fix/short-description</code></td><td>Corrección no urgente de algo que no es comportamiento de una historia: la build, la configuración, un script. Sale de <code>develop</code> y vuelve a <code>develop</code></td><td>El lado al que pertenecen los ficheros</td></tr>
+      <tr><td><code>chore/short-description</code></td><td>Trabajo que no es una historia: dependencias, herramientas, documentación. Sale de <code>develop</code> y vuelve a <code>develop</code></td><td>El lado al que pertenecen los ficheros</td></tr>
+      <tr><td><code>hotfix/short-description</code></td><td>Arreglo urgente en producción. Sale de <code>main</code> y vuelve a <code>main</code>; después se lleva a <code>develop</code></td><td>El lado al que le toca lo que falla</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note" style="margin-top:10px">Las ramas de las historias llevan la clave de Jira. Las demás van en inglés y en kebab-case, como el resto de identificadores: <code>fix/session-timeout</code>, <code>chore/upgrade-vite</code>. Cada rama se crea desde el remoto: <code>git fetch</code> y <code>git switch -c &lt;rama&gt; origin/develop</code> (<code>origin/main</code> para un hotfix). En local, <code>develop</code> y <code>main</code> solo se actualizan con <code>git pull --ff-only</code>. Un fallo de comportamiento no es un <code>fix/</code>: reabre su historia (punto 2).</p>
+
+  <h3 class="sub">Reglas en Bitbucket</h3>
+  <ul style="margin:0;padding-left:20px;font-size:14px">
+    <li>Ni <code>main</code> ni <code>develop</code> admiten push directo, borrado ni reescritura del historial: todo entra por PR.</li>
+    <li>Para fusionar un PR hace falta: al menos una aprobación de otra persona (Bitbucket no deja que el autor apruebe el suyo); que no haya cambios pedidos; que no queden tareas abiertas; que el último build esté en verde (hasta la instalación, parte 2, el pipeline solo valida las historias, pero en todas las ramas, para que cada PR tenga build); en <code>main</code>, además, que la rama de origen no vaya por detrás.</li>
+    <li>A <code>develop</code> puede fusionar cualquiera; a <code>main</code>, solo las personas autorizadas en Bitbucket.</li>
+    <li><b>Estas comprobaciones avisan, pero no bloquean</b>, porque el bloqueo es de Bitbucket Premium. La regla del equipo es que <b>no se fusiona un PR con una comprobación en rojo</b>. Claude tampoco lo hace: antes de fusionar comprueba que otra persona lo ha aprobado, que nadie ha pedido cambios y que el build está en verde.</li>
+  </ul>
+
+  <h3 class="sub">Cómo se fusiona cada PR</h3>
+  <div class="tblwrap">
+  <table class="tbl">
+    <thead><tr><th>PR</th><th>Estrategia</th><th>¿Borrar la rama de origen?</th><th>Por qué</th></tr></thead>
+    <tbody>
+      <tr><td><code>design/EO-123</code> → <code>develop</code></td><td><b>Squash</b> (la de por defecto)</td><td>Sí</td><td>La historia entra en <code>develop</code> como un solo commit</td></tr>
+      <tr><td><code>story/EO-123</code> → <code>develop</code></td><td><b>Merge commit</b></td><td>Sí; las mitades se quedan</td><td>Conserva un commit por criterio, cada uno con el ok de su persona, y los commits de bloqueo de tests: es el rastro de la historia. Y deja las mitades dentro de la historia de <code>develop</code>, que es como una historia reabierta las encuentra juntadas. Con Squash quedaría todo en un solo commit</td></tr>
+      <tr><td><code>fix/</code> o <code>chore/</code> → <code>develop</code></td><td><b>Squash</b> (la de por defecto)</td><td>Sí</td><td>Todo el PR entra en <code>develop</code> como un solo commit, con el formato de los commits</td></tr>
+      <tr><td><code>develop</code> → <code>main</code></td><td><b>Fast forward</b></td><td>No</td><td><code>main</code> avanza hasta el mismo commit que <code>develop</code>, sin crear commits nuevos. Así las dos ramas quedan idénticas y <code>develop</code> nunca va por detrás de <code>main</code></td></tr>
+      <tr><td><code>hotfix/</code> → <code>main</code></td><td><b>Squash</b></td><td>Sí</td><td>Igual que un arreglo, pero hacia <code>main</code></td></tr>
+      <tr><td><code>main</code> → <code>develop</code>, tras un hotfix</td><td><b>Merge commit</b></td><td>No</td><td>Mete en <code>develop</code> el commit del hotfix tal cual. Con Squash sería otro commit, <code>develop</code> seguiría «por detrás» de <code>main</code> y el siguiente Fast forward fallaría</td></tr>
+      <tr><td><code>hotfix/…-develop</code> → <code>develop</code>, si lo anterior choca</td><td><b>Merge commit</b></td><td>Sí</td><td>Lo mismo, con los conflictos resueltos en una rama propia</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="note" style="margin-top:10px">Bitbucket propone Squash por defecto. La estrategia se cambia en el diálogo <b>Merge</b> de cada PR. <b>Las mitades no se borran nunca</b>: el pipeline da por no terminada una mitad que no está en Bitbucket, y si la historia se reabre, el lado que la reabre vuelve a trabajar en la suya. Solo se borran las ramas de una historia descartada. La tarjeta pasa a Hecha cuando todos los criterios de la historia están verificados en <code>develop</code>, aunque su rama ya no exista.</p>
+
+  <h3 class="sub">Trabajo fuera de las historias</h3>
+  <div class="kinds">
+    <div class="kind"><b>Arreglo o tarea</b><span class="ex"><code>fix/</code>, <code>chore/</code> desde <code>develop</code></span><span>El agente del lado al que pertenecen los ficheros, con el mismo bucle en pareja (punto 3). PR a <code>develop</code>, Squash, aprobado por otra persona. No mueve ninguna tarjeta. Los ficheros de la raíz (pipeline, fichero de tareas, lockfile, linters) también son de un lado: la instalación los reparte.</span></div>
+    <div class="kind"><b>Hotfix</b><span class="ex"><code>hotfix/</code> desde <code>origin/main</code></span><span>Si rompe un criterio, como al reabrir una mitad pero en esta rama: se desbloquean solo sus tests, test en rojo que reproduce el fallo, arreglo y se vuelven a bloquear. Nunca se sube un <code>[failing]</code>: la tarjeta sigue en Hecha. PR a <code>main</code> (Squash, lo fusiona una persona autorizada) y enseguida PR de <code>main</code> a <code>develop</code> (merge commit). Si hay conflictos, se resuelven en <code>hotfix/…-develop</code>, que sale de <code>develop</code>.</span></div>
+    <div class="kind"><b>Paso a producción</b><span class="ex"><code>develop</code> → <code>main</code></span><span>Cuando el equipo lo decide, normalmente al cerrar una entrega. Lo abre una persona autorizada, con el último build de <code>develop</code> en verde y todos los hotfix ya de vuelta en <code>develop</code>. Lo aprueba otra persona y se fusiona con Fast forward. Las historias que siguen en sus ramas no lo impiden.</span></div>
+  </div>
+  <p class="note" style="margin-top:10px"><b>Un fichero bloqueado que otro trabajo tiene que cambiar</b> (otra historia, una tarea que actualiza el runner de tests, un hotfix): tu sesión lo quita de la lista que lo bloquea en un commit propio, con tu ok, y lo vuelve a bloquear en la misma rama al terminar. Los bloqueos no caducan, y van por fichero: desbloquear un fichero de tests desbloquea todos los criterios que prueba.</p>
 </section>
 
 <!-- 5 -->
@@ -442,12 +514,14 @@
   <div class="cols">
     <div class="col block"><h3>Bloquea siempre</h3><ul>
       <li>Push forzado, <code>reset --hard</code>, <code>clean -f</code>, <code>--no-verify</code></li>
-      <li>Commits directos en <code>main</code> o <code>develop</code></li>
+      <li>Commits directos en <code>main</code> o <code>develop</code>, y cualquier merge, pull o rebase sobre ellas salvo <code>git pull --ff-only</code></li>
       <li><code>git add .</code>: los ficheros se añaden por nombre</li>
-      <li>Tocar un test bloqueado o una lista de bloqueo</li>
+      <li>Tocar un test bloqueado</li>
+      <li>Que un agente toque una lista de bloqueo (tu sesión sí: así bloquea y desbloquea)</li>
       <li>Que un agente haga push o merge</li>
       <li>Que un agente edite una historia</li>
       <li>Que el agente de un lado toque el otro lado</li>
+      <li>Que un agente de solo lectura escriba algo que no sea su informe, también en git (borrar ramas, tocar los remotos)</li>
     </ul></div>
     <div class="col ask"><h3>Te pide confirmación</h3><ul>
       <li>Cada push</li>
@@ -466,11 +540,11 @@
   <h2><span class="num">6</span>Cómo arrancamos</h2>
   <p class="lead">El stack no sale de las historias: el esqueleto se monta antes, porque el propio flujo lo necesita. Las funcionalidades solo llegan a través de historias.</p>
   <div class="timeline">
-    <div class="step"><h3>Día uno</h3>Repositorio, proyecto de Jira con sus 6 estados y <b>instalación, parte 1</b>:<ul>
+    <div class="step"><h3>Día uno</h3>Repositorio, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada»), ajustes de Bitbucket e <b>instalación, parte 1</b>:<ul>
       <li>carpeta de historias, validador, pipeline mínimo</li><li>la definición en <code>docs/definicion.md</code></li>
       <li><code>README.md</code> y <code>CLAUDE.md</code></li><li><code>docs/rules/</code> con la semilla de reglas</li>
       <li>los pendientes técnicos, como decisiones abiertas</li></ul></div>
-    <div class="step"><h3>Cimientos (entrega 0)</h3>Los responsables técnicos, con Claude y la misma disciplina:<ul>
+    <div class="step"><h3>Cimientos (entrega 0)</h3>Los responsables técnicos, con Claude, fuera del flujo de historias: aún no hay agentes que programan, bucle en pareja ni tarjetas. Todo entra por PR desde ramas <code>chore/</code>, aprobado por otra persona:<ul>
       <li>pruebas técnicas pendientes (◇), que cierran sus decisiones</li><li>monorepo, Go, panel React, PostgreSQL</li>
       <li>un endpoint de juguete de punta a punta</li><li>reglas que no se negocian: cuenta, BD por cuenta, linters</li>
       <li>las comprobaciones de la §12.1: SQL concatenado, gitleaks, govulncheck</li><li>el generador de módulos y un módulo de referencia</li><li>el grafo de código (code-review-graph), con su configuración en el repositorio</li><li>CI en Bitbucket</li></ul></div>
@@ -492,11 +566,11 @@
   </div>
   <div class="audit-steps">
     <div class="astep"><span class="n">1</span><div><b class="t">Audita contra las reglas del equipo</b>El <code>auditor</code>, de solo lectura, comprueba las reglas de <code>docs/rules/</code>, no su gusto. Cada hallazgo cita el ID de la regla que rompe; si no rompe ninguna, va aparte como propuesta.</div></div>
-    <div class="astep"><span class="n">2</span><div><b class="t">Cada hallazgo, con su prueba</b>Trae el comando que lo demuestra. Antes de que nadie lo lea, el orquestador lo repite: si no se reproduce, se descarta como falso positivo.</div></div>
-    <div class="astep"><span class="n">3</span><div><b class="t">Se decide qué se convierte en regla</b>Pendiente: si lo confirma una persona o el orquestador por su cuenta (abajo).</div></div>
+    <div class="astep"><span class="n">2</span><div><b class="t">Cada hallazgo, con su prueba</b>Trae el comando que lo demuestra. Antes de que nadie lo lea, el orquestador lo repite: si no se reproduce, se descarta como falso positivo. Un bug de comportamiento no es una regla: reabre su historia (punto 2).</div></div>
+    <div class="astep"><span class="n">3</span><div><b class="t">Se decide qué se convierte en regla</b>Por orden: una comprobación de la máquina, una regla en <code>docs/rules/</code> o un patrón. Lo construye el agente del lado al que le toca, en <code>chore/audit-&lt;entrega&gt;</code> y por PR. Pendiente: si lo confirma una persona o el orquestador por su cuenta (abajo).</div></div>
     <div class="astep"><span class="n">4</span><div><b class="t">La regla demuestra que funciona</b>Falla sobre el código malo que la motivó y pasa cuando se corrige. Si no, no entra.</div></div>
     <div class="astep"><span class="n">5</span><div><b class="t">Se registra</b>En <code>docs/audits/</code>: aceptado, rechazado o falso positivo, y el porcentaje de acierto. Lo rechazado no se vuelve a sacar.</div></div>
-    <div class="astep"><span class="n">6</span><div><b class="t">Las reglas aprenden</b>Lo aceptado que la máquina no puede comprobar entra como regla en <code>docs/rules/</code>; lo que ya comprueba la máquina pasa a «Comprobadas por la máquina».</div></div>
+    <div class="astep"><span class="n">6</span><div><b class="t">Las reglas aprenden</b>Lo aceptado que la máquina no puede comprobar entra como regla en <code>docs/rules/</code>; lo que ya comprueba la máquina pasa a «Comprobadas por la máquina». Si dos auditorías seguidas aciertan menos de la mitad, se revisan las reglas y el encargo antes de la siguiente.</div></div>
   </div>
   <div class="parallel" style="background:var(--shared-soft)"><b>Pendiente de decidir: ¿la confirma una persona al final?</b> Con <code>audit.confirm: human</code>, una persona decide qué hallazgos se convierten en reglas. Con <code>auto</code>, el orquestador lo hace por su cuenta y abre el PR. En los dos casos las reglas entran por un PR que fusionan las personas, y lo crítico y lo que afecta a zonas de riesgo siempre lo ve una persona. <b>Mientras no se decida, la confirma una persona.</b> Un criterio posible: empezar así y pasar a <code>auto</code> cuando el auditor lleve varias entregas con un acierto alto.</div>
 </section>
@@ -520,7 +594,7 @@
     <thead><tr><th>Qué</th><th>Dónde</th><th>Lo escribe</th><th>Lo mantiene al día</th></tr></thead>
     <tbody>
       <tr><td>Qué hace el producto</td><td><code>producto/stories/EO-123-….md</code></td><td><span class="tag t-design">Diseño</span>; un desarrollador si no hay pantalla</td><td><code>stories.mjs --check</code> y los tests por criterio</td></tr>
-      <tr><td>Estado de todo, bloqueos</td><td><code>producto/map.md</code></td><td>Se genera</td><td>El pipeline</td></tr>
+      <tr><td>Estado de todo, bloqueos</td><td><code>producto/map.md</code>, en el equipo de cada uno; nunca se sube</td><td>Se genera con <code>node producto/stories.mjs</code></td><td>El validador. La etapa de cada historia está en su tarjeta de Jira</td></tr>
       <tr><td>El diseño: pantallas, estados, componentes</td><td>Figma, fuera del repositorio. La historia enlaza sus pantallas en <code>screens</code></td><td><span class="tag t-design">Diseño</span></td><td>La revisión visual compara lo construido con Figma</td></tr>
       <tr><td>Referencias de otras apps</td><td>Colecciones de Mobbin con el nombre de la historia, fuera del repositorio</td><td><span class="tag t-design">Diseño</span>, con Claude</td><td>— (son referencia, no diseño)</td></tr>
       <tr><td>Decisiones nuevas, de producto o de arquitectura</td><td><code>producto/decisions/DEC-031-….md</code> en adelante</td><td>Quien figura en <code>decides</code>: dirección o el responsable técnico</td><td>El validador, que las enlaza a las historias que bloquean</td></tr>
@@ -544,7 +618,7 @@
   <div class="pair">
     <div class="out"><b>Fuera del repositorio</b><ul>
       <li><b>El método</b> (skills, agentes, guardia, la propuesta y este esquema) está en el plugin. Nunca se copia al proyecto: el README lo enlaza.</li>
-      <li><b>Jira:</b> una tarjeta por historia, con su clave. Lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia; <b>nunca los criterios</b>. Las etapas las mueve el pipeline.</li>
+      <li><b>Jira:</b> una tarjeta por historia, con su clave. Lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y, desde que se abre su PR, el enlace al fichero de la historia; <b>nunca los criterios</b>. Las etapas las mueve el pipeline.</li>
       <li><b>Figma</b> es el único sitio del diseño; <b>Mobbin</b>, el de las referencias.</li>
       <li><b>Hyliable</b> sigue en su propio repositorio hasta que se migre.</li>
       <li><b>Los manuales para clientes y soporte</b> quedan fuera de este sistema.</li>
@@ -651,7 +725,11 @@
       <tr><td>Se construye un criterio</td><td>El builder lee las reglas comunes, las de su lado y los patrones del encargo</td><td>—</td></tr>
       <tr><td>Algo falla en el bucle o en la revisión</td><td>Si es comportamiento, es un criterio que falla. Si puede repetirse, al cerrar se propone, por este orden, comprobación, regla o patrón</td><td>PR a <code>docs/rules/</code> o a la configuración</td></tr>
       <tr><td>Se cierra una entrega</td><td>Auditoría contra <code>docs/rules/</code> (punto 7); lo que la máquina puede comprobar pasa a ella</td><td><code>docs/audits/</code></td></tr>
-      <tr><td>Cambia algo ya hecho</td><td>Se editan los criterios de su historia, nunca una historia nueva encima</td><td>La misma historia</td></tr>
+      <tr><td>Cambia algo ya hecho, o aparece un bug</td><td>Se reabre la misma historia: <code>story/EO-123</code> otra vez desde <code>develop</code>, los criterios que cambian a «sin construir» o el que falla a <code>[failing]</code>. La tarjeta vuelve a Integración (punto 2). Nunca una historia nueva encima</td><td>La misma historia</td></tr>
+      <tr><td>Bug urgente en producción</td><td>Hotfix desde <code>main</code>, y enseguida de <code>main</code> a <code>develop</code> (punto 4)</td><td>El código y los tests de su criterio</td></tr>
+      <tr><td>Se descarta una historia</td><td><code>discarded: true</code> y el motivo, por PR desde <code>design/EO-123</code>. La tarjeta pasa a Descartada; sus ramas se borran sin fusionar (punto 2)</td><td>La misma historia</td></tr>
+      <tr><td>Un arreglo o una tarea fuera de las historias</td><td><code>fix/</code> o <code>chore/</code>, con el agente del lado al que pertenecen los ficheros y el mismo bucle en pareja (punto 4)</td><td>El código y la configuración</td></tr>
+      <tr><td>Paso a producción</td><td>PR de <code>develop</code> a <code>main</code> con Fast forward, cuando el equipo lo decide (punto 4)</td><td><code>main</code></td></tr>
       <tr><td>Alguien quiere documentar algo</td><td>«¿Dónde escribo esto?» (punto 8). <b>Si no encaja en nada, no se escribe</b></td><td>—</td></tr>
     </tbody>
   </table>
@@ -668,7 +746,7 @@
     <div class="rule"><b>El contrato manda</b>Cuando una historia cambia la API, la acuerdan backend y frontend y la escribe el backend. El frontend nunca toca el contrato a mano.</div>
     <div class="rule"><b>Las tarjetas las mueve el pipeline</b>Jira refleja lo que hay en el repositorio, no lo que alguien recuerda mover.</div>
     <div class="rule"><b>Historias verticales</b>Nunca se divide por capas. Las dos mitades son dos ramas de la misma historia.</div>
-    <div class="rule"><b>Un bug no es una historia nueva</b>Es un criterio que falla en la historia que ya existe.</div>
+    <div class="rule"><b>Un bug no es una historia nueva</b>Es un criterio que falla: reabre la historia que ya existe.</div>
     <div class="rule"><b>Cada error, una regla</b>Un error que puede repetirse se convierte en algo que comprueba la máquina.</div>
     <div class="rule"><b>La revisión baja, «cero fe» no</b>Se revisa menos código porque los errores dejan de poder repetirse, no porque nos fiemos más de la IA.</div>
     <div class="rule"><b>Cada cosa, un solo sitio</b>Lo demás enlaza. Si dos ficheros dicen lo mismo, uno de los dos sobra.</div>

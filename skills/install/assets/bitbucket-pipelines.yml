@@ -1,6 +1,8 @@
 # Bitbucket Pipelines for a project that uses easyone-orchestrator.
 # Every push runs the checks. Story branches and the integration branch also move the story's Jira card:
 # jira-sync runs in after-script, so a red build still moves the card (to Integration, for example).
+# The tests run first, through stories.mjs, so their results exist even when a later check fails. A build
+# that fails before them (installing the dependencies) has no results, and then the card stays where it is.
 # Secured repository variables: JIRA_EMAIL, JIRA_API_TOKEN.
 
 image: {{IMAGE: an image with Go, Node 22 and pnpm}}
@@ -23,8 +25,8 @@ definitions:
           - node
         script:
           - {{SETUP: install the dependencies, e.g. pnpm install --frozen-lockfile && go mod download}}
-          - {{VERIFY: one line per command in .orchestrator.json → verify.all}}
           - node {{STORIES_DIR}}/stories.mjs --tests --check
+          - {{VERIFY: one line per command in .orchestrator.json → verify.all that stories.config.json → tests does not already run}}
         after-script:
           - node {{STORIES_DIR}}/jira-sync.mjs
     - step: &stories
@@ -35,6 +37,8 @@ definitions:
           - node {{STORIES_DIR}}/jira-sync.mjs
 
 pipelines:
+  default: # fix/*, chore/*, hotfix/*: verified like the rest; jira-sync has no card to move
+    - step: *build
   branches:
     "design/*":
       - step: *stories

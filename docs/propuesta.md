@@ -1,6 +1,6 @@
 # Metodología y adaptación del orquestador · EASY One
 
-**Versión 2.1 · 2026-10-25.** Sustituye a la versión 1 (`propuesta.md`, sin fecha). Recoge lo decidido al llevar aquella propuesta al stack de EASY One y al plugin. La 2.1 añade dónde vive cada cosa y qué reglas se siguen (sección 8), que sustituye a lo que proponía la definición en su §18.3. Al final hay una lista de qué cambia respecto a la v1 y por qué.
+**Versión 2.2 · 2026-10-26.** Sustituye a la versión 1 (`propuesta.md`, sin fecha). Recoge lo decidido al llevar aquella propuesta al stack de EASY One y al plugin. La 2.1 añade dónde vive cada cosa y qué reglas se siguen (sección 8), que sustituye a lo que proponía la definición en su §18.3. La 2.2 añade todas las ramas, las reglas de Bitbucket, cómo se fusiona cada PR y el trabajo fuera de las historias (sección 5), y qué pasa cuando una historia hecha se reabre o una historia se descarta (sección 4). Al final hay una lista de qué cambia respecto a la v1 y por qué.
 
 Este documento define cómo trabaja el equipo de Hyliacom (diseño, backend y frontend) para desarrollar EASY One con Claude Code, y qué se ha cambiado del plugin *Orchestrator* para conseguirlo. El plugin adaptado se llama `easyone-orchestrator`. El esquema visual para el equipo está en [`esquema-orquestador.html`](esquema-orquestador.html).
 
@@ -19,7 +19,7 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | Rol | Quién | Qué hace |
 |---|---|---|
 | **Orquestador** | La sesión de Claude (Opus) de **cada persona** | Lee en Jira lo que le toca a su persona, prepara cada encargo, le enseña las pruebas, hace el commit tras su ok |
-| **Agentes que programan** | `backend-builder` y `frontend-builder` (Sonnet) | Un encargo cada vez: el contrato, un criterio o la integración. Prueban, se paran e informan |
+| **Agentes que programan** | `backend-builder` y `frontend-builder` (Sonnet) | Un encargo cada vez: el contrato, un criterio, la integración o una tarea fuera de las historias (un `fix/`, un `chore/`). Prueban, se paran e informan |
 | **Desarrolladores** | Backend (Go) y frontend (TypeScript) | Navegan: acuerdan el contrato, validan cada paso, deciden |
 | **Diseño** | Equipo de diseño, como product owners | Escribe con Claude las historias verticales a partir del diseño en Figma, con Mobbin como referencia, y hace la revisión visual. Claude crea la tarjeta en Jira. Las historias técnicas, sin pantalla, puede escribirlas un desarrollador |
 | **Revisor** | `reviewer`, solo lectura | Revisa la historia completa al cerrarla, **solo si lleva etiqueta de riesgo** |
@@ -35,9 +35,9 @@ El plugin adaptado está en el fork local `Orquestador-EasyOne`, rama `easyone`.
 ### A. Agentes
 
 1. **El `builder` genérico desaparece.** Lo sustituyen dos agentes, cada uno en su lado:
-   - `backend-builder`: Go + PostgreSQL. Escribe el contrato (endpoints con sus tipos, sin implementar) o un criterio por encargo. Prueba contra PostgreSQL real y comprueba que una cuenta no ve los datos de otra.
+   - `backend-builder`: Go + PostgreSQL. Escribe el contrato (endpoints con sus tipos, sin implementar), un criterio o una tarea fuera de las historias por encargo. Prueba contra PostgreSQL real y comprueba que una cuenta no ve los datos de otra.
    - `frontend-builder`: React (panel, sección de empleados) y **Hyliable** (su interfaz, su servicio Node del agente y la plantilla Astro). Construye contra el contrato con simulaciones generadas a partir de él. Nunca toca el contrato. En los tests nunca llama al modelo.
-2. **El `reviewer` se mantiene, pero solo para riesgo.** Una revisión al cerrar la historia, si lleva etiqueta de riesgo (aislamiento entre cuentas, identidad, pagos, fiscal, datos personales, producción). Comprueba que los tests prueban de verdad cada criterio y que la historia se cumple. El humano sigue sin revisar líneas: el revisor audita las evidencias.
+2. **El `reviewer` se mantiene, pero solo para riesgo.** Una revisión al cerrar la historia, si lleva etiqueta de riesgo (aislamiento entre cuentas, identidad, pagos, fiscal, datos personales, producción). La etiqueta (`tags`) la pone quien escribe la historia, y un desarrollador la añade en el arranque si la historia toca una zona de riesgo que no lleva. Comprueba que los tests prueban de verdad cada criterio y que la historia se cumple. El humano sigue sin revisar líneas: el revisor audita las evidencias.
 
 ### B. El contrato vive en el repositorio
 
@@ -45,7 +45,7 @@ El contrato entre backend y frontend es el **OpenAPI que se genera desde Go**. D
 
 ### C. Jira sincroniza a los departamentos
 
-Una tarjeta por historia, en una de seis etapas (sección 4). **Las tarjetas las mueve Bitbucket Pipelines** con lo que hay en el repositorio, no las personas ni las sesiones. Al abrir Claude, cada sesión lee en Jira lo que le toca a su persona.
+Una tarjeta por historia, en una de seis etapas o en «Descartada» (sección 4). **Las tarjetas las mueve Bitbucket Pipelines** con lo que hay en el repositorio, no las personas ni las sesiones. Al abrir Claude, cada sesión lee en Jira lo que le toca a su persona.
 
 El estado compartido es Jira. El registro de cada sesión (`.orchestrator/state.md`) y quién es cada persona (`.orchestrator/me.json`) son personales y no entran en git.
 
@@ -60,8 +60,10 @@ El estado compartido es Jira. El registro de cada sesión (`.orchestrator/state.
 Además de lo que ya hacía el original (push forzado, `reset --hard`, commits en `main` o `develop`, `git add .`, tests bloqueados…):
 - **Cada agente solo toca su lado.** Lo comprueba al editar y otra vez sobre el diff cuando el agente termina.
 - **Cada agente pasa las comprobaciones de su lado** al terminar: Go en backend, TypeScript en frontend.
-- **Cada mitad bloquea sus tests en su propia lista**, para que las dos mitades no choquen al juntarse.
+- **Cada mitad bloquea sus tests en su propia lista**, para que las dos mitades no choquen al juntarse. Los agentes no pueden tocar esas listas; tu sesión sí, para bloquear y desbloquear.
 - **Pide confirmación para cada push y cada merge en Bitbucket.**
+- **`main` y `develop` solo cambian por PR.** En local solo se actualizan con `git pull --ff-only`; cualquier otro merge, pull o rebase sobre ellas está bloqueado.
+- **Los agentes de solo lectura solo leen**, también en git: no pueden borrar ramas ni tocar los remotos.
 
 ### F. Bitbucket
 
@@ -74,9 +76,10 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 | **Diseño** | Diseño (un desarrollador si la historia no tiene pantalla) | Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia en `design/EO-123`: reglas, estados de cada pantalla, enlaces a Figma | El PR de la historia entra en `develop`. **Es la aprobación**, y la da al menos una persona distinta de quien la escribió |
 | **Contrato** | Backend + frontend | Arranque: el lado que empieza crea `story/EO-123` y anota las mitades de la historia (`sides`) y los endpoints que usa (`operations`). **Solo si la historia cambia la API**, los dos la acuerdan y el agente de backend genera los endpoints sin implementar | Existe la rama de la historia y el OpenAPI tiene sus endpoints |
 | **Desarrollo** | Las mitades de la historia, en paralelo | Cada lado trabaja en su mitad (`story/EO-123-back`, `-front`), **un criterio cada vez**. Al acabar, bloquea sus tests y junta su mitad | Todas las mitades de la historia están en `story/EO-123` |
-| **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Si la E2E falla por la API, lo arregla el backend reabriendo su mitad. Sin pantalla, solo los marcadores | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
-| **Revisión visual** | Diseño; después el revisor si hay riesgo, y el merge | Solo historias con algo que mirar. Diseño compara capturas y app con su diseño: aprueba o pide ajustes en la misma historia (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend | El PR a `develop` lo aprueba al menos una persona distinta de quien lo crea, y se fusiona |
-| **Hecha** | — | La historia está en `develop` con todos sus criterios verificados | — |
+| **Integración** | Frontend; backend si la historia no tiene pantalla | API real en lugar de simulaciones, E2E en verde, capturas por estado, marcadores. Si la E2E falla por la API, lo arregla el backend reabriendo su mitad. Sin pantalla, solo los marcadores. Lo que solo una persona puede comprobar y no es visual (un correo que llega, una llamada a un servicio real, lo que hace el agente de Hyliable con un prompt) lo comprueba ahora el desarrollador de su lado, y queda como `[manual fecha, nombre]` | Todo pasa y algo espera a diseño. Si nada espera a diseño, la tarjeta se queda aquí hasta el merge |
+| **Revisión visual** | Diseño; después el lado que integra: el revisor si hay riesgo, y el merge | Solo historias con algo que mirar. Diseño compara capturas y app con su diseño: aprueba (su sesión cambia esos criterios a `[manual fecha, nombre]` y hace push) o pide ajustes en la misma historia (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend | El PR a `develop` lo aprueba al menos una persona distinta de quien lo crea, y se fusiona. Solo se abre cuando todos los criterios pasan o están comprobados por una persona |
+| **Hecha** | — | La historia está en `develop` con todos sus criterios verificados | Si cambia o aparece un bug, se reabre la misma historia y vuelve a Integración (ver «Cuando algo vuelve atrás») |
+| **Descartada** | — | La historia se descartó: entra en `develop` con `discarded: true` y su motivo, desde cualquier etapa | — |
 
 ### Cómo nace una historia de diseño
 
@@ -85,11 +88,11 @@ La diseñadora trabaja con su sesión de Claude. **Figma es el único sitio del 
 1. **Leer el diseño en Figma.** La diseñadora le pasa a su sesión el fichero o la página. Claude lo lee con el conector de Figma (pantallas, variantes, componentes, capturas) y propone la lista de historias: **una por cada cosa que una persona puede hacer, no una por pantalla**. Los estados dibujados (cargando, vacío, error) se convierten en criterios; los que faltan, los señala para que se dibujen.
 2. **Contrastar con Mobbin.** Cómo resuelven ese flujo otras apps, para encontrar estados y casos de error que falten. Es referencia, no diseño: lo que se adopta se dibuja primero en Figma. Las referencias que se quedan van a una colección de Mobbin con el nombre de la historia, nunca al repositorio.
 3. **La diseñadora confirma la lista:** qué historias salen, cómo se dividen y a qué actividad pertenece cada una.
-4. **Claude crea la tarjeta en Jira**, con el ok de la diseñadora sobre el texto. La tarjeta lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. **Nunca los criterios:** viven en el fichero. Su clave es el ID.
+4. **Claude crea la tarjeta en Jira**, con el ok de la diseñadora sobre el texto. La tarjeta lleva solo el título, la frase «Como… quiero… para…» y el enlace a Figma. **Nunca los criterios:** viven en el fichero. Su clave es el ID.
 5. **Claude escribe la historia** en `design/EO-123`, con los enlaces a las pantallas de Figma en `screens`, y la pasa por `--ready` hasta que está lista.
-6. **PR y aprobación.** Push y PR a `develop`. Lo aprueba al menos una persona distinta de quien lo abre.
+6. **PR y aprobación.** Push y PR a `develop`. Claude añade a la tarjeta el enlace al fichero de la historia. Lo aprueba al menos una persona distinta de quien lo abre.
 
-El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.
+Si después cambian el título o la frase, Claude actualiza la tarjeta con el ok de la diseñadora; nada más de la historia va a Jira. El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.
 
 ### No todas las historias tienen las dos mitades
 
@@ -98,7 +101,7 @@ La pregunta clave es: **¿cambia la forma de la API?** Es decir, sus endpoints, 
 | Caso | Ejemplos | Contrato | Mitades (`sides`) |
 |---|---|---|---|
 | Cambia la API | Un endpoint nuevo, un campo nuevo o renombrado, un error nuevo | Se acuerda y lo escribe el backend, aunque ninguna pantalla lo use todavía | `[back, front]`, o `[back]` si ninguna pantalla lo usa todavía |
-| Solo frontend | Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable | Ninguno | `[front]` |
+| Solo frontend | Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable (cuando se migre al monorepo) | Ninguno | `[front]` |
 | Solo backend | Sin pantalla: una regla sobre los datos, una tarea periódica, el envío de correos, un importador, corregir datos guardados | Ninguno, salvo que cambie la API | `[back]` |
 
 **Ejemplo, EO-140 · «Las facturas rectificativas usan su propia serie».** Cambia una regla, no la API, y no tiene pantalla:
@@ -116,15 +119,19 @@ Los desarrolladores lo deciden en el arranque, leyendo la historia. El pipeline 
 
 ### El bucle en pareja (un criterio)
 
-1. La sesión prepara el encargo de **un solo criterio**.
-2. El agente escribe el test y lo ve fallar por la razón correcta (**rojo**).
-3. Escribe lo mínimo para que pase (**verde**) y ejecuta las comprobaciones de su lado.
-4. Se para. La sesión te lo enseña en un máximo de 8 líneas: el criterio, qué comprueba el test, la salida en rojo y en verde, y los ficheros tocados. Sin código.
-5. **Tú decides:** ok, refactor o cambio. Un refactor o un cambio vuelve al mismo agente, con los tests en verde.
-6. Con el ok, la sesión hace el commit (ficheros por nombre, un commit por criterio).
-7. Siguiente criterio cuando digas «sigue».
+1. **Encargo.** La sesión prepara el encargo de **un solo criterio**.
+2. **Rojo.** El agente escribe el test y lo ve fallar por la razón correcta.
+3. **Verde mínimo.** Escribe lo mínimo para que pase.
+4. **Verificación.** Ejecuta las comprobaciones de su lado.
+5. **Te lo enseña.** Se para, y la sesión te lo enseña en un máximo de 8 líneas: el criterio, qué comprueba el test, la salida en rojo y en verde, y los ficheros tocados. Sin código.
 
-Si el agente se bloquea (por ejemplo, al contrato le falta algo), se para. Tu sesión lo lleva al otro lado con un comentario en la tarjeta, que tú apruebas. El agente nunca improvisa.
+**Tú decides:** ok, refactor o cambio. Un refactor o un cambio vuelve al mismo agente, con los tests en verde.
+
+6. **Commit.** Con el ok, la sesión hace el commit (ficheros por nombre, un commit por criterio).
+
+Siguiente criterio cuando digas «sigue». Si el agente se bloquea (por ejemplo, al contrato le falta algo), se para. Tu sesión lo lleva al otro lado con un comentario en la tarjeta, que tú apruebas. El agente nunca improvisa.
+
+Los arreglos y las tareas fuera de las historias (`fix/`, `chore/`) siguen el mismo bucle: el encargo dice qué cambia y qué comandos lo demuestran, y si cambia algo que un test puede mostrar, primero va el test en rojo.
 
 ### Cuando algo vuelve atrás
 
@@ -137,25 +144,94 @@ Una mitad ya juntada puede tener que reabrirse: la E2E de la integración falla 
 5. Vuelve a bloquear los tests y junta otra vez su mitad.
 6. Si hay pantalla, el frontend repite la integración (E2E y capturas), se ponen los marcadores y la historia vuelve a diseño.
 
+**Si la historia ya está Hecha.** Si cambia lo que hace o aparece un bug, se reabre la misma historia; nunca se escribe una nueva encima. Un bug urgente en producción va primero por un hotfix (sección 5).
+
+1. **Quién:** diseño, si cambia el comportamiento; si es un bug, el desarrollador del lado al que le toca.
+2. **Se reabre:** crea otra vez `story/EO-123` desde `develop` y edita los criterios. Lo que cambia vuelve a «sin construir». El criterio que rompe el bug pasa a `[failing: qué falla]`, o se añade uno si ninguno cubría ese comportamiento. Commit (`EO-123: reopen EO-123.2`) y push: la tarjeta sale de Hecha y vuelve a Integración.
+3. **Se arregla:** el lado al que le toca reabre su mitad, que sigue ahí; por eso las mitades nunca se borran. Si es un bug, el agente escribe primero un test que lo reproduce y lo ve fallar.
+4. **Después, como siempre:** integración, revisión visual si hay algo que mirar, revisor si hay riesgo y PR.
+
+### Descartar una historia
+
+Es una decisión de producto. Quien la toma lo hace desde su sesión:
+
+1. **Se descarta en `develop`.** Crea `design/EO-123` desde `develop`, pone `discarded: true` y el motivo, y abre el PR, que aprueba otra persona. Cuando entra, el pipeline mueve la tarjeta a **Descartada**, esté en la etapa que esté.
+2. **Se borran sus ramas.** La rama de la historia y sus mitades nunca se fusionan, porque tienen trabajo sin terminar. Se borran después, y las listas de bloqueo que solo vivían en ellas, también.
+
+Si la historia ya estaba hecha, su código, sus tests y sus listas de bloqueo siguen en `develop`: quitarlos es una tarea aparte, que desbloquea sus tests antes de borrarlos (sección 5).
+
 ## 5. Git y Bitbucket
 
-| Rama | Sale de | Para qué |
-|---|---|---|
-| `design/EO-123` | `develop` | La historia nueva, hasta que entra su PR |
-| `story/EO-123` | `develop` | El arranque, el contrato si cambia la API, la integración, los marcadores y la revisión visual |
-| `story/EO-123-back` / `-front` | `story/EO-123` | Las mitades que tenga la historia |
+### Ramas
 
+| Rama | Para qué | Quién |
+|---|---|---|
+| `main` | Lo que está en producción. Solo recibe PR desde `develop` o desde un `hotfix/` | Nadie directamente |
+| `develop` | Integración: aquí se juntan las historias y los arreglos terminados | Nadie directamente |
+| `design/EO-123` | La historia nueva, reescribirla antes del arranque, o descartarla, esté en la etapa que esté. Sale de `develop` y vuelve a `develop` | Diseño, o quien escribe o descarta la historia |
+| `story/EO-123` | La rama de la historia: el arranque, el contrato si cambia la API, la integración, los marcadores y la revisión visual. Sale de `develop` y vuelve a `develop`. Se crea otra vez para reabrir una historia hecha | El lado que arranca, el que integra, diseño en la revisión visual y quien reabre una historia hecha |
+| `story/EO-123-back` / `-front` | Las mitades que tenga la historia. Salen de `story/EO-123` y vuelven a ella, sin PR. No se borran nunca | Backend / frontend |
+| `fix/short-description` | Corrección no urgente de algo que no es comportamiento de una historia: la build, la configuración, un script. Sale de `develop` y vuelve a `develop` | El lado al que pertenecen los ficheros |
+| `chore/short-description` | Trabajo que no es una historia: dependencias, herramientas, documentación. Sale de `develop` y vuelve a `develop` | El lado al que pertenecen los ficheros |
+| `hotfix/short-description` | Arreglo urgente en producción. Sale de `main` y vuelve a `main`; después se lleva a `develop` | El lado al que le toca lo que falla |
+
+Las ramas de las historias llevan la clave de Jira. Las demás van en inglés y en kebab-case, como el resto de identificadores: `fix/session-timeout`, `chore/upgrade-vite`. Cada rama se crea desde el remoto, para que salga de lo que de verdad hay: `git fetch` y `git switch -c <rama> origin/develop` (`origin/main` para un hotfix).
+
+- Un fallo de comportamiento no es un `fix/`: reabre su historia (sección 4, «Cuando algo vuelve atrás»).
 - Un commit por criterio, tras el ok, con los ficheros por nombre.
 - Push y merge solo cuando la persona lo pide, y la guardia pide confirmación.
-- Los PR van a `develop`: el de la historia nueva y el de la historia terminada. Las mitades se juntan directamente en `story/EO-123`.
-- El pipeline verifica cada push y mueve la tarjeta, incluso si la verificación falla, para que la tarjeta refleje los fallos. Si Jira no responde, avisa sin poner la build en rojo.
+- El pipeline verifica cada push y mueve la tarjeta, incluso si la verificación falla, para que la tarjeta refleje los fallos. Los tests van primero; si la build falla antes de ellos (al instalar las dependencias), la tarjeta se queda donde está. Si Jira no responde, avisa sin poner la build en rojo.
+
+### Reglas en Bitbucket
+
+- Ni `main` ni `develop` admiten push directo, borrado ni reescritura del historial: todo entra por PR.
+- Para fusionar un PR hace falta:
+  - al menos una aprobación de otra persona (Bitbucket no deja que el autor apruebe el suyo);
+  - que no haya cambios pedidos;
+  - que no queden tareas abiertas;
+  - que el último build esté en verde (hasta la instalación, parte 2, el pipeline solo valida las historias, pero en todas las ramas, para que cada PR tenga build);
+  - en `main`, además, que la rama de origen no vaya por detrás.
+- A `develop` puede fusionar cualquiera; a `main`, solo las personas autorizadas en Bitbucket.
+- **Estas comprobaciones avisan, pero no bloquean**, porque el bloqueo es de Bitbucket Premium. La regla del equipo es que **no se fusiona un PR con una comprobación en rojo**. Claude tampoco lo hace: antes de fusionar comprueba que otra persona lo ha aprobado, que nadie ha pedido cambios y que el build está en verde.
+
+### Cómo se fusiona cada PR
+
+| PR | Estrategia | ¿Borrar la rama de origen? | Por qué |
+|---|---|---|---|
+| `design/EO-123` → `develop` | **Squash** (la de por defecto) | Sí | La historia entra en `develop` como un solo commit |
+| `story/EO-123` → `develop` | **Merge commit** | Sí; las mitades se quedan | Conserva un commit por criterio, cada uno con el ok de su persona, y los commits de bloqueo de tests: es el rastro de la historia. Y deja las mitades dentro de la historia de `develop`, que es como una historia reabierta las encuentra juntadas. Con Squash quedaría todo en un solo commit |
+| `fix/` o `chore/` → `develop` | **Squash** (la de por defecto) | Sí | Todo el PR entra en `develop` como un solo commit, con el formato de los commits |
+| `develop` → `main` | **Fast forward** | No | `main` avanza hasta el mismo commit que `develop`, sin crear commits nuevos. Así las dos ramas quedan idénticas y `develop` nunca va por detrás de `main` |
+| `hotfix/` → `main` | **Squash** | Sí | Igual que un arreglo, pero hacia `main` |
+| `main` → `develop`, tras un hotfix | **Merge commit** | No | Mete en `develop` el commit del hotfix tal cual. Con Squash sería otro commit, `develop` seguiría «por detrás» de `main` y el siguiente Fast forward fallaría |
+| `hotfix/…-develop` → `develop`, si lo anterior choca | **Merge commit** | Sí | Lo mismo, con los conflictos resueltos en una rama propia |
+
+Bitbucket propone Squash por defecto. La estrategia se cambia en el diálogo **Merge** de cada PR.
+
+Las mitades no pasan por PR: cada lado junta la suya en `story/EO-123` con el ok de su persona. **No se borran nunca**: el pipeline da por no terminada una mitad que no está en Bitbucket, y si la historia se reabre, el lado que la reabre vuelve a trabajar en la suya. Solo se borran las ramas de una historia descartada. La tarjeta pasa a Hecha cuando todos los criterios de la historia están verificados en `develop`, aunque su rama ya no exista.
+
+En local, `develop` y `main` solo se actualizan con `git pull --ff-only`; la guardia bloquea cualquier otro merge, pull o rebase sobre ellas. Al empezar, la sesión hace `git fetch --prune` y te ofrece borrar las ramas locales cuyo remoto ya no existe.
+
+### Trabajo fuera de las historias
+
+**Arreglo o tarea (`fix/`, `chore/`).** Lo hace el lado al que pertenecen los ficheros, con su agente y el mismo bucle en pareja. El encargo es una tarea, no un criterio: dice qué cambia y qué comandos lo demuestran. Si cambia algo que un test puede mostrar, el agente escribe primero ese test y lo ve fallar. PR a `develop`, Squash, aprobado por otra persona. No mueve ninguna tarjeta. Los ficheros de la raíz (el pipeline, el fichero de tareas, el lockfile, los linters) también son de un lado: la instalación los reparte.
+
+**Hotfix: urgencia en producción.**
+1. `hotfix/short-description` desde `origin/main`.
+2. Si rompe un criterio, se trabaja como al reabrir una mitad, pero en esta rama: se desbloquean solo los tests de ese criterio, el agente escribe primero un test que reproduce el fallo, lo arregla, y se vuelven a bloquear. Si hacen falta los dos lados, un agente detrás del otro en la misma rama. Nunca se sube un `[failing]`: el criterio vuelve a cumplirse al fusionar, así que la tarjeta sigue en Hecha.
+3. PR a `main`, Squash. Lo aprueba otra persona y lo fusiona una persona autorizada.
+4. Enseguida, la misma persona abre el PR de `main` a `develop`, con merge commit. Si hay conflictos, se crea `hotfix/short-description-develop` desde `develop`, se junta `origin/main`, se resuelve con el lado dueño de los ficheros y se abre ese PR, también con merge commit.
+
+**Paso a producción (`develop` → `main`).** Cuando el equipo lo decide, normalmente al cerrar una entrega. Una persona autorizada abre el PR. Antes de fusionar, el último build de `develop` está en verde y todos los hotfix han vuelto a `develop`; si no, el Fast forward falla. Las historias que siguen en sus ramas no lo impiden: su código aún no está en `develop`. Lo aprueba otra persona y lo fusiona una persona autorizada, con Fast forward. Después se despliega como diga el `README.md`.
+
+**Un fichero bloqueado que otro trabajo tiene que cambiar** (otra historia, una tarea que actualiza el runner de tests, un hotfix): tu sesión lo quita de la lista que lo bloquea, en un commit propio y con tu ok, y lo vuelve a bloquear en la misma rama al terminar. Los bloqueos no caducan: después del merge las listas siguen en `develop`. Y van por fichero: desbloquear un fichero de tests desbloquea todos los criterios que prueba.
 
 ## 6. Cómo arrancamos
 
 El stack no sale de las historias: el esqueleto se monta antes, porque el propio flujo lo necesita. Las funcionalidades solo llegan a través de historias.
 
-1. **Día uno.** Repositorio en Bitbucket, proyecto de Jira con sus 6 estados e **instalación, parte 1**: historias, Jira, git y pipeline mínimo; la definición en `docs/definicion.md`; `README.md` y `CLAUDE.md`; `docs/rules/` con la semilla de reglas, y los pendientes técnicos de la definición como decisiones abiertas (sección 8). Desde ese momento diseño escribe las historias de la entrega 1 (plataforma mínima), en paralelo con los cimientos.
-2. **Cimientos (entrega 0 de la definición).** Los responsables técnicos, con Claude y la misma disciplina:
+1. **Día uno.** Repositorio en Bitbucket, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») e **instalación, parte 1**: historias, Jira, git y pipeline mínimo; la definición en `docs/definicion.md`; `README.md` y `CLAUDE.md`; `docs/rules/` con la semilla de reglas, y los pendientes técnicos de la definición como decisiones abiertas (sección 8). Desde ese momento diseño escribe las historias de la entrega 1 (plataforma mínima), en paralelo con los cimientos.
+2. **Cimientos (entrega 0 de la definición).** Los responsables técnicos, con Claude, fuera del flujo de historias: todavía no hay agentes que programan, bucle en pareja ni tarjetas, que llegan con la instalación, parte 2. Todo entra por PR desde ramas `chore/`, aprobado por otra persona:
    - las pruebas técnicas pendientes que necesitan las primeras historias, que cierran sus decisiones;
    - el monorepo (Go, panel React, PostgreSQL);
    - un endpoint de juguete de punta a punta: Go → OpenAPI → cliente → panel → E2E;
@@ -208,7 +284,7 @@ Todo gira en torno al orquestador. El método está en el plugin (skill `orchest
 | Qué | Dónde | Lo escribe | Lo mantiene al día |
 |---|---|---|---|
 | Qué hace el producto | `producto/stories/EO-123-….md` | Diseño; un desarrollador si no hay pantalla | `stories.mjs --check` y los tests por criterio |
-| Estado de todo, bloqueos | `producto/map.md` | Se genera | El pipeline |
+| Estado de todo, bloqueos | `producto/map.md`, en el equipo de cada uno; nunca se sube | Se genera con `node producto/stories.mjs` | El validador. La etapa de cada historia está en su tarjeta de Jira |
 | El diseño: pantallas, estados, componentes | Figma, fuera del repositorio. La historia enlaza sus pantallas en `screens` | Diseño | La revisión visual compara lo construido con Figma |
 | Referencias de otras apps | Colecciones de Mobbin con el nombre de la historia, fuera del repositorio | Diseño, con Claude | — (son referencia, no diseño) |
 | Decisiones nuevas, de producto o de arquitectura | `producto/decisions/DEC-031-….md` en adelante (las D1–D30 siguen en la definición) | Quien figura en `decides`: dirección o el responsable técnico | El validador, que las enlaza a las historias que bloquean |
@@ -304,7 +380,11 @@ Un comportamiento nunca es una regla: es un criterio de su historia.
 | **Se construye un criterio** | El builder lee las reglas comunes, las de su lado y los patrones del encargo | — |
 | **Algo falla en el bucle o en la revisión** | Si es comportamiento, es un criterio que falla. Si puede repetirse, al cerrar se propone, por este orden, comprobación, regla o patrón | PR a `docs/rules/` o a la configuración |
 | **Se cierra una entrega** | Auditoría contra `docs/rules/` (sección 7); lo que la máquina puede comprobar pasa a ella | `docs/audits/` |
-| **Cambia algo ya hecho** | Se editan los criterios de su historia | La misma historia |
+| **Cambia algo ya hecho, o aparece un bug** | Se reabre la misma historia: `story/EO-123` otra vez desde `develop`, los criterios que cambian a «sin construir» o el que falla a `[failing]`. La tarjeta vuelve a Integración (sección 4) | La misma historia |
+| **Bug urgente en producción** | Hotfix desde `main`, y enseguida de `main` a `develop` (sección 5) | El código y los tests de su criterio |
+| **Se descarta una historia** | `discarded: true` y el motivo, por PR desde `design/EO-123`. La tarjeta pasa a Descartada; sus ramas se borran sin fusionar (sección 4) | La misma historia |
+| **Un arreglo o una tarea fuera de las historias** | `fix/` o `chore/`, con el agente del lado al que pertenecen los ficheros y el mismo bucle en pareja (sección 5) | El código y la configuración |
+| **Paso a producción** | PR de `develop` a `main` con Fast forward, cuando el equipo lo decide (sección 5) | `main` |
 | **Alguien quiere documentar algo** | «¿Dónde escribo esto?». **Si no encaja en nada, no se escribe** | — |
 
 ## 9. Hyliable
@@ -323,9 +403,14 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador, de backend o de frontend |
-| Aprobación de los PR | Todo PR a `develop` o a `main` lo aprueba al menos una persona distinta de quien lo crea; después lo fusiona cualquiera de las dos. Bitbucket lo exige con un mínimo de 1 aprobación, porque no deja que el autor apruebe el suyo |
+| Aprobación de los PR | Todo PR a `develop` o a `main` lo aprueba al menos una persona distinta de quien lo crea; después lo fusiona cualquiera de las dos (a `main`, solo las personas autorizadas). Bitbucket pide 1 aprobación y no deja que el autor apruebe el suyo, pero sin Premium solo avisa: la regla la cumple el equipo, y Claude la comprueba antes de fusionar |
+| Ramas y merges | `main` es producción y `develop`, integración. Ramas de historia con la clave de Jira; `fix/`, `chore/` y `hotfix/` para lo demás. Squash por defecto; merge commit para la rama de la historia y para llevar un hotfix a `develop`; fast forward de `develop` a `main`. Las mitades no se borran nunca (sección 5) |
+| Historia hecha que cambia o falla | Se reabre la misma historia y su tarjeta vuelve a Integración. Nunca una historia nueva encima |
+| Historias descartadas | Séptimo estado en Jira, «Descartada»; lo mueve el pipeline cuando el descarte entra en `develop` |
+| Mapa de historias | `map.md` se genera en el equipo de cada uno y no se sube: en el repositorio, dos PR siempre chocarían en él |
+| Comprobaciones que solo puede hacer una persona | Las visuales, diseño. Las demás (un correo, un servicio real, el agente de Hyliable), el desarrollador de su lado en la integración |
 | Fuente del diseño | Figma. Mobbin, como referencia; lo que se adopta se dibuja en Figma |
-| Tarjeta de Jira | La crea Claude con el ok de la diseñadora: título, frase y enlaces (Figma y el fichero). Los criterios, solo en el fichero (opción A) |
+| Tarjeta de Jira | La crea Claude con el ok de la diseñadora: título, frase y enlaces (Figma y, al abrir el PR, el fichero). Los criterios, solo en el fichero |
 | Auditoría | Por muestreo al cerrar cada entrega, con el agente `auditor`. **Pendiente:** si la confirma una persona al final |
 | Agentes | `backend-builder` y `frontend-builder` con Sonnet; orquestador con Opus |
 | Commits | Los hace el orquestador tras el ok de la persona |
@@ -342,7 +427,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 |---|---|---|
 | Contratos y memoria de arquitectura en un servidor MCP sobre PostgreSQL con `pgvector` | El contrato es el OpenAPI generado desde Go, en el repositorio. Jira lleva el estado compartido | En el stack de EASY One el contrato ya sale del código. Una copia en `pgvector` se desincronizaría, no viajaría con la rama, nadie la revisaría en un PR y no se podría usar en la CI. `pgvector` sirve para buscar por parecido; un contrato hay que leerlo exacto. Lo que de verdad hacía falta era saber a quién le toca cada historia, y eso lo da Jira |
 | Desactivar el `reviewer` | Se mantiene solo para historias con riesgo | Los tests los escribe el mismo agente que escribe el código. En aislamiento entre cuentas, identidad, pagos o fiscal, un test en verde puede probar solo el caso fácil |
-| El humano hace el `git commit` de cada paso | Lo hace el orquestador tras el ok | La decisión sigue siendo humana, pero así los ficheros van por nombre, el formato del mensaje es siempre el mismo y el bloqueo de tests entra en el mismo commit |
+| El humano hace el `git commit` de cada paso | Lo hace el orquestador tras el ok | La decisión sigue siendo humana, pero así los ficheros van por nombre, el formato del mensaje es siempre el mismo y el bloqueo de tests va en su propio commit (`EO-123: lock back tests`), que es contra el que compara la guardia |
 | `frontend-builder` para Astro y React | React y Hyliable | Las webs de los clientes se hacen con Hyliable; desarrollar Hyliable es trabajo de frontend |
 | El orquestador decide la rama y despacha | Una sesión orquestadora por persona | Es un equipo: la coordinación entre lados pasa por Jira y por el contrato, no por una sola sesión |
 | Cinco fases | Seis etapas, con la integración separada | La integración con la API real es un paso propio de frontend, antes de que diseño revise |
@@ -352,7 +437,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 ## 12. Pendiente
 
 - **Probar el acceso a Jira desde Claude Code** (servidor MCP de Atlassian o `acli`) y el pipeline con Jira real.
-- **Elegir el generador del contrato:** Huma (código primero) u oapi-codegen (contrato primero). Es una de las pruebas técnicas de los cimientos; oapi-codegen encaja mejor con acordar el contrato antes de escribir código.
+- **Elegir el generador del contrato:** Huma (el OpenAPI sale del código Go) u oapi-codegen (el OpenAPI se escribe y genera el código Go). Es una decisión abierta desde el día uno y se cierra con las pruebas técnicas de los cimientos. Si gana oapi-codegen, donde este documento dice «OpenAPI generado desde Go» pasa a ser «OpenAPI escrito por el backend», y la instalación, parte 2, mide ese comando en lugar de `generateSpec`.
 - **Subir el fork a Bitbucket**, para que cada miembro del equipo lo instale desde allí.
 - **Hacer la historia piloto** y corregir el plugin con lo que salga.
 - **Migrar Hyliable** al monorepo y a claves de Jira, cuando se decida.

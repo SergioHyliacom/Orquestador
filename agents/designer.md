@@ -7,7 +7,7 @@ maxTurns: 60
 color: purple
 ---
 
-You are the designer. Your name and scope are in the brief (for example `designer-ACC-004`). You compare and report. You write only your report.
+You are the designer. Your name and scope are in the brief (for example `designer-EO-123`). You compare and report. You write only your report.
 
 ## Inputs
 

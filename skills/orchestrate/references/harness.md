@@ -26,7 +26,7 @@ Write the verdict on the first line of `.orchestrator/state.md`, with the Run id
 
 **In Orca the worker is the default.** Use the Agent tool only for a short read-only lookup whose answer only you need and that you would otherwise do yourself. Everything that writes, runs long, or produces a verdict the human will read is a supervised worker. Never substitute the Agent tool when the human asked to supervise, monitor or track the work: that request is for Orca provenance, and an in-process subagent leaves none.
 
-**In plain Claude Code** the Agent tool is the only mechanism. Parallel writers get `isolation: worktree`. Separate sessions only if the human runs them; coordinate through files in `.orchestrator/work/` and cross-session messages (ListAgents/SendMessage). A message lasts only as long as the session; the branch and the files are the durable record.
+**In plain Claude Code** the Agent tool is the only mechanism. Only one writer runs at a time, in your checkout (§2 of the skill); read-only agents may run in parallel with it. Separate sessions only if the human runs them; coordinate through files in `.orchestrator/work/` and cross-session messages (ListAgents/SendMessage). A message lasts only as long as the session; the branch and the files are the durable record.
 
 ## Orca: the guide is the authority
 
@@ -105,11 +105,11 @@ If the wait reports a `blockedReason`, read the terminal and take the prompt to 
 
 ## The brief is the spec
 
-Orca requires a **self-contained** spec: the injected preamble is all the worker starts with, and a worker in another workspace cannot read your ignored files by relative path. So pass the §4 brief **inline** as `--spec`, and keep writing it to `.orchestrator/work/<scope>/brief.md` as the durable record.
+Orca requires a **self-contained** spec: the injected preamble is all the worker starts with, and a worker in another workspace cannot read your ignored files by relative path. So pass the §4 brief **inline** as `--spec`, and keep writing it to `.orchestrator/work/<ID>/brief-<side>-<step>.md` as the durable record.
 
 | Orca spec field | §4 brief line |
 |---|---|
-| Target | `Target:` |
+| Target | `Story:` (a task: the branch) |
 | Change | `Change:` (reviewers: `Judge:`) |
 | Constraints | `Constraints:` and `Read first:` |
 | Ownership | `You may edit:` plus the role name |

@@ -36,7 +36,8 @@
       "build": "{{Jira status name for Desarrollo}}",
       "integration": "{{Jira status name for Integración}}",
       "visual": "{{Jira status name for Revisión visual}}",
-      "done": "{{Jira status name for Hecha}}"
+      "done": "{{Jira status name for Hecha}}",
+      "discarded": "{{Jira status name for Descartada}}"
     }
   },
   "orca": { "workerPermissionMode": "{{OPTIONAL: the mode Orca workers launch in, e.g. bypassPermissions; remove to use the orchestrator's own mode}}" },

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Story validator and map generator (easyone-orchestrator). No dependencies: Node >= 20.
 //
-//   node stories.mjs                 generate the map with the last saved test results
+//   node stories.mjs                 generate the map with the last saved test results (map.md is never committed)
 //   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
-//   node stories.mjs --check         exit 1 on errors or if the map is stale
+//   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
 //   node stories.mjs --pr ID         print a PR checklist for one story
 //   node stories.mjs --json          print the computed state as JSON (for agents)
@@ -285,7 +285,8 @@ for (const s of stories) {
   for (const c of s.criteria) {
     if (c.kind !== "test") continue;
     c.result = testResult(c);
-    if (c.result === "notFound") errors.push(`${s.file}: no test found for ${c.id}.`);
+    // A discarded story's tests may be gone with the code that removed it.
+    if (c.result === "notFound" && !s.discarded) errors.push(`${s.file}: no test found for ${c.id}.`);
   }
   const kinds = s.criteria.map((c) => (c.kind === "test" ? ({ pass: "ok", fail: "failing" }[c.result] ?? "unverified") : c.kind === "manual" ? "ok" : c.kind));
   const openDecisions = s.blockedBy.filter((d) => decisions.get(d)?.open);
@@ -430,7 +431,7 @@ out.push(`## ${X.legend}`, "", ...STATUS_ORDER.map((e) => `- ${L.statuses[e]}`),
 const md = out.join("\n");
 
 if (flag("--check")) {
-  // The main release must be green: a failing or skipped criterion fails the check, not only a stale map.
+  // The main release must be green: a failing, failing-test or skipped criterion fails the check.
   for (const s of main) for (const c of s.criteria) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);
     else if (c.result === "fail") errors.push(`${s.file}: the test for ${c.id} fails.`);
@@ -441,14 +442,9 @@ if (flag("--check")) {
 if (errors.length) { console.error(`\n${errors.length} problem(s):`); for (const e of errors) console.error("  - " + e); }
 if (runnerCode) console.error(`\nThe test command exited with code ${runnerCode}.`);
 
-if (flag("--check")) {
-  const current = existsSync(MAP) ? lf(readFileSync(MAP, "utf8")) : "";
-  if (current !== md) { console.error(`\nmap.md is stale: run \`node ${SCRIPT}\`.`); process.exit(1); }
-  if (errors.length || runnerCode) process.exit(1);
-  console.log("map.md is up to date.");
-} else {
-  writeFileSync(MAP, md);
-  console.log(`map.md written: ${stories.length} stories, ${MAIN_RELEASE} ${ok}/${main.length} (${pct} %).`);
-  if (errors.length) process.exit(1);
-  if (runnerCode) process.exit(runnerCode);
-}
+// map.md is generated on each machine and never committed: two pull requests would always conflict on it,
+// and a map written with test results never matches one written without them.
+writeFileSync(MAP, md);
+console.log(`map.md written: ${stories.length} stories, ${MAIN_RELEASE} ${ok}/${main.length} (${pct} %).`);
+if (errors.length) process.exit(1);
+if (runnerCode) process.exit(flag("--check") ? 1 : runnerCode);

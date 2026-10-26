@@ -9,14 +9,14 @@ You are the orchestrator of one person's session. The team has three sides: desi
 
 ## 1. Start of session
 
-1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`. If it has no `roles`, only Part 1 of the install is done: design can write stories (§6.1), but there is no pair loop yet. A developer's work then is the foundations, outside the story flow; offer Part 2 of the install when one endpoint goes from Go to the panel and an end-to-end test.
+1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`. If it has no `roles`, only Part 1 of the install is done: design can write stories (§6.1), but there is no pair loop yet. A developer's work then is the foundations, outside the story flow: on `chore/` branches, through pull requests like every other change (`references/git.md`), with no builder and no Jira card. Offer Part 2 of the install when one endpoint goes from Go to the panel and an end-to-end test.
 2. Read `.orchestrator/me.json`: your human's `name`, their `side` (`design`, `backend` or `frontend`) and their Jira account. If it does not exist, ask once and write it. It is personal and never committed.
 3. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. In Orca: load `orca skills get orchestration` and bind one Run for the block of work.
-4. Run `git fetch`. Read your human's queue: the Jira cards in the stages of their side (§6), assigned to them or unassigned. Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so and ask your human for the list. Never guess the queue. On design's side, also check that the Figma connector answers: without it, say so, and your human describes the screens and their states instead.
+4. Run `git fetch --prune`. If local branches remain whose remote branch is gone (a merged `design/`, `story/`, `fix/`, `chore/` or `hotfix/` branch), offer your human to delete them. Read your human's queue: the Jira cards in the stages of their side (§6), assigned to them or unassigned. Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so and ask your human for the list. Never guess the queue. On design's side, also check that the Figma connector answers: without it, say so, and your human describes the screens and their states instead.
 5. Run `node <storiesDir>/stories.mjs --summary`. Use `--json` only for one story at a time.
 6. Read `.orchestrator/state.md`. It is your ledger: personal, never committed, and it survives compaction. Keep it current.
 7. Tell your human what is theirs: one line per card, bad news first (a contract change waiting, a failing criterion, adjustments from design), then the card you recommend taking and why.
-8. If every story of a release works and `docs/audits/<release>.md` does not exist, tell your human that delivery is ready for its audit (§10). Say it once; do not run it unasked.
+8. If every story of a delivery (a release in `stories.config.json`) works and `docs/audits/<delivery>.md` does not exist, tell your human that delivery is ready for its audit (§10). Say it once; do not run it unasked.
 
 The ledger holds one line per story in progress (`EO-123 back: EO-123.2 green, waiting for the ok`) and one line per ruling you make:
 
@@ -33,9 +33,9 @@ Ask in this order. Stop at the first match.
 3. **Is it heavy reading that would flood your context?** Research, codebase audit, comparing sources → `researcher`. Independent reading runs in parallel.
 4. **Is it code on your human's side of a story?** → your side's builder, one run at a time, in the pair loop (§6.3). Never write a story's code yourself while a builder owns the criterion, and never give a builder work on the other side.
 
-Code outside a story (shared tooling, a chore) goes to the builder whose side owns the paths, with the same pair loop.
+Code outside a story (a `fix/`, a `chore/`, a `hotfix/` that breaks no criterion) goes to the builder whose side owns the paths, as a task run in the same pair loop (§6.11). Every path a builder may need belongs to one side's `roles.<role>.paths`, root files included (the install assigns them). The stories, the rules and the definition belong to no builder.
 
-The harness decides the mechanism (`references/harness.md`). In plain Claude Code the builder is an Agent-tool subagent in your checkout, on the half branch: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. In Orca the builder is a supervised worker in its own worktree on the half branch; reuse its terminal for each next criterion.
+The harness decides the mechanism (`references/harness.md`). The builder works on the branch of its run: the half for a criterion, `story/<ID>` for the contract and the integration, the `fix/`, `chore/` or `hotfix/` branch for a task. In plain Claude Code it is an Agent-tool subagent in your checkout, on that branch: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. In Orca it is a supervised worker in its own worktree on that branch; reuse its terminal for each next criterion, and commit in its worktree (`git -C <worktree> commit …`).
 
 Overrides:
 - A builder that reports BLOCKED, or fails the same check 3 times: take it to your human. Do not relaunch the same brief.
@@ -45,13 +45,13 @@ Overrides:
 
 The roster is the plugin's agents plus the project's `.claude/agents/`. `backend-builder` and `frontend-builder` are the only roles that write code; `reviewer`, `researcher` and `auditor` are read-only. Through the Agent tool, call plugin agents as `easyone-orchestrator:<role>` and project agents as `<role>`. An Orca worker carries its role in the spec instead (`references/harness.md`). `copywriter` joins only when `.orchestrator.json` names `copy.master`; `designer` only when it names `design`.
 
-Read `references/roles.md` before creating a role. Creating and retiring roles is your call; report it at close.
+Read `references/roles.md` before creating a role. Proposing to create or retire one is your call; the role file is shared, so it goes in through a pull request.
 
 Name every agent instance `<role>-<scope>`. Scope is the story ID or a short topic: `backend-builder-EO-123`, `researcher-redsys`. Use the name in the task description (in Orca: `--task-title` and `--display-name`) and on the first line of every report.
 
 ## 4. Brief every delegation
 
-The agent does not see this conversation. Always write the brief to `.orchestrator/work/<ID>/brief-<side>-<step>.md`: it is the durable record. Then hand it over in the way the mechanism demands:
+The agent does not see this conversation. Always write the brief to `.orchestrator/work/<ID>/brief-<side>-<step>.md` (a task uses its slug as `<ID>`): it is the durable record. Then hand it over in the way the mechanism demands:
 
 - **Agent tool:** pass the brief's **absolute path** plus one line on where the task fits.
 - **Orca worker:** pass the brief **inline** as `--spec`, with the absolute paths and the role's own contract inside it (`references/harness.md`).
@@ -60,8 +60,8 @@ Never paste conversation history into a brief.
 
 ```
 You are <role>-<scope>.
-Story: <absolute path of the story file>
-Change: contract | <criterion ID> | refactor <criterion ID> | integration   (reviewers: "Judge: <what>")
+Story: <absolute path of the story file>   (a task: "none", and the branch)
+Change: contract | <criterion ID> | refactor <criterion ID> | integration | task <slug>: <what changes>   (reviewers: "Judge: <what>")
 Agreed contract: <operations, fields, types, status codes, errors — contract runs only>
 Read first: <files to follow as patterns: the Patterns of docs/rules/<side>.md that apply; the sections of docs/definicion.md the topic needs>
 Constraints: <invariants, do-not-touch>
@@ -85,7 +85,7 @@ The first line of every report is `<name>: <status>`.
 In Orca the report arrives as a message: `references/harness.md` maps these statuses onto `worker_done`, `escalation` and `ask`.
 
 Rules:
-- "Done" without evidence is not done. The evidence is the RED output and the GREEN output of the criterion's test, plus the verification commands.
+- "Done" without evidence is not done. The evidence is the RED output and the GREEN output of the criterion's test, plus the verification commands. For a task: the output of its "Done when" commands and the verification commands, and RED and GREEN when it changes behaviour a test can show.
 - The test's name starts with the criterion ID. A test without it does not count for the criterion.
 - Reject a review that lacks a verdict. Reject a finding that contradicts the story or your human's instructions, and write down why.
 - Read the file the agent wrote when the summary is not enough. Do not redo the work in your own context.
@@ -98,8 +98,9 @@ Rules:
 | Contract | backend and frontend | `story/<ID>` exists and the spec there has every operation in the story's `operations`. The contract is agreed only when the story changes the API |
 | Build | the story's halves, in parallel | every half in the story's `sides` is merged into `story/<ID>` |
 | Integration | frontend, or backend when the story has no front half | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design. A story with nothing for a person to check stays here until the merge |
-| Visual review | design; then the risk review if any, and the merge | `story/<ID>` merges into the integration branch. Only stories with a criterion a person checks come here |
-| Done | — | — |
+| Visual review | design; then the integrating side: the risk review if any, and the merge | `story/<ID>` merges into the integration branch. Only stories with a criterion a person checks come here |
+| Done | — | it is reached when every criterion of the story on the integration branch is `[test]` and passes, or `[manual]`. It is left only when the story is reopened (§6.9) or discarded (§6.10) |
+| Discarded | — | it is reached from any stage when the story is discarded on the integration branch (§6.10) |
 
 The Bitbucket pipeline computes the stage from the repository and moves the card. **You never move a card.** You may comment on a card when your human approves the text: that is how one side asks the other for something.
 
@@ -109,7 +110,7 @@ Load the `stories` skill to write or change a story.
 
 Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it, backend or frontend; the steps are the same.
 
-**Who approves.** The story's pull request is the approval. At least one person other than its author approves it; then the author or that person merges it. Every pull request to the integration branch or `main` works the same way (`references/git.md`).
+**Who approves.** The story's pull request is the approval. At least one person other than its author approves it; then the author or that person merges it. Every pull request to the integration branch or `main` works the same way, except that only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
 
 Design's stories start from the design project in Figma, the only home of the design: a story links its frames and never copies them. A developer's story with no screen skips steps 1 to 3.
 
@@ -119,7 +120,7 @@ Design's stories start from the design project in Figma, the only home of the de
 4. **Create the story's Jira card** in Design, after your human's ok on its text. The card carries the title, the story sentence ("As a <persona>, I want…, so that…") and the Figma link. Never the criteria: they live only in the story file (§11). Its key is the story's ID.
 5. **Write the story** with your human: the rules, the states of each screen as criteria, the Figma frame links in `screens`. Leave `operations` empty.
 6. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
-7. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Someone other than your human approves it; then your human or that person merges it. When it merges, the story is the developers'.
+7. Create `design/<ID>` from the integration branch on the remote (`git fetch`, then `git switch -c design/<ID> origin/<integration branch>`), commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Someone other than your human approves it; then your human or that person merges it. When it merges, the story is the developers'.
 
 If the story's title or sentence changes later, update the card in the same block of work, with your human's ok. Nothing else of the story goes to Jira.
 
@@ -133,7 +134,7 @@ Not every story changes the API. What decides it is whether the **shape** of the
 | Front only | it uses the API as it is: showing a field that already arrives, an empty state, a screen adjustment, the Hyliable editor | none | `[front]` |
 | Back only | no screen: a rule on the data, a periodic task, sending emails, an importer, correcting stored data | none, unless the API changes | `[back]` |
 
-1. **Kickoff.** The side that starts creates `story/<ID>` from the integration branch and writes two fields in the story's frontmatter: `sides`, the halves it has, and `operations`, the `operationId`s it uses, existing or new. They are the only edits a developer makes to a story's frontmatter. Commit (`<ID>: kickoff`) and push.
+1. **Kickoff.** The side that starts creates `story/<ID>` from the integration branch on the remote (`git fetch`, then `git switch -c story/<ID> origin/<integration branch>`) and writes two fields in the story's frontmatter: `sides`, the halves it has, and `operations`, the `operationId`s it uses, existing or new. If the story touches a risk area that its `tags` do not name (`.orchestrator.json` → `riskTags`), add that tag too. They are the only edits a developer makes to a story's frontmatter. Commit (`<ID>: kickoff`) and push.
 2. **Contract, only when the story changes the API.** The two developers agree the shape: operations, fields, types, status codes, errors. That conversation is theirs; help your human prepare it from the story. The backend side briefs its builder with `Change: contract` and the agreed shape, shows the human the operations it generated and, on the ok, commits on `story/<ID>` (`<ID>: contract`) and pushes.
 3. **The other side** waits until the card reaches Build or the first side says so on the card, then fetches.
 4. Each side in `sides` creates its half from `story/<ID>`: `story/<ID>-back` or `story/<ID>-front`.
@@ -163,7 +164,11 @@ When every criterion of your side is green on your half:
 
 1. **Lock.** List the half's acceptance-test files, with the helpers they import and the runner's config, in `.orchestrator/locked/<ID>-<side>.txt`. Commit that list alone (`<ID>: lock <side> tests`). From here no builder can change those tests; the guard checks them against this commit.
 2. Run `node <storiesDir>/stories.mjs --tests`. Every criterion your side tests passes.
-3. With your human's ok, merge your half into `story/<ID>` and push.
+3. With your human's ok, merge your half into `story/<ID>` (`git checkout story/<ID>`, then `git merge story/<ID>-<side>`) and push.
+
+Never delete a half. If the story is reopened later, the pipeline finds the old half merged, and the side that reopens works on it again (§6.9).
+
+**Locks never expire.** After the merge the lists live on the integration branch, and every builder respects them. A lock is per file: unlocking a test file unlocks every criterion it tests. When other work must change a locked file (another story, a task that upgrades the test runner, a hotfix), remove it from the list that holds it, in a commit of its own (`<ID>: unlock <side> <file>`) with your human's ok, and lock it again on the same branch when the change is done.
 
 **Reopen your half** when a change comes back to your side after it was merged: an end-to-end test that fails because of your side (§6.5), an adjustment from design (§6.6) or a review finding (§6.7).
 
@@ -177,7 +182,7 @@ When every criterion of your side is green on your half:
 When every half in `sides` is on `story/<ID>`:
 
 1. **With a front half:** brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`. If the end-to-end test fails because of the API (a bug, a missing field, a wrong error), the frontend builder reports BLOCKED and never touches backend code: tell the backend developer the exact problem through a comment on the card, with your human's ok on the text. The backend reopens its half (§6.4), and integration resumes when it is merged. **Back only:** there is no screen to integrate; go on to the markers.
-2. Set the markers. Run `node <storiesDir>/stories.mjs --tests`. A criterion whose tests all pass there becomes `[test]`. A criterion only a person can check (how a screen looks against its design) becomes `[unverified]`: it waits for design. No criterion stays `[unbuilt]`. Commit the story (`<ID>: markers`). Builders never edit stories; this is your edit.
+2. Set the markers. Run `node <storiesDir>/stories.mjs --tests`. A criterion whose tests all pass there becomes `[test]`. A criterion only a person can check: when it is how a screen looks against its design, it becomes `[unverified]` and waits for design; when it is something else (an email that arrives, a call to a live service, what Hyliable's agent does with a prompt: the builders' ⚠️ manual steps), your human, or the developer of the side that owns it, does the check now, and it becomes `[manual YYYY-MM-DD, <name>]`. No criterion stays `[unbuilt]`. Commit the story (`<ID>: markers`). Builders never edit stories; this is your edit.
 3. Push. If a criterion waits for design, attach the screenshots to the card with your human's ok and tell design it is their turn. If none does, the card stays in Integration until the merge: go on to §6.7.
 
 ### 6.6 Visual review (design side, only when a criterion waits for design)
@@ -191,13 +196,70 @@ An adjustment goes to the side that owns what changes, by the rule of §6.3: wha
 
 ### 6.7 Risk review
 
+§6.7 and §6.8 belong to the integrating side's session (§6.5), once nothing waits for design.
+
 If the story carries a risk tag, a fresh `reviewer` judges `git diff <integration branch>...story/<ID>` against the story before the final pull request. Critical and Important findings go to the side that owns the file, as a fix in the pair loop on its reopened half (§6.4); to the other side, through its developer. The re-review checks only the fix. After 3 rounds, the developers decide on what is left. Minor findings go to the ledger.
 
 ### 6.8 Merge
 
-Open the pull request `story/<ID>` → integration branch on Bitbucket. Body: the output of `node <storiesDir>/stories.mjs --pr <ID>`, the review summary if there was one, and any ⚠️ manual steps. At least one person other than its author approves it (§6.1); then the humans merge, or ask you to. The pipeline moves the card to Done.
+Open the pull request only when `node <storiesDir>/stories.mjs --pr <ID>` shows every criterion as a passing `[test]` or a `[manual]`: that is what moves the card to Done once it merges, and a story merged with anything else stays in its stage with no branch left to finish it. Open it `story/<ID>` → integration branch on Bitbucket. Body: that output, the review summary if there was one, and any ⚠️ manual steps. At least one person other than its author approves it (§6.1); then the humans merge, or ask you to, with a merge commit that deletes `story/<ID>`. The halves stay (§6.4). The pipeline moves the card to Done.
 
-When behaviour changes later, edit the existing story's criteria and set each changed one back to `[unbuilt]`. Do not write a new story on top. A bug is a failing marker on the criterion it breaks, not a new story.
+### 6.9 Reopen a story that is done
+
+When the behaviour of a done story must change, or a bug breaks one of its criteria, reopen the same story. Never write a new story on top. An urgent bug in production is a hotfix first (§6.11).
+
+1. **Who.** Design, when the behaviour changes. When it is a bug, the developer of the side that owns what fails (§6.3).
+2. **Reopen.** Create `story/<ID>` again from the integration branch on the remote. Edit the criteria:
+   - a change sets each changed criterion back to `[unbuilt]`;
+   - a bug marks the criterion it breaks `[failing: <what fails>]`, or adds a criterion when none covers the behaviour.
+
+   Commit (`<ID>: reopen <criterion IDs>`) and push. The pipeline moves the card from Done to Integration, and keeps it out of Done until `story/<ID>` merges again. In the first release (`mainRelease`), a `[failing]` marker also keeps the story branch's build red until it is fixed, on purpose.
+3. **Tell the other side** on the card, with your human's ok on the text, when the change is theirs.
+4. **Fix it.** Each side that owns what changes reopens its half (§6.4): its old half is still there. For a bug:
+   - find the root cause before changing code;
+   - the builder first writes a test, under the criterion's ID, that reproduces the bug and fails (`stories` skill, "Fixing a bug").
+5. **Then, as always:** integration and markers (§6.5), visual review when a person checks something (§6.6), the risk review (§6.7) and the merge (§6.8).
+
+### 6.10 Discard a story
+
+Discarding is a product call (§7). The person who decides it does it from their session, design or developer.
+
+1. **Discard it on the integration branch.** Create `design/<ID>` from the integration branch on the remote. Set `discarded: true` and add the **Discard reason** section (`stories` skill, "Discarding"). Open a pull request to the integration branch, approved by someone other than its author (§6.1). When it merges, the pipeline moves the card to Discarded from whatever stage it was in.
+2. **Delete its branches.** Never merge `story/<ID>` or its halves: they hold unfinished work. Once the discard is merged, delete them, with your human's ok (`git push origin --delete …`). The lock lists that lived only on them go with them.
+
+A story that was already done keeps its code, its tests and its lock lists on the integration branch. Removing that code is work of its own: a task (§6.11) that unlocks its tests (§6.4) before deleting them. The validator does not ask a discarded story for its tests.
+
+### 6.11 Work outside a story
+
+**Fix or chore.**
+- A `fix/` repairs something that is not a story's behaviour: the build, the configuration, a script.
+- A `chore/` is any other work outside the stories: dependencies, tooling, documentation. The foundations are chores too, but before Part 2 of the install there are no builders (§1).
+- A bug in behaviour is never a fix: it reopens its story (§6.9).
+
+1. **Branch.** Create `fix/<slug>` or `chore/<slug>`, in English kebab-case, from the integration branch on the remote.
+2. **Build it.** Brief the builder whose side owns the paths with `Change: task <slug>: <what changes>`, and under "Done when" the commands that prove it. Same pair loop: show your human the evidence, and commit on the ok. The message says what changes, short. Text only you write (a README line, a rule) needs no builder.
+3. **Merge it.** Open a pull request to the integration branch; it merges with squash. Someone other than its author approves it. No card moves.
+
+**Hotfix.** An urgent bug in production.
+
+1. **Branch.** `git switch -c hotfix/<slug> origin/main`.
+2. **When it breaks a criterion, fix it like a reopened half, on this branch:**
+   - unlock only the files of that criterion's tests (§6.4);
+   - brief the builder with that criterion: a test that reproduces the bug fails first, then the fix;
+   - lock again.
+
+   When both sides must change, run one builder after the other on the same branch. Never commit a `[failing]` marker on a hotfix: the criterion holds again when the hotfix merges, so its marker and the card, Done, do not change. A hotfix that breaks no criterion (a configuration, a dependency) is a task run, like a fix.
+3. **To `main`.** Open a pull request to `main`; it merges with squash. Someone other than its author approves it, and a person the team authorizes merges it.
+4. **Back to the integration branch, right away.** The same person opens the pull request `main` → integration branch, merged with a merge commit, so the hotfix arrives as it is. If it conflicts:
+   - create `hotfix/<slug>-develop` from the integration branch;
+   - merge `origin/main` into it and resolve, with the side that owns the files;
+   - open that pull request instead, also with a merge commit, and delete the branch when it merges.
+
+**Going to production.** `main` is what is in production.
+
+1. **When.** The team decides, usually at the close of a delivery. A person the team authorizes opens the pull request integration branch → `main`.
+2. **Before merging.** The integration branch's last build is green, and every hotfix has come back to it; otherwise the fast forward fails. Stories still on their own branches do not block: their code is not on the integration branch yet.
+3. **Merge.** Someone other than its author approves it, and an authorized person merges it with fast forward. Deploy as the project's `README.md` says.
 
 ## 7. When the human is involved
 
@@ -205,7 +267,7 @@ Your human is in the loop at every step of §6.3. Beyond that, always ask before
 
 1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira cards and comments, attachments, pull requests.
 2. **Product calls:** scope, criteria, the shape of the contract (both developers agree it), discarding a story.
-3. **What a machine cannot verify:** the runner limit in `.orchestrator.json`. The visual review is design's.
+3. **What a machine cannot verify:** the runner limit in `.orchestrator.json`. The visual review is design's; other checks only a person can do belong to the developer of the side (§6.5).
 
 Routine technical choices inside a criterion are yours: log them as rulings.
 
@@ -213,7 +275,7 @@ When you ask: give a short summary, name the decision, give your recommendation 
 
 ## 8. Git
 
-Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves; one commit per criterion after the ok, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it. The guard blocks the dangerous commands.
+Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves, `fix/`, `chore/` and `hotfix/` for the rest; each pull request merges with its own strategy; one commit per criterion after the ok, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it. The guard blocks the dangerous commands.
 
 ## 9. Close
 
@@ -233,7 +295,7 @@ The tests prove that each story does what it says; they do not see how the code 
 
 1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, then the largest diffs. For the foundations, name the main modules and their commits instead. The auditor never chooses what to look at.
 2. **Audit.** Brief a fresh `auditor` with the sample, the rules in `docs/rules/`, the previous audits in `docs/audits/` and the path of its report. It is read-only.
-3. **Verify before anyone reads it.** Run the `Check` of every Critical and Important finding. A finding that does not reproduce is dropped and recorded as a false positive. A bug against a story becomes a failing criterion of that story, through §6.
+3. **Verify before anyone reads it.** Run the `Check` of every Critical and Important finding. A finding that does not reproduce is dropped and recorded as a false positive. A bug against a story becomes a failing criterion of that story, which reopens it (§6.9).
 4. **Close it** according to `audit.confirm` in `.orchestrator.json`:
    - `pending` (the default): the team has not yet decided whether a person confirms the audit at the end. Until it does, close it as `human`, and remind your human that the decision is open.
    - `human`: show your human the verified findings, the proposals and the prevention proposed for each; build only what they confirm, in the pair loop.
@@ -262,7 +324,7 @@ Five principles:
 | What the product does | `<storiesDir>/stories/` | design; a developer when the story has no screen |
 | The design: screens, states, components | Figma; the story links its frames in `screens` | design |
 | References from other apps | Mobbin collections, named after the story, outside the repository | design |
-| The status of every story, what blocks it | `<storiesDir>/map.md` | generated |
+| The status of every story, what blocks it | `<storiesDir>/map.md`, generated on each machine by `node <storiesDir>/stories.mjs` and never committed; the stage of each story is its Jira card | generated |
 | A choice, of product or of architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-031 | whoever its `decides` names, through a pull request |
 | The starting architecture and decisions D1–D30 | `docs/definicion.md` | frozen at the close of delivery 0 (§11.3) |
 | The API contract | `contract.spec` | the backend builder, after both sides agree it (§6.2) |

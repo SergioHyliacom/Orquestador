@@ -26,6 +26,7 @@ Stories have no priority field. The release sets the order. The first release in
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
 - Author: design writes every story with a screen. A story with no screen can be written by the developer who understands it, backend or frontend.
 - Approval: the story's pull request. At least one person other than its author approves it; then the author or that person merges it.
+- Tags: `tags` holds the risk tags (`.orchestrator.json` → `riskTags`) of the areas the story touches. Whoever writes the story sets them; a developer adds one at the kickoff when the story touches an area it does not name. A risk tag adds the reviewer at story close.
 - Sides: the `sides` field lists the halves the story has: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
 - Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story uses, existing or new. Design leaves it empty. The developers fill it at the kickoff, and the validator checks that each one is in the spec.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
@@ -82,10 +83,12 @@ A bug is not a new story. Mark the criterion it breaks as failing.
 
 ## Fixing a bug
 
-1. Find the criterion the bug breaks. Mark it failing, with the reason. If no criterion covers the behaviour, add one to the story it belongs to.
+A bug reopens the story it breaks (`orchestrate` skill, §6.9); an urgent one in production is a hotfix first (§6.11).
+
+1. Find the criterion the bug breaks. On the reopened `story/<ID>`, mark it failing, with the reason. If no criterion covers the behaviour, add one to the story it belongs to.
 2. Find the root cause before changing code. Check the project's seams first: a bug where nothing errors and the old behaviour keeps showing is usually one half of a seam that did not change.
-3. Write a test that reproduces the bug and watch it fail.
-4. Fix the code until the test passes. Update the marker.
+3. The builder of the side that owns it writes a test, under the criterion's ID, that reproduces the bug, and watches it fail. Unlock that test file first if it is locked.
+4. The same builder fixes the code until the test passes, in the pair loop. The marker is set again at integration.
 
 ## Decisions
 
@@ -97,7 +100,7 @@ A decision that changes the definition names the sections it changes under *What
 
 ## Discarding
 
-Never delete a story. Set `discarded: true` and add a **Discard reason** section with the date and the reason.
+Never delete a story. Set `discarded: true` and add a **Discard reason** section with the date and the reason. It reaches the integration branch through `design/<ID>`, never through the story's own branches, and the card moves to Discarded when it merges (`orchestrate` skill, §6.10).
 
 ## Splitting a story
 
@@ -120,7 +123,7 @@ Never split by layer ("API for…", "database for…", "front end of…"). A lay
 ## Turning a request into stories
 
 1. Find the activity. If none fits, propose a new one to the human; activities are product calls.
-2. Create the story's Jira card, in the design status, after the human's ok on its text, and take its key as the ID. The card carries the title, the story sentence and the Figma link; never the criteria.
+2. Create the story's Jira card, in the design status, after the human's ok on its text, and take its key as the ID. The card carries the title, the story sentence and the Figma link; the link to the story file is added when its pull request opens. Never the criteria.
 3. Write the story and its rules. Ask the human only what you cannot infer, all at once.
 4. Add key examples where a rule is ambiguous.
 5. Fill out-of-scope and verification. Link the Figma frames in `screens`.

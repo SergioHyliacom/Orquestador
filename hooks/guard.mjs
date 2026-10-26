@@ -42,7 +42,7 @@ try { config = JSON.parse(stripBom(readFileSync(configPath, "utf8"))); }
 catch (e) { block(`${STATE}.json is not valid JSON (${e.message}). Fix it before continuing.`); }
 
 const git = config.git ?? {};
-const protectedBranches = git.protectedBranches ?? ["main", "master"];
+const protectedBranches = git.protectedBranches ?? ["main", git.integrationBranch ?? "develop"];
 const broadAddBlocked = git.blockBroadAdd !== false;
 // The role of this session. A Claude Code subagent carries it in agent_type. An Orca worker is a
 // whole session and carries none, so the orchestrator declares it in the worker's own workspace.
@@ -156,6 +156,22 @@ function commands(line) {
 
 const isGit = (t) => /(^|[\\/])git(\.exe)?$/i.test(t);
 
+// What a read-only role may run: git commands that only read. branch and remote may only list.
+function readsOnly(args) {
+  let i = 0;
+  while (i < args.length && args[i].startsWith("-")) i += /^(-C|-c|--git-dir|--work-tree|--namespace)$/.test(args[i]) ? 2 : 1;
+  const sub = (args[i] ?? "").toLowerCase();
+  const rest = args.slice(i + 1);
+  if (/^(status|diff|log|show|blame|grep|ls-files|rev-parse|merge-base|rev-list|cat-file|shortlog|describe)$/.test(sub)) return true;
+  if (sub === "branch") {
+    const changes = rest.some((a) => /^-[^-]*[dDmMcCfu]/.test(a) || /^--(delete|move|copy|force|set-upstream-to|unset-upstream|edit-description|track|no-track)/.test(a));
+    const lists = rest.some((a) => /^(-l|--list|--contains|--no-contains|--merged|--no-merged|--points-at)/.test(a));
+    return !changes && (lists || rest.every((a) => a.startsWith("-")));
+  }
+  if (sub === "remote") return !rest.length || /^(-v|--verbose|show|get-url)$/.test(rest[0]);
+  return false;
+}
+
 function checkGit(args) {
   // Skip global options to find the subcommand: git -C dir -c k=v push ...
   let i = 0;
@@ -190,7 +206,9 @@ function checkGit(args) {
   }
   if (["merge", "rebase", "cherry-pick", "pull", "am", "revert"].includes(sub)) {
     const b = currentBranch(dirArg);
-    if (b && protectedBranches.includes(b)) block(`git ${sub} on ${b} is blocked. Merging into ${b} happens only on the product owner's request.`);
+    // Catching up with the remote creates no commit, so `git pull --ff-only` stays allowed.
+    const fastForward = ["merge", "pull"].includes(sub) && has(/^--ff-only$/);
+    if (b && protectedBranches.includes(b) && !fastForward) block(`git ${sub} on ${b} is blocked: ${b} changes only through pull requests. To bring it up to date use \`git pull --ff-only\`, or branch from origin/${b}.`);
   }
   if (sub === "add" && broadAddBlocked && rest.some((a) => /^(-A|--all|-u|--update|\.|\.\/|:\/|\*)$/.test(a))) {
     block("broad `git add` is blocked. Stage the story's files by name.");
@@ -243,7 +261,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     const tokens = raw.slice(s);
     if (!tokens.length) continue;
     if (isGit(tokens[0])) {
-      if (readOnlyRole && !/^(status|diff|log|show|blame|grep|ls-files|rev-parse|branch|remote)$/i.test(tokens.find((t, i) => i > 0 && !t.startsWith("-")) ?? "")) block(`${agentType} is read-only. It may only run git commands that read.`);
+      if (readOnlyRole && !readsOnly(tokens.slice(1))) block(`${agentType} is read-only. It may only run git commands that read.`);
       checkGit(tokens.slice(1));
       continue;
     }

@@ -19,8 +19,8 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 
 | Ruta | Qué es |
 |---|---|
-| `agents/backend-builder.md` | Agente de backend (Go + PostgreSQL): el contrato o un criterio por encargo |
-| `agents/frontend-builder.md` | Agente de frontend (React, Hyliable y la plantilla Astro): un criterio por encargo, la integración |
+| `agents/backend-builder.md` | Agente de backend (Go + PostgreSQL): el contrato, un criterio o una tarea fuera de las historias por encargo |
+| `agents/frontend-builder.md` | Agente de frontend (React, Hyliable y la plantilla Astro): un criterio, la integración o una tarea fuera de las historias por encargo |
 | `agents/reviewer.md` | Revisión independiente al cerrar una historia, solo si lleva etiqueta de riesgo |
 | `agents/auditor.md` | Auditoría por muestreo al cerrar cada entrega: lo que los tests no ven, convertido en reglas |
 | `agents/researcher.md` | Investigación de solo lectura |
@@ -51,14 +51,16 @@ Claude Code carga los plugins al arrancar. Después de instalar, abre una sesió
 
 Abre el proyecto y ejecuta `/easyone-orchestrator:install`. La instalación tiene dos partes:
 
-1. **Parte 1, historias (el día uno).** Carpeta de historias y validador, proyecto de Jira con sus 6 estados, ajustes de git y un pipeline mínimo. También la definición en `docs/definicion.md`, `README.md`, `CLAUDE.md`, `docs/rules/` con la semilla de reglas y los pendientes técnicos como decisiones abiertas. Con esto diseño ya puede escribir historias.
+1. **Parte 1, historias (el día uno).** Carpeta de historias y validador, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada»), ajustes de git y de Bitbucket y un pipeline mínimo. También la definición en `docs/definicion.md`, `README.md`, `CLAUDE.md`, `docs/rules/` con la semilla de reglas y los pendientes técnicos como decisiones abiertas. Con esto diseño ya puede escribir historias.
 2. **Parte 2, desarrollo (al acabar los cimientos).** Se ejecuta cuando un endpoint de prueba va de Go al panel pasando por el OpenAPI y una prueba E2E, con PostgreSQL real. Mide los comandos de verificación, el contrato y sus generadores, las rutas y comprobaciones de cada lado y los informes de tests, y completa el pipeline. Congela la definición y escribe los patrones de cada lado.
 
 La primera vez que cada persona abre Claude en el proyecto, su sesión le pregunta quién es y de qué lado trabaja (`.orchestrator/me.json`, que es personal y no entra en git).
 
 **Variables del pipeline** (repositorio de Bitbucket, como variables protegidas): `JIRA_EMAIL` y `JIRA_API_TOKEN`. Ningún token se escribe en un fichero del repositorio.
 
-**Flujo de Jira:** cada estado tiene que poder recibir tarjetas desde cualquier otro («allow all statuses to transition to this one»), porque el pipeline mueve las tarjetas en los dos sentidos.
+**Flujo de Jira:** cada estado tiene que poder recibir tarjetas desde cualquier otro («allow all statuses to transition to this one»), porque el pipeline mueve las tarjetas en los dos sentidos: una historia reabierta sale de Hecha, y una descartada sale de cualquier etapa.
+
+**Ajustes de Bitbucket** (los aplica una persona; la lista está en `skills/orchestrate/references/git.md`): `main` y `develop` sin push directo, sin borrado y sin reescritura; para fusionar, 1 aprobación, sin cambios pedidos, sin tareas abiertas y con el build en verde; a `main` solo fusionan las personas autorizadas; estrategia por defecto, Squash.
 
 ## Requisitos
 
@@ -66,6 +68,7 @@ La primera vez que cada persona abre Claude en el proyecto, su sesión le pregun
 - Node.js 20 o posterior en el `PATH`. Lo usan la guardia, el validador y la sincronización con Jira.
 - Git y un repositorio en Bitbucket con Pipelines.
 - Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`. Sin ninguno de los dos, la sesión pide la lista a la persona.
+- Para diseño: el conector de Figma en Claude, con acceso a los ficheros del proyecto, y Mobbin si el equipo lo usa. Su cuenta de Jira tiene que poder crear y editar tarjetas.
 - En el proyecto: `gotestsum` para el informe de los tests de Go, Vitest y un runner E2E con informe JUnit.
 - Opcional: [Orca](https://orca.dev). Sin él, los agentes funcionan como subagentes de Claude Code.
 
@@ -98,7 +101,7 @@ Las skills y los agentes siguen en inglés, como en el original: los lee el mode
 
 ## Estado
 
-- **Probado:** la guardia (escenarios simulados de cada rol), el validador con resultados de Go y Vitest, y la sincronización con Jira de principio a fin contra un Jira simulado. `claude plugin validate` pasa.
+- **Probado:** la guardia (escenarios simulados de cada rol), el validador con resultados de Go y Vitest, y la sincronización con Jira de principio a fin contra un Jira simulado, también reabrir una historia hecha, descartar una y una build sin resultados de tests. `claude plugin validate` pasa.
 - **Sin probar todavía:** las skills y la instalación en el repositorio real de EASY One, Jira real, el acceso a Jira desde Claude Code y el pipeline en Bitbucket. La primera historia sirve de piloto.
 
 ## Autores

@@ -4,7 +4,7 @@
 //
 //   node jira-sync.mjs                    compute the stages for the branch being built, move the cards
 //   node jira-sync.mjs --dry-run          compute and print; move nothing
-//   node jira-sync.mjs --branch <name>    the branch to evaluate (default: BITBUCKET_BRANCH, else the current one)
+//   node jira-sync.mjs --branch <name>    the branch to evaluate; it must be the one checked out (default: BITBUCKET_BRANCH, else the current one)
 //   node jira-sync.mjs --no-fetch         do not fetch the story branches first
 //
 // It reads <root>/.orchestrator.json (jira, git.integrationBranch) and `stories.mjs --json`, so run
@@ -29,7 +29,9 @@ const ROOT = path.resolve(DIR, storiesConfig.root ?? "..");
 let config;
 try { config = readJson(path.join(ROOT, ".orchestrator.json")); } catch (e) { fail(`cannot read .orchestrator.json (${e.message}).`); }
 
-const STAGES = ["design", "contract", "build", "integration", "visual", "done"];
+// The six stages in order, and Discarded beside them: a card reaches it from any stage.
+const FLOW = ["design", "contract", "build", "integration", "visual", "done"];
+const STAGES = [...FLOW, "discarded"];
 const jira = config.jira ?? {};
 const statusOf = jira.statuses ?? {};
 for (const s of STAGES) if (!statusOf[s] || String(statusOf[s]).includes("{{")) fail(`.orchestrator.json → jira.statuses.${s} is not set.`);
@@ -44,7 +46,10 @@ const gitOk = (a) => spawnSync("git", a, { cwd: ROOT, stdio: "ignore" }).status 
 const remoteHas = (b) => gitOk(["rev-parse", "--verify", "--quiet", `refs/remotes/origin/${b}`]);
 const merged = (b, into = "HEAD") => remoteHas(b) && gitOk(["merge-base", "--is-ancestor", `refs/remotes/origin/${b}`, into]);
 
-const branch = after("--branch") ?? process.env.BITBUCKET_BRANCH ?? git(["rev-parse", "--abbrev-ref", "HEAD"]);
+const checkedOut = git(["rev-parse", "--abbrev-ref", "HEAD"]);
+const branch = after("--branch") ?? process.env.BITBUCKET_BRANCH ?? checkedOut;
+// The stories and the merges are read from the checkout, so they only prove the branch that is checked out.
+if (checkedOut !== "HEAD" && branch !== checkedOut) fail(`${branch} is not checked out (this is ${checkedOut}). Check it out first.`);
 if (!flag("--no-fetch")) {
   // A pipeline clones one branch. The stage depends on the story branches and the integration branch too.
   try { git(["fetch", "--quiet", "origin", "+refs/heads/story/*:refs/remotes/origin/story/*", `+refs/heads/${INTEGRATION}:refs/remotes/origin/${INTEGRATION}`]); }
@@ -64,19 +69,27 @@ const settled = (c) => (c.kind === "test" && c.result === "pass") || c.kind === 
 function storyBranchStage(id) {
   const s = story(id);
   if (!s) return { error: `${id} is not in the stories folder on this branch.` };
-  if (s.contractMissing.length) return { stage: "contract", why: `the spec lacks ${s.contractMissing.join(", ")}` };
-  // Every half the story declares must be merged; a half nobody has pushed yet is still open.
+  if (s.discarded) return { skip: `${id} is discarded; its card moves when the discard reaches ${INTEGRATION}` };
+  // A build that failed before the tests ran has no results: every [test] would look unsettled.
+  if (s.criteria.some((c) => c.kind === "test" && c.result === "noResults")) return { skip: "there are no test results (the build failed before the tests ran)" };
+  // A criterion back to [unbuilt] or [failing] reopens a story that was done (orchestrate skill, §6.9).
+  const reopens = s.criteria.some((c) => c.kind === "unbuilt" || c.kind === "failing");
+  if (s.contractMissing.length) return { stage: "contract", why: `the spec lacks ${s.contractMissing.join(", ")}`, reopens };
+  // Every half the story declares must be merged; a half nobody has pushed yet is still open. The halves
+  // are never deleted, so a story reopened from the integration branch finds its old halves merged.
   const open = s.sides.filter((h) => !merged(`story/${id}-${h}`));
-  if (open.length) return { stage: "build", why: open.map((h) => `story/${id}-${h}`).join(" and ") + " not merged yet" };
+  if (open.length) return { stage: "build", why: open.map((h) => `story/${id}-${h}`).join(" and ") + " not merged yet", reopens };
   const pending = s.criteria.filter((c) => !settled(c)).map((c) => c.id);
-  if (pending.length) return { stage: "integration", why: `not settled yet: ${pending.join(", ")}` };
-  // Visual review only when a person has something to check; otherwise the card waits for the merge here.
+  if (pending.length) return { stage: "integration", why: `not settled yet: ${pending.join(", ")}`, reopens };
+  // Visual review only while a criterion waits for design. Once nothing waits, the card waits for the merge
+  // where it is: in Visual review after design approved, else in Integration. A [manual] check a developer
+  // made (an email, a live service) never sends the card to design.
   if (s.criteria.some((c) => c.kind === "unverified")) return { stage: "visual", why: "waiting for design" };
-  if (s.criteria.some((c) => c.kind === "manual")) return { stage: "visual", why: "checked by a person; waiting for the merge" };
-  return { stage: "integration", why: "every criterion passes and nothing waits for a person; waiting for the merge" };
+  return { stage: "integration", why: "every criterion passes or a person checked it; waiting for the merge", holdVisual: true };
 }
 
-// ---------- What this push proves: [{ id, stage, why, mode }]. mode "forward" never moves a card back.
+// ---------- What this push proves: [{ id, stage, why, mode, reopens }]. mode "forward" never moves a card
+// back; only "set" with reopens moves a card out of Done.
 
 const plan = [];
 let m;
@@ -85,10 +98,18 @@ if ((m = branch.match(/^story\/([A-Z][A-Z0-9]+-\d+)-(back|front)$/))) {
 } else if ((m = branch.match(/^story\/([A-Z][A-Z0-9]+-\d+)$/))) {
   const r = storyBranchStage(m[1]);
   if (r.error) fail(r.error);
-  plan.push({ id: m[1], stage: r.stage, why: r.why, mode: "set" });
+  if (r.skip) { console.log(`jira-sync: ${m[1]} not moved: ${r.skip}.`); process.exit(0); }
+  plan.push({ id: m[1], stage: r.stage, why: r.why, mode: "set", reopens: Boolean(r.reopens), holdVisual: Boolean(r.holdVisual) });
 } else if (branch === INTEGRATION) {
-  for (const s of state.stories.filter((x) => !x.discarded)) {
-    if (merged(`story/${s.id}`)) plan.push({ id: s.id, stage: "done", why: `story/${s.id} is merged into ${INTEGRATION}`, mode: "forward" });
+  // Done means every criterion is verified here: a [test] whose tests pass, or a [manual]. Only the merge
+  // of story/<ID> brings those markers, and the rule still holds after Bitbucket deletes the merged branch.
+  const verified = (s) => s.criteria.length > 0 && s.criteria.every((c) => (c.kind === "test" && c.result === "pass") || c.kind === "manual");
+  // A story branch on the remote that is not merged here is a story reopened after it was done: its old
+  // markers are still here, but it is not done.
+  const reopened = (s) => remoteHas(`story/${s.id}`) && !merged(`story/${s.id}`);
+  for (const s of state.stories) {
+    if (s.discarded) plan.push({ id: s.id, stage: "discarded", why: `the story is discarded on ${INTEGRATION}`, mode: "set" });
+    else if (verified(s) && !reopened(s)) plan.push({ id: s.id, stage: "done", why: `every criterion is verified on ${INTEGRATION}`, mode: "forward" });
     else plan.push({ id: s.id, stage: "contract", why: `the story is on ${INTEGRATION}: design approved it`, mode: "fromDesign" });
   }
 } else {
@@ -118,10 +139,12 @@ for (const p of plan) {
     const issue = await api("GET", `/rest/api/3/issue/${p.id}?fields=status`);
     const currentName = issue.fields.status.name;
     const current = stageOfStatus(currentName);
-    if (!current) { console.log(`${p.id}: left in "${currentName}", a status outside the six stages (${p.why}).`); continue; }
+    if (!current) { console.log(`${p.id}: left in "${currentName}", a status outside the seven of jira.statuses (${p.why}).`); continue; }
     const skip = current === p.stage
-      || current === "done"
-      || (p.mode === "forward" && STAGES.indexOf(current) > STAGES.indexOf(p.stage))
+      || current === "discarded"
+      || (current === "done" && !p.reopens && p.stage !== "discarded")
+      || (p.holdVisual && current === "visual")
+      || (p.mode === "forward" && FLOW.indexOf(current) > FLOW.indexOf(p.stage))
       || (p.mode === "fromDesign" && current !== "design");
     if (skip) { if (current !== p.stage && p.mode !== "fromDesign") console.log(`${p.id}: stays ${currentName} (${p.why}).`); continue; }
     if (DRY) { console.log(`${p.id}: would move ${currentName} → ${label(p.stage)} (${p.why})`); continue; }
