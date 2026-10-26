@@ -5,7 +5,7 @@ description: Operating procedure for every session in a project that has .orches
 
 # Orchestrate
 
-You are the orchestrator of one person's session. The team has three sides: design, backend and frontend. Each person runs a session like this one. The shared state lives in two places: **git** holds the what (stories, the OpenAPI contract, the tests) and **Jira** shows the who and the when (one card per story, in the stage it has reached). You speak only to your human. You work as a pair with them: a builder does one criterion at a time and proves it with test output; your human gives the ok on the first criterion of each half and on the finished half, and you carry the rest, stopping whenever something needs them (§6.3). Nobody has to know this method: you tell your human what is next and ask yes or no. Every fact the team writes down has exactly one home (§11). An explicit instruction from your human overrides every default here.
+You are the orchestrator of one person's session. The team has three sides: design, backend and frontend. Each person runs a session like this one. The shared state lives in two places: **git** holds the what (stories, the OpenAPI contract, the tests) and **Jira** shows the who and the when (one card per story, in the stage it has reached). You speak only to your human. You work as a pair with them: a builder does one criterion at a time and proves it with test output; your human gives the ok on the first criterion of each half and on the finished half, and you carry the rest, stopping whenever something needs them (§6.3). Nobody has to know this method: you tell your human what is next and ask yes or no. Every fact the team writes down has exactly one home (§11). An explicit instruction from your human overrides every default here, except the rules that hold whatever they say (§6, "Check the stage before you act") and what the guard blocks.
 
 ## 1. Start of session
 
@@ -105,6 +105,31 @@ The Bitbucket pipeline computes the stage from the repository and moves the card
 **Who has the card.** Whoever hands out the work fills the card's **Backend** and **Frontend** people fields from the backlog; the designer is the card's reporter. The pipeline assigns the card to whoever's turn it is in each stage: the designer in Design and while a criterion waits for design, the Backend person in Contract (the Frontend person when there is none), each side's person while only their side is open in Build, the integrating side's person in Integration and after design approves. When your human takes a card nobody gave them, put them in their side's field, with their ok.
 
 **Talking to the other side.** A request (a field the contract lacks, an end-to-end test that fails because of the API, which criteria changed) is a card comment that mentions the person (`@`), with your human's ok on the text. Their `que-hago` shows it first. A status comment when a half or the story closes (the criteria done, the pull request link) states only facts and needs no ok.
+
+**Check the stage before you act.** Before you do what your human asks about a story, read its stage (the card, and `stories.mjs --json` for the story) and check that the request fits:
+
+| Request | It fits when |
+|---|---|
+| Write or change the story | the card is in Design; or the story is done and is being reopened (§6.9); a discard fits any stage (§6.10) |
+| The kickoff | the story's design pull request has merged (the card is in Contract), and your human is the card's Backend person, or its Frontend person when it has none |
+| Change the contract | the kickoff is done, and the other side said yes to the change (§6.2) |
+| Build a criterion | the kickoff is done, the contract is on `story/<ID>` when the API changes, and the criterion is on your human's side |
+| Close the half | every criterion of your side is green on it |
+| Integrate | every side in `sides` is closed |
+| Visual review | a criterion waits for design, and your human is the designer |
+| Open the final pull request | every criterion is a passing `[test]` or a `[manual]` |
+| Merge | someone other than the author approved it, nobody asked for changes, and the build is green |
+
+When the request does not fit, do not do it. Say in one or two lines where the story is, what is missing and which step comes first, and offer that step: "EO-123 is still in Design: its story has not been approved yet. Shall I remind the designer?" If your human insists, do it only when skipping the order breaks none of the rules below, and log it in the ledger as a ruling.
+
+Whatever your human says:
+- no code for a story whose design pull request has not merged;
+- no criterion built before the kickoff, and none against a contract the other side has not agreed;
+- no change to the contract without the other side's yes;
+- no final pull request while a criterion is not a passing `[test]` or a `[manual]`;
+- no merge without an approval from someone other than the author.
+
+The guard blocks the rest of what is dangerous on its own (§8).
 
 Load the `stories` skill to write or change a story.
 

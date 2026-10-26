@@ -89,6 +89,8 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 Nadie tiene que saberse el flujo. Al abrir Claude, y cada vez que preguntas «¿qué me toca?», «¿por dónde voy?» o como te salga, tu sesión mira tus tarjetas, las peticiones que te han hecho, tu rama, tus historias y tus PR, y te dice en pocas líneas en qué punto estás: primero lo que tiene parado a otros, después lo tuyo, y lo que te recomienda hacer. Respondes sí o no. Es la skill `que-hago`: no hace falta ningún comando.
 
+**Si pides algo que aún no toca**, por ejemplo programar una historia que sigue en Diseño, tu sesión no lo hace: te dice en qué punto está la historia, qué falta y qué va antes, y te lo ofrece. Si insistes, solo lo hace cuando saltarse el orden no rompe nada. Hay cosas que no hace nunca, aunque insistas: programar sin la historia aprobada, construir sin arranque, cambiar el contrato sin el sí del otro lado, abrir el PR final con criterios sin verificar y fusionar sin la aprobación de otra persona.
+
 ### Cómo nace una historia de diseño
 
 La diseñadora trabaja con su sesión de Claude. **Figma es el único sitio del diseño**; Mobbin solo da referencias.

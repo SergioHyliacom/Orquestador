@@ -73,3 +73,7 @@ Then wait for the answer:
 - On "hablamos", draft a comment mentioning the other person, show it, and post it on their ok.
 
 Never move a card. Never show code, and never give them git commands to run: the session runs them.
+
+## 4. When they ask for something specific
+
+When the person asks for a step instead ("programa EO-123", "abre el PR", "fusiónalo"), check first that it fits the story's stage (`orchestrate` skill, §6, "Check the stage before you act"). If it does not, say where the story is and what is missing, and offer the step that comes first, as a yes or no question.
