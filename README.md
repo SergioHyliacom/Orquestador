@@ -97,9 +97,22 @@ La primera vez que cada persona abre Claude en el proyecto, su sesión le pregun
 | GitHub y `gh` | Bitbucket y Bitbucket Pipelines |
 | El estado vive en `.orchestrator/state.md` | Jira es el estado compartido; `state.md` es personal |
 
+## Versiones y actualizaciones
+
+El número de `version` en `.claude-plugin/plugin.json` decide qué recibe el equipo: Claude Code deja a cada persona en la versión que instaló hasta que ese número cambia. Un cambio subido sin cambiar la versión no le llega a nadie.
+
+Cada vez que un cambio tiene que llegar al equipo, en el mismo commit:
+
+- **el número del medio** (`0.2.0` → `0.3.0`) cuando cambia cómo se trabaja;
+- **el último** (`0.2.0` → `0.2.1`) cuando solo se arregla algo.
+
+Cada persona lo actualiza con `claude plugin update easyone-orchestrator@hyliacom` y reinicia Claude Code.
+
+Las copias de `stories.mjs` y `jira-sync.mjs` que hay en el proyecto no se actualizan con el plugin. Al abrir la sesión, Claude avisa si son distintas de las del plugin y ofrece actualizarlas con un PR `chore/`.
+
 ## Traer mejoras del original
 
-`main` es una copia del original y la adaptación vive en la rama `easyone`:
+En este repositorio local, `main` es una copia del original y la adaptación vive en la rama `easyone`. En GitHub (`SergioHyliacom/Orquestador`), `main` es la adaptación: se sube con `git push fork easyone:main`.
 
 ```
 git fetch upstream
