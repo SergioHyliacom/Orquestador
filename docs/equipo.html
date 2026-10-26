@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EASY One · Cómo trabajamos</title>
+<style>
+  :root {
+    --ink: #1E293B; --muted: #5B6B7F; --line: #D8DEE6; --bg: #F5F7FA; --card: #FFFFFF;
+    --design: #7C3AED; --design-soft: #F1EAFE;
+    --back: #2563EB;   --back-soft: #E5EEFE;
+    --front: #0F8F82;  --front-soft: #DDF4F1;
+    --shared: #B45309; --shared-soft: #FDF0DE;
+    --infra: #475569;  --infra-soft: #EDF1F5;
+    --red: #DC2626; --red-soft: #FEF2F2; --green: #16A34A; --green-soft: #F0FDF4;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 64px; }
+  header h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); max-width: 640px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 22px 24px; margin-top: 20px; }
+  h2 { margin: 0 0 12px; font-size: 21px; }
+  h3 { margin: 0 0 6px; font-size: 16px; }
+  p { margin: 0 0 10px; }
+  ul { margin: 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+  code { font: 14px/1.4 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--infra-soft); padding: 1px 6px; border-radius: 4px; }
+  .muted { color: var(--muted); }
+
+  .hero { background: var(--ink); color: #fff; border: 0; }
+  .hero h2 { color: #fff; }
+  .hero .big { font-size: 22px; line-height: 1.4; margin: 0 0 14px; }
+  .hero .say { display: inline-block; font-size: 18px; background: #fff; color: var(--ink); padding: 10px 14px; border-radius: 8px; }
+  .hero p.small { color: #CBD5E1; margin: 14px 0 0; font-size: 15px; }
+
+  .roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .role { border-radius: 12px; padding: 14px 16px; }
+  .role h3 { font-size: 17px; }
+  .r-design { background: var(--design-soft); } .r-design h3 { color: var(--design); }
+  .r-back { background: var(--back-soft); } .r-back h3 { color: var(--back); }
+  .r-front { background: var(--front-soft); } .r-front h3 { color: var(--front); }
+  .never { margin-top: 14px; background: var(--red-soft); border: 1px solid #FCA5A5; border-radius: 12px; padding: 14px 16px; }
+  .never h3 { color: var(--red); }
+
+  ol.flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  ol.flow li { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; margin: 0; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .n { width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: #fff; font-weight: 700; text-align: center; line-height: 30px; }
+  .who { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; margin-left: 6px; vertical-align: 2px; }
+  .w-design { background: var(--design-soft); color: var(--design); }
+  .w-back { background: var(--back-soft); color: var(--back); }
+  .w-front { background: var(--front-soft); color: var(--front); }
+  .w-auto { background: var(--infra-soft); color: var(--infra); }
+  .ask { display: block; margin-top: 4px; color: var(--muted); font-size: 15px; }
+  .ask b { color: var(--ink); }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .box { background: var(--infra-soft); border-radius: 12px; padding: 14px 16px; }
+  .ok { background: var(--green-soft); border: 1px solid #86EFAC; }
+  .msg { font-style: italic; background: var(--card); border-left: 3px solid var(--shared); padding: 8px 12px; margin: 8px 0; border-radius: 0 8px 8px 0; }
+  .example { font: 14px/1.5 ui-monospace, "Cascadia Code", Consolas, monospace; background: var(--infra-soft); border-radius: 10px; padding: 12px 14px; white-space: pre-wrap; margin: 10px 0 0; }
+
+  footer { margin-top: 24px; color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 760px) {
+    .roles, .two { grid-template-columns: 1fr; }
+  }
+  @media print { body { background: #fff; } section { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Cómo trabajamos en EASY One</h1>
+  <p>La versión corta, para todo el equipo. No hace falta saberse el flujo: lo sabe tu sesión de Claude. Tú decides y respondes a lo que te pregunta.</p>
+</header>
+
+<section class="hero">
+  <h2>Lo único que tienes que recordar</h2>
+  <p class="big">Abre Claude Code en el proyecto. Te dice qué te toca.</p>
+  <span class="say">«¿Qué me toca?»</span>
+  <p class="small">En cualquier momento, pregúntaselo con tus palabras: «¿qué hago?», «¿por dónde voy?», «¿qué tengo pendiente?». Te dice qué te piden los demás, qué espera tu ok y qué te recomienda hacer ahora, y te pregunta si seguís.</p>
+  <div class="example" style="background:#334155;color:#E2E8F0">Ana · backend
+1. Te piden algo: Luis necesita el campo vat_id en createInvoice (EO-123). ¿Sí, no o hablamos?
+2. Tu PR de EO-118 está aprobado. ¿Lo fusiono?
+3. EO-130: tu mitad está terminada y espera tu ok.
+Te recomiendo empezar por el 1, porque tiene parado a Luis. ¿Seguimos?</div>
+</section>
+
+<section>
+  <h2>Qué haces tú, según tu lado</h2>
+  <div class="roles">
+    <div class="role r-design">
+      <h3>Diseño</h3>
+      <ul>
+        <li>Le pasas a Claude el Figma de lo que quieres.</li>
+        <li>Confirmas la lista de historias que propone y el texto de cada tarjeta.</li>
+        <li>Al final miras las capturas y dices «aprobado» o qué cambiar.</li>
+      </ul>
+      <p class="muted" style="margin-top:8px">Claude crea la tarjeta, escribe la historia y hace todo el git por ti.</p>
+    </div>
+    <div class="role r-back">
+      <h3>Backend</h3>
+      <ul>
+        <li>Confirmas el arranque de tus historias y el contrato que propone Claude.</li>
+        <li>Das el ok al primer criterio de cada historia y al resultado final.</li>
+        <li>Respondes a lo que te pide frontend y revisas un PR cuando Claude te lo dice.</li>
+      </ul>
+    </div>
+    <div class="role r-front">
+      <h3>Frontend</h3>
+      <ul>
+        <li>Respondes a la propuesta de contrato: sí, no o «hablamos».</li>
+        <li>Das el ok al primer criterio de cada historia y al resultado final.</li>
+        <li>Respondes a lo que te pide backend y revisas un PR cuando Claude te lo dice.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="never">
+    <h3>Nunca</h3>
+    <ul>
+      <li><b>Mover tarjetas en Jira.</b> Las mueve el sistema, y si alguien arrastra una, vuelve sola a su sitio en el siguiente cambio. Jira se mira; no se toca.</li>
+      <li><b>Fusionar un PR desde la web de Bitbucket.</b> Díselo a Claude: lo fusiona de la forma correcta.</li>
+      <li><b>Borrar ramas a mano.</b> Claude borra las que ya no hacen falta.</li>
+      <li><b>Escribir criterios o acuerdos en la tarjeta de Jira.</b> Díselos a Claude: van a la historia.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>Quién reparte el trabajo</h2>
+  <p>El tablero de Jira es el sitio común: ahí están todas las historias y el backlog, en orden. Quien reparte el trabajo pone en cada tarjeta a su persona de <b>Backend</b> y de <b>Frontend</b>; la diseñadora es quien la creó.</p>
+  <p class="muted">A partir de ahí, la tarjeta se asigna sola a quien le toca en cada paso, y su sesión de Claude se la enseña al abrir. Si coges una tarjeta que no tenía a nadie de tu lado, Claude te pone en ella.</p>
+</section>
+
+<section>
+  <h2>La vida de una historia</h2>
+  <ol class="flow">
+    <li><span class="n">1</span><div><b>Diseño escribe la historia</b><span class="who w-design">Diseño</span>
+      <span class="ask">Claude lee el Figma, propone las historias y escribe cada una. Te pregunta: <b>«¿Esta lista está bien?»</b> y <b>«¿Creo la tarjeta con este texto?»</b> Otra persona aprueba la historia.</span></div></li>
+    <li><span class="n">2</span><div><b>Arranque</b><span class="who w-back">Backend</span>
+      <span class="ask">Lo hace la persona de backend de la tarjeta; si no tiene, la de frontend. Claude lee la historia y te propone qué lados toca y si cambia la API. Te pregunta: <b>«¿Es así?»</b></span></div></li>
+    <li><span class="n">3</span><div><b>Contrato, solo si cambia la API</b><span class="who w-back">Backend</span><span class="who w-front">Frontend</span>
+      <span class="ask">Claude de backend escribe la propuesta de endpoints y te pregunta si la manda. A frontend le llega como petición: <b>sí, no o «hablamos»</b>. Sin reunión obligatoria.</span></div></li>
+    <li><span class="n">4</span><div><b>Desarrollo</b><span class="who w-back">Backend</span><span class="who w-front">Frontend</span>
+      <span class="ask">El agente hace los criterios uno a uno: test, lo ve fallar, lo arregla. Tú das el ok al <b>primero</b>, que es donde se ve si ha entendido lo que hay que hacer; el resto lo hace solo y se para si algo se tuerce. Al terminar te enseña el resultado, criterio a criterio, y te pregunta: <b>«¿Cierro tu parte?»</b></span></div></li>
+    <li><span class="n">5</span><div><b>Integración</b><span class="who w-front">Frontend</span>
+      <span class="ask">El agente conecta la pantalla con la API real, pasa la prueba de punta a punta y saca una captura de cada estado. Si falla por la API, Claude escribe la petición a backend y te pregunta si la manda. Lo que solo puede comprobar una persona y no es visual (que llega un correo, por ejemplo) lo compruebas tú aquí.</span></div></li>
+    <li><span class="n">6</span><div><b>Revisión visual, si hay pantalla</b><span class="who w-design">Diseño</span>
+      <span class="ask">Te llegan las capturas. Dices <b>«aprobado»</b> o qué cambiar, en tu sesión. No tocas git. Cada cambio vuelve solo al lado que le toca.</span></div></li>
+    <li><span class="n">7</span><div><b>Hecha</b><span class="who w-auto">Automático</span>
+      <span class="ask">Claude abre el PR y pide la aprobación a otra persona. Cuando está aprobado, te pregunta si lo fusiona. La tarjeta pasa a Hecha sola.</span></div></li>
+  </ol>
+  <p class="muted" style="margin-top:12px">Si una historia hecha falla o cambia, se reabre la misma. Díselo a Claude: «EO-123 tiene un bug». Él sabe qué hacer. Si es urgente y está en producción, también.</p>
+</section>
+
+<section>
+  <h2>Cuando necesitas algo del otro lado</h2>
+  <div class="two">
+    <div class="box">
+      <h3>Tú pides</h3>
+      <p>Claude detecta que falta algo (un campo, un error) y escribe la petición. Tú lees el texto y dices «envíalo». Queda en la tarjeta, con una mención a la otra persona.</p>
+      <div class="msg">«@Luis, necesito el campo <code>vat_id</code> en <code>createInvoice</code> para mostrar el NIF en la factura.»</div>
+    </div>
+    <div class="box">
+      <h3>A ti te piden</h3>
+      <p>La próxima vez que abras Claude, o en cuanto le preguntes qué te toca, es lo primero que te enseña. Respondes:</p>
+      <ul><li><b>sí</b>: tu agente lo hace;</li><li><b>no</b>: dices por qué, y Claude se lo contesta;</li><li><b>hablamos</b>: Claude le avisa de que queréis hablarlo.</li></ul>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:12px">Nadie tiene que acordarse de mirar comentarios en Jira. Si tu petición lleva más de un día sin respuesta, tu sesión te lo recuerda y te ofrece insistir.</p>
+</section>
+
+<section>
+  <h2>Antes de dar el ok</h2>
+  <div class="two">
+    <div class="box">
+      <h3>Al primer criterio</h3>
+      <p>No hace falta leer el código. Claude ya ha comprobado lo mecánico (el nombre del test, que falló por lo que tenía que fallar, que no ha tocado ficheros de más) y te hace <b>una sola pregunta</b>:</p>
+      <div class="msg">«¿Esta comprobación mira lo que dice el criterio?»</div>
+      <p class="muted">Si no, dile qué debería comprobar.</p>
+    </div>
+    <div class="box">
+      <h3>Al terminar tu parte</h3>
+      <p>Te enseña una línea por criterio: qué test lo prueba y qué comprueba. Y las capturas, si hay pantalla. Si algo no cuadra, dile cuál y lo rehace.</p>
+      <p class="muted">Si prefieres dar el ok a cada criterio, díselo y te los irá enseñando uno a uno.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Lo que hace la máquina por ti</h2>
+  <div class="two">
+    <div class="box ok">
+      <h3>Para que no se rompa nada</h3>
+      <ul>
+        <li>La guardia impide lo peligroso: push forzado, borrar trabajo, tocar tests bloqueados, que un agente toque el otro lado.</li>
+        <li>Cada push y cada merge te pide confirmación.</li>
+        <li>Los tests de cada criterio se bloquean al terminar: nadie puede debilitarlos.</li>
+      </ul>
+    </div>
+    <div class="box ok">
+      <h3>Para que no se pierda nada</h3>
+      <ul>
+        <li>El pipeline mueve cada tarjeta según lo que hay en el repositorio y se la asigna a quien le toca.</li>
+        <li>Cada vez que abres Claude, ves lo tuyo que está parado: peticiones sin responder, PR por revisar, una parte a medias.</li>
+        <li>Al cerrar cada entrega, una auditoría convierte los errores en comprobaciones.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>
+  El detalle completo está en <a href="esquema-orquestador.html">esquema-orquestador.html</a> y en <a href="propuesta.md">propuesta.md</a>.
+</footer>
+
+</div>
+</body>
+</html>

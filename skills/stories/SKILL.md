@@ -118,7 +118,7 @@ Then try these patterns in order. Prefer the split that lets you drop or defer a
 8. Defer performance: make it work, then make it fast, as two stories.
 9. Spike: when the unknown is too big, a time-boxed investigation first.
 
-Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices. The backend and frontend halves of a story are two branches of the same story, not two stories.
+Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices. The backend and frontend halves of a story are two sides of the same story, not two stories.
 
 ## Turning a request into stories
 

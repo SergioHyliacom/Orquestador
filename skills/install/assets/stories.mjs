@@ -267,8 +267,9 @@ const sameFile = (a, b) => { const [x, y] = a.length >= b.length ? [a, b] : [b, 
 
 function testResult(c) {
   if (!tests) return "noResults";
-  // Go reports a subtest as Parent/[EO-123.1]_name, so the ID may also follow a slash.
-  const byId = tests.filter((t) => t.title.startsWith(`[${c.id}]`) || t.title.includes(`/[${c.id}]`));
+  // Go reports a subtest as Parent/[EO-123.1]_name, and Playwright's JUnit report puts the describe blocks
+  // first, Login › [EO-123.1] name: the ID may also follow a slash or a ›.
+  const byId = tests.filter((t) => t.title.startsWith(`[${c.id}]`) || t.title.includes(`/[${c.id}]`) || t.title.includes(`› [${c.id}]`));
   // Parameterised tests (it.each) report %s, %d... substituted: treat them as wildcards.
   const pattern = c.ref && new RegExp("^" + c.ref.title.split(/%[sdifjo#%]/).map(escape).join(".*") + "$");
   const matches = byId.length ? byId : c.ref

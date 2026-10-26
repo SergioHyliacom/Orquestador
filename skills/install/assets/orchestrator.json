@@ -30,6 +30,10 @@
   "jira": {
     "site": "{{JIRA_SITE: e.g. hyliacom.atlassian.net}}",
     "project": "{{JIRA_PROJECT_KEY: e.g. EO}}",
+    "fields": {
+      "backend": "{{ID of the Jira people field Backend, e.g. customfield_10050}}",
+      "frontend": "{{ID of the Jira people field Frontend, e.g. customfield_10051}}"
+    },
     "statuses": {
       "design": "{{Jira status name for Diseño}}",
       "contract": "{{Jira status name for Contrato}}",

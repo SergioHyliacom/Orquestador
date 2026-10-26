@@ -145,12 +145,24 @@ if (input.hook_event_name === "PreToolUse" && ["Edit", "Write", "MultiEdit", "No
 function commands(line) {
   const quoted = [];
   const bare = line.replace(/"((?:[^"\\]|\\.)*)"|'([^']*)'/g, (_, d, s) => { quoted.push(d ?? s); return ` __Q${quoted.length - 1}__ `; });
+  const restore = (t) => t.replace(/__Q(\d+)__/g, (_, i) => quoted[i]);
   const out = [];
+  const nested = new Set();
   for (const seg of bare.split(/&&|\|\||;|\||\n|\$\(|`|\(|\)/)) {
     const tokens = seg.trim().split(/\s+/).filter(Boolean);
-    if (tokens.length) out.push(tokens.map((t) => t.replace(/__Q(\d+)__/g, (_, i) => quoted[i])));
+    if (!tokens.length) continue;
+    // Each command keeps its tokens before the quotes come back: a > inside quotes is not a redirection.
+    const cmd = tokens.map(restore);
+    cmd.bare = tokens;
+    cmd.restore = restore;
+    out.push(cmd);
+    // The script a shell runs (bash -c "…", pwsh -Command "…") is commands of its own.
+    if (cmd.slice(0, 3).some((t) => /^(\S*[\\/])?(bash|sh|zsh|dash|pwsh|powershell|cmd)(\.exe)?$/i.test(t))) {
+      for (const t of tokens) { const q = t.match(/^__Q(\d+)__$/); if (q) nested.add(+q[1]); }
+    }
   }
-  for (const q of quoted) if (/^\s*(\S*[\\/])?git(\.exe)?\s/i.test(q) || /^\s*(bash|sh|pwsh|powershell)\b/i.test(q)) out.push(...commands(q));
+  quoted.forEach((q, i) => { if (/^\s*(\S*[\\/])?git(\.exe)?\s/i.test(q) || /^\s*(bash|sh|pwsh|powershell)\b/i.test(q)) nested.add(i); });
+  for (const i of nested) out.push(...commands(quoted[i]));
   return out;
 }
 
@@ -282,9 +294,11 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       if (inSubagent) block("role agents never merge. The product owner merges, or asks the orchestrator to.");
       if (git.allowPush === false) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
     }
-    // Redirections write too: split "x>file" and "> file" into their own tokens.
-    const split = tokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);
-    const redirTargets = split.filter((t, i) => i > 0 && /^>>?$/.test(split[i - 1]));
+    // Redirections write too: split "x>file" and "> file" into their own tokens. Only the unquoted text is
+    // read, so `node -e "a => a"` and `grep "a > b"` are not redirections; a quoted target comes back whole.
+    const bareTokens = (raw.bare ?? raw).slice(s);
+    const split = bareTokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);
+    const redirTargets = split.filter((t, i) => i > 0 && /^>>?$/.test(split[i - 1])).map((t) => (raw.restore ? raw.restore(t) : t));
     if (WRITERS.test(tokens[0])) checkPaths(tokens.slice(1), cwd);
     if (REMOVERS.test(tokens[0])) checkPaths(/^(mv|move|move-item|mi)$/i.test(tokens[0]) ? tokens.slice(1, -1) : tokens.slice(1), cwd, true);
     if (redirTargets.length) checkPaths(redirTargets, cwd);

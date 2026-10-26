@@ -7,9 +7,9 @@
 | `main` | — | nobody directly | what is in production. It receives pull requests only from `develop` or from a `hotfix/` |
 | `develop` | — | nobody directly | integration: the finished stories and fixes come together here |
 | `design/<ID>` | `develop` → `develop` | design, or whoever writes or discards the story | a new story; a rewording before the kickoff; a discard, at any stage (`orchestrate` skill, §6.10) |
-| `story/<ID>` | `develop` → `develop` | the side that starts, for the kickoff and the contract; the side that integrates; design for the visual review; whoever reopens a done story (§6.9) | the kickoff, the contract if the API changes, the halves once merged, the end-to-end test, the markers. Created again from `develop` to reopen a done story (§6.9) |
-| `story/<ID>-back` | `story/<ID>` → `story/<ID>`, after the kickoff | backend | the backend half, when `sides` has `back`. Never deleted (§6.4) |
-| `story/<ID>-front` | `story/<ID>` → `story/<ID>`, after the kickoff | frontend | the frontend half, when `sides` has `front`. Never deleted (§6.4) |
+| `story/<ID>` | `develop` → `develop` | the card's Backend person (or Frontend, when it has none) for the kickoff and the contract; the side itself when the story has one side; the side that integrates; design for the visual review; whoever reopens a done story (§6.9) | the kickoff, the contract if the API changes, the halves once merged, the end-to-end test, the markers. Created again from `develop` to reopen a done story (§6.9) |
+| `story/<ID>-back` | `story/<ID>` → `story/<ID>`, after the kickoff | backend | the backend half, only when `sides` has both sides. Deleted after the story merges (§6.8) |
+| `story/<ID>-front` | `story/<ID>` → `story/<ID>`, after the kickoff | frontend | the frontend half, only when `sides` has both sides. Deleted after the story merges (§6.8) |
 | `fix/<slug>` | `develop` → `develop` | the side that owns the paths | a non-urgent fix of something that is not a story's behaviour: the build, the configuration, a script. A behaviour bug reopens its story (§6.9) |
 | `chore/<slug>` | `develop` → `develop` | the side that owns the paths | work that is not a story: dependencies, tooling, documentation |
 | `hotfix/<slug>` | `main` → `main`, then `main` → `develop` | the side that owns what fails | an urgent fix in production (§6.11) |
@@ -25,7 +25,7 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 - Never commit on a protected branch (`git.protectedBranches`, default `main` and `develop`). The guard blocks it.
 - In Orca a builder works in its own worktree, inside the repo's configured worktree location. In plain Claude Code it works in your checkout: only one writer runs at a time.
 - Stage files by name. The guard blocks `git add .`, `-A` and `--all` unless `git.blockBroadAdd` is `false`.
-- One commit per criterion, after your human's ok. Message: `<criterion ID>: <the rule, short>`. The kickoff: `<ID>: kickoff`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`. An unlock, when a half reopens: `<ID>: unlock <side> <criterion IDs>`, committed alone; when other work must change a locked file: `<ID>: unlock <side> <file>`. A reopened story: `<ID>: reopen <criterion IDs>`. A task: what changes, short.
+- One commit per criterion; your human's ok comes on the first one of each half and on the finished half (§6.3). Message: `<criterion ID>: <the rule, short>`. The kickoff: `<ID>: kickoff`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`. An unlock, when a half reopens: `<ID>: unlock <side> <criterion IDs>`, committed alone; when other work must change a locked file: `<ID>: unlock <side> <file>`. A reopened story: `<ID>: reopen <criterion IDs>`. A task: what changes, short.
 - Check `git status` before staging. Unrelated changes stay out of the commit.
 - Never `--no-verify`, `reset --hard`, `clean -f` or force push. The guard blocks them.
 - Each half's locked tests live in `.orchestrator/locked/<ID>-<side>.txt`, so the two halves never touch the same list.
@@ -42,8 +42,8 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 
 - A story's pull requests: `design/<ID>` → `develop` (the new story) and `story/<ID>` → `develop` (the finished story). Title: `<ID>: <story title>`. Body for a finished story: the output of `node <storiesDir>/stories.mjs --pr <ID>`, the review summary if there was one, and any ⚠️ manual steps.
 - The others: `fix/` and `chore/` → `develop`, `develop` → `main`, `hotfix/` → `main` and then `main` → `develop`. Title: what changes, short.
-- The halves are not pull requests: each merges into `story/<ID>` with `git merge`, on your human's ok. Never delete them: the pipeline counts a half that is not on Bitbucket as unfinished, and a reopened story (§6.9) works on its old halves again. Only a discarded story's branches are deleted (§6.10).
-- Bitbucket has no official CLI. Open the pull request in the web UI with your human, or through the REST API (`POST /2.0/repositories/<workspace>/<repo>/pullrequests`) when the machine has a token for it. Never write the token into a file the repository tracks.
+- The halves are not pull requests: each merges into `story/<ID>` with `git merge`, on your human's ok. The pipeline knows a side is closed by its lock list on `story/<ID>`, not by the half branch, so the halves are deleted after the story merges, and a reopened story creates them again (§6.9).
+- **You open and merge the pull requests, through the REST API**, so nobody has to pick a strategy by hand. Bitbucket has no official CLI: use `POST /2.0/repositories/<workspace>/<repo>/pullrequests` with `BITBUCKET_USER` and `BITBUCKET_TOKEN` from your human's environment. Add as reviewer someone other than your human (`reviewers` in the body). Never write the token into a file the repository tracks. Without a token, your human does it in the web UI and you tell them the strategy of the table below.
 - A pull request merges only after at least one person other than its author approves it (`orchestrate` skill, §6.1).
 - Merge only on your human's ok. A merge through the API (`POST …/pullrequests/<id>/merge`) is a merge: the guard asks your human to confirm it and blocks it for role agents. Before it, read the pull request (`GET …/pullrequests/<id>`): some participant other than the `author` must have `approved: true`, and none may have `state: changes_requested`; and its builds (`GET …/pullrequests/<id>/statuses`) must all be `SUCCESSFUL`. Bitbucket only warns about these on this plan, so you check them. If one fails, do not merge; tell your human what it is waiting for. Send the strategy of the table below as `merge_strategy` (`squash`, `merge_commit` or `fast_forward`) and `close_source_branch` as the table says.
 - Never merge on a red pipeline.
@@ -52,15 +52,15 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 
 | Pull request | Strategy | Delete the source branch | Why |
 |---|---|---|---|
-| `design/<ID>` → `develop` | Squash (the default) | yes | the story enters `develop` as one commit |
-| `story/<ID>` → `develop` | Merge commit | yes; the halves stay | keeps one commit per criterion, each with its human's ok, and the lock commits: the story's trail. It also keeps the halves inside `develop`'s history, which is how a reopened story finds them merged. Squash would collapse it all into one commit |
-| `fix/` or `chore/` → `develop` | Squash (the default) | yes | it enters `develop` as one commit, in the commit format |
+| `design/<ID>` → `develop` | Squash | yes | the story enters `develop` as one commit |
+| `story/<ID>` → `develop` | Merge commit | yes; then the halves | keeps one commit per criterion and the lock commits: the story's trail. Squash would collapse it all into one commit |
+| `fix/` or `chore/` → `develop` | Squash | yes | it enters `develop` as one commit, in the commit format |
 | `develop` → `main` | Fast forward | no | `main` moves to the same commit as `develop` without new commits, so both stay identical and `develop` is never behind `main` |
 | `hotfix/` → `main` | Squash | yes | like a fix, towards `main` |
 | `main` → `develop`, after a hotfix | Merge commit | no | brings the hotfix commit into `develop` as it is. With Squash it would be another commit, `develop` would stay behind `main` and the next fast forward would fail |
 | `hotfix/<slug>-develop` → `develop`, when that conflicts | Merge commit | yes | the same, with the conflicts resolved on a branch of its own (§6.11) |
 
-Bitbucket proposes Squash. The strategy is changed in the **Merge** dialog of each pull request.
+The repository's default is Merge commit, so a pull request merged by hand in the web UI never loses a story's history: at worst a design, fix or chore pull request gets a merge commit it did not need. Your merges send the strategy of the table.
 
 ## Repository settings
 
@@ -69,7 +69,7 @@ The human applies these in Bitbucket, because they change a shared repository.
 - Branch restrictions on `main` and `develop`: no direct pushes, no deleting the branch and no rewriting its history. Everything enters through a pull request.
 - Merge checks: at least 1 approval, which is always someone else's because Bitbucket does not let authors approve their own pull requests (`orchestrate` skill, §6.1); no changes requested; no open tasks; the last build green; on `main`, also that the source branch is not behind.
 - Merge permissions: anyone may merge into `develop`; into `main`, only the people the team authorizes in Bitbucket.
-- Default merge strategy: Squash.
+- Default merge strategy: Merge commit. The sessions send the right strategy for each pull request; the default only matters for a merge made by hand.
 - Bitbucket blocks a merge on a failing check only on Premium; on the other plans the checks warn. The team rule is the same either way: no pull request merges with a check in red.
 - Required pipeline steps: the project's verification commands plus `node <storiesDir>/stories.mjs --tests --check`, on every branch (`default` covers `fix/`, `chore/` and `hotfix/`). Until Part 2 of the install the pipeline runs only `stories.mjs --check`, but on every branch too, so every pull request has a build.
 - Default reviewers, to keep others informed, never required: the contract spec to one developer of each side.
