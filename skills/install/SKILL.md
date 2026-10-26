@@ -64,7 +64,7 @@ All files the project reads are in one language: the project's.
 2. Add `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/` and `.orchestrator/role.json` to `.gitignore`. They are personal: who the human is, their ledger, their briefs and reports, a worker's role. None of them may travel with a branch.
 3. If the upstream `orchestrator` plugin is installed on this machine (`claude plugin list`), its guard would run here too. Disable it for this project in `.claude/settings.json`: `"enabledPlugins": { "orchestrator@<its marketplace>": false }`. Tell the human every teammate needs the same, and that the file is shared.
 4. Write a first `bitbucket-pipelines.yml` from `assets/bitbucket-pipelines.yml`: only the `stories` step, with `image: node:22`, on `design/*` and the integration branch. That is enough for the card to move from design to contract when a story's pull request merges. Ask the human to add the secured repository variables `JIRA_EMAIL` and `JIRA_API_TOKEN` in Bitbucket; never write a token into a tracked file.
-5. Offer the human the Bitbucket repository settings in the `orchestrate` skill's `references/git.md`. Do not apply them yourself.
+5. Give the human the Bitbucket repository settings in the `orchestrate` skill's `references/git.md`, with the minimum of 1 approval on `main` and `develop` before the first story's pull request. Do not apply them yourself.
 
 ### 1.5 The project's documents
 

@@ -94,7 +94,7 @@ Rules:
 
 | Stage in Jira | Whose turn | It leaves the stage when |
 |---|---|---|
-| Design | design, or a developer for a story with no screen | the story's pull request merges into the integration branch. That merge is the approval |
+| Design | design, or a developer for a story with no screen | the story's pull request, approved by someone other than its author, merges into the integration branch. That merge is the approval |
 | Contract | backend and frontend | `story/<ID>` exists and the spec there has every operation in the story's `operations`. The contract is agreed only when the story changes the API |
 | Build | the story's halves, in parallel | every half in the story's `sides` is merged into `story/<ID>` |
 | Integration | frontend, or backend when the story has no front half | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design. A story with nothing for a person to check stays here until the merge |
@@ -109,7 +109,7 @@ Load the `stories` skill to write or change a story.
 
 Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it, backend or frontend; the steps are the same.
 
-**Who approves.** The story's pull request is the approval. Its author or anyone else may approve and merge it. Nobody has to wait for a second person, so the work goes on when someone is away.
+**Who approves.** The story's pull request is the approval. At least one person other than its author approves it; then the author or that person merges it. Every pull request to the integration branch or `main` works the same way (`references/git.md`).
 
 Design's stories start from the design project in Figma, the only home of the design: a story links its frames and never copies them. A developer's story with no screen skips steps 1 to 3.
 
@@ -119,7 +119,7 @@ Design's stories start from the design project in Figma, the only home of the de
 4. **Create the story's Jira card** in Design, after your human's ok on its text. The card carries the title, the story sentence ("As a <persona>, I want…, so that…") and the Figma link. Never the criteria: they live only in the story file (§11). Its key is the story's ID.
 5. **Write the story** with your human: the rules, the states of each screen as criteria, the Figma frame links in `screens`. Leave `operations` empty.
 6. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
-7. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Your human or anyone else approves and merges it. When it merges, the story is the developers'.
+7. Create `design/<ID>` from the integration branch, commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Someone other than your human approves it; then your human or that person merges it. When it merges, the story is the developers'.
 
 If the story's title or sentence changes later, update the card in the same block of work, with your human's ok. Nothing else of the story goes to Jira.
 
@@ -195,7 +195,7 @@ If the story carries a risk tag, a fresh `reviewer` judges `git diff <integratio
 
 ### 6.8 Merge
 
-Open the pull request `story/<ID>` → integration branch on Bitbucket. Body: the output of `node <storiesDir>/stories.mjs --pr <ID>`, the review summary if there was one, and any ⚠️ manual steps. The humans merge, or ask you to. The pipeline moves the card to Done.
+Open the pull request `story/<ID>` → integration branch on Bitbucket. Body: the output of `node <storiesDir>/stories.mjs --pr <ID>`, the review summary if there was one, and any ⚠️ manual steps. At least one person other than its author approves it (§6.1); then the humans merge, or ask you to. The pipeline moves the card to Done.
 
 When behaviour changes later, edit the existing story's criteria and set each changed one back to `[unbuilt]`. Do not write a new story on top. A bug is a failing marker on the criterion it breaks, not a new story.
 
@@ -213,7 +213,7 @@ When you ask: give a short summary, name the decision, give your recommendation 
 
 ## 8. Git
 
-Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves; one commit per criterion after the ok, files named; push and merge only on your human's ok. The guard blocks the dangerous commands.
+Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves; one commit per criterion after the ok, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it. The guard blocks the dangerous commands.
 
 ## 9. Close
 

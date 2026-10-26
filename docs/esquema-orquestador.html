@@ -244,7 +244,7 @@
       <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-back">Desarrollo si no hay pantalla</span></div>
       <dl><dt>Qué pasa</dt><dd>Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia con sus estados y los enlaces a Figma</dd>
       <dt>Rama</dt><dd><code>design/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación. Puede aprobarlo y fusionarlo quien lo crea u otra persona <span class="human">· humano</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación. Lo aprueba al menos una persona distinta de quien lo crea <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:linear-gradient(90deg,var(--back) 50%,var(--front) 50%)"></div>
       <h3>Contrato</h3><div class="who"><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></div>
       <dl><dt>Qué pasa</dt><dd>Arranque: se anota qué mitades tiene la historia. <b>Solo si cambia la API</b>, los dos la acuerdan y el backend la escribe</dd>
@@ -264,7 +264,7 @@
       <h3>Revisión visual</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-shared">Revisor si hay riesgo</span></div>
       <dl><dt>Qué pasa</dt><dd>Solo historias con algo que mirar. Diseño aprueba o pide ajustes <b>sobre la misma historia</b> (vuelve a Integración). Cada ajuste va al lado al que le toca: la pantalla, a frontend; los datos, las reglas o los errores de la API, a backend</dd>
       <dt>Rama</dt><dd><code>story/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>El PR a <code>develop</code> se aprueba y se fusiona: puede hacerlo quien lo crea u otra persona <span class="human">· humano</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>El PR a <code>develop</code> se aprueba y se fusiona: lo aprueba al menos una persona distinta de quien lo crea <span class="human">· humano</span></dd></dl></div>
     <div class="stage"><div class="bar" style="background:var(--infra)"></div>
       <h3>Hecha</h3><div class="who"><span class="tag t-infra">—</span></div>
       <dl><dt>Qué pasa</dt><dd>La historia está en <code>develop</code> con todos sus criterios verificados</dd>
@@ -278,7 +278,7 @@
     <div class="astep"><span class="n" style="background:var(--design)">3</span><div><b class="t">La diseñadora confirma la lista</b>Qué historias salen, cómo se dividen y a qué actividad pertenece cada una.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">4</span><div><b class="t">Claude crea la tarjeta en Jira</b>Con el ok de la diseñadora sobre el texto. Lleva solo el título, la frase «Como… quiero… para…», el enlace a Figma y el enlace al fichero de la historia en Bitbucket. <b>Nunca los criterios</b>: viven en el fichero. Su clave es el ID: <code>EO-123</code>.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">5</span><div><b class="t">Claude escribe la historia</b>En <code>design/EO-123</code>, con los enlaces a las pantallas de Figma en <code>screens</code>. La pasa por <code>--ready</code> hasta que está lista.</div></div>
-    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>. Lo puede aprobar la propia diseñadora u otra persona. Cuando entra, la tarjeta pasa a Contrato.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>. Lo aprueba al menos una persona distinta de quien lo abre. Cuando entra, la tarjeta pasa a Contrato.</div></div>
   </div>
   <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave.</p>
   <h3 style="margin:22px 0 8px;font-size:16px">No todas las historias tienen las dos mitades</h3>
@@ -290,13 +290,13 @@
   <div class="kinds">
     <div class="kind"><b>Cambia la API</b><span class="ex">Un endpoint nuevo, un campo nuevo o renombrado, un error nuevo</span><span><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></span><span class="ex">Se acuerda el contrato y lo escribe el backend. Si ninguna pantalla lo usa todavía, solo backend, pero con contrato</span></div>
     <div class="kind"><b>Solo frontend</b><span class="ex">Usa la API tal como está: mostrar un dato que ya llega, un estado vacío, un ajuste de pantalla, el editor de Hyliable</span><span><span class="tag t-front">Frontend</span></span><span class="ex">Sin contrato. Integra frontend; revisión visual si hay algo que mirar</span></div>
-    <div class="kind"><b>Solo backend</b><span class="ex">Sin pantalla: una regla sobre los datos, una tarea periódica, el envío de correos, un importador, corregir datos guardados</span><span><span class="tag t-back">Backend</span></span><span class="ex">Sin contrato salvo que cambie la API. La puede escribir un desarrollador, y aprobarla él mismo u otra persona. Integra el backend y no pasa por revisión visual</span></div>
+    <div class="kind"><b>Solo backend</b><span class="ex">Sin pantalla: una regla sobre los datos, una tarea periódica, el envío de correos, un importador, corregir datos guardados</span><span><span class="tag t-back">Backend</span></span><span class="ex">Sin contrato salvo que cambie la API. La puede escribir un desarrollador, y la aprueba al menos otra persona. Integra el backend y no pasa por revisión visual</span></div>
   </div>
 
   <h3 style="margin:22px 0 8px;font-size:16px">Ejemplo: una historia solo de backend, columna a columna</h3>
   <p style="margin:0 0 10px;font-size:14px;color:var(--muted)"><b>EO-140 · Las facturas rectificativas usan su propia serie.</b> Cambia una regla, no la API, y no tiene pantalla.</p>
   <div class="walk">
-    <div class="cell"><b>Diseño</b>La escribe un desarrollador, porque es técnica. Su PR a <code>develop</code> lo aprueba él mismo u otra persona</div>
+    <div class="cell"><b>Diseño</b>La escribe un desarrollador, porque es técnica. Su PR a <code>develop</code> lo aprueba al menos otra persona</div>
     <div class="cell"><b>Contrato</b>Arranque: crea <code>story/EO-140</code> con <code>sides: [back]</code> y sin endpoints. Sin reunión: pasa en minutos</div>
     <div class="cell"><b>Desarrollo</b>Solo existe <code>story/EO-140-back</code>. Un criterio cada vez, con tu ok</div>
     <div class="cell"><b>Integración</b>El backend junta su mitad, pasan todos los tests y pone los marcadores. La tarjeta espera aquí el merge</div>
@@ -425,13 +425,13 @@
   </div>
   <ol class="steps">
     <li><span class="n" style="background:var(--design)">1</span><div><span class="tag t-design">Diseño</span> Con Claude, desde Figma: crea la tarjeta y escribe la historia en su rama, con reglas, estados de cada pantalla y enlaces a Figma.<span class="st">Tarjeta en <b>Diseño</b></span></div></li>
-    <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Lo puede aprobar ella misma u otra persona. Cuando entra, la historia está aprobada.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
+    <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Lo aprueba al menos otra persona. Cuando entra, la historia está aprobada.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
     <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Arranque: el lado que empieza crea la rama de la historia y anota sus mitades. Si la API cambia, se acuerda y el backend sube el contrato.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada lado de la historia abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con todas dentro, pasa a <b>Integración</b></span></div></li>
     <li><span class="n" style="background:var(--front)">6</span><div><span class="tag t-front">Frontend</span> Integra: API real, prueba E2E, capturas de cada estado y marcadores. Si la E2E falla por la API, el agente se para y lo arregla el backend reabriendo su mitad. Sin pantalla, el backend solo pone los marcadores.<span class="st">Si algo espera a diseño, pasa a <b>Revisión visual</b>; si no, espera el merge</span></div></li>
     <li><span class="n" style="background:var(--design)">7</span><div><span class="tag t-design">Diseño</span> Si hay algo que mirar: compara las capturas con su diseño y aprueba, o pide ajustes: cambia los criterios en la misma historia y los devuelve a «sin construir». Cada ajuste va al lado al que le toca (pantalla, frontend; datos, reglas o errores de la API, backend), que reabre su mitad; luego se vuelve al paso 6. Si hay riesgo, después revisa el <code>reviewer</code>.<span class="st">Sigue en <b>Revisión visual</b></span></div></li>
-    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code>. Lo aprueba y hace el merge quien lo crea u otra persona.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
+    <li><span class="n" style="background:var(--infra)">8</span><div><span class="tag t-infra">Las personas</span> PR de la rama de la historia a <code>develop</code>. Lo aprueba al menos una persona distinta de quien lo crea, y se hace el merge.<span class="st">La tarjeta pasa a <b>Hecha</b></span></div></li>
   </ol>
 </section>
 
@@ -645,7 +645,7 @@
       <tr><td>Día uno (instalación, parte 1)</td><td>La definición entra en el repositorio. Se crean <code>README.md</code>, <code>CLAUDE.md</code> y <code>docs/rules/</code> con la semilla. Los pendientes técnicos del §14 que afectan a la construcción se abren como decisiones: Huma u oapi-codegen, goose o Atlas, fosite o ZITADEL, el fichero de tareas…</td><td><code>docs/</code>, <code>producto/decisions/</code></td></tr>
       <tr><td>Entrega 0</td><td>Las pruebas técnicas cierran decisiones. Se montan los linters, los tests de arquitectura, las comprobaciones de la §12.1, el generador de módulos y un módulo de referencia. La definición todavía se edita por PR</td><td>Decisiones, configuración, código</td></tr>
       <tr><td>Cierre de la entrega 0 (instalación, parte 2)</td><td>Se congela la definición, se escriben los patrones de cada lado y se auditan los cimientos</td><td><code>docs/</code>, <code>docs/rules/</code>, <code>docs/audits/</code></td></tr>
-      <tr><td>Historia nueva</td><td>Diseño, con Claude: lee Figma, contrasta con Mobbin, confirma la lista; Claude crea la tarjeta y escribe la historia. Un desarrollador escribe las que no tienen pantalla. La aprueba en su PR quien la escribe u otra persona (punto 2)</td><td><code>producto/stories/</code> y su tarjeta</td></tr>
+      <tr><td>Historia nueva</td><td>Diseño, con Claude: lee Figma, contrasta con Mobbin, confirma la lista; Claude crea la tarjeta y escribe la historia. Un desarrollador escribe las que no tienen pantalla. La aprueba en su PR al menos una persona distinta de quien la escribe (punto 2)</td><td><code>producto/stories/</code> y su tarjeta</td></tr>
       <tr><td>Aparece una elección que bloquea</td><td>Se crea una decisión abierta y la historia la cita en <code>blocked_by</code>. Quien decide la cierra por PR. Si cambia la definición, se añade un aviso de una línea bajo el apartado afectado</td><td><code>producto/decisions/</code></td></tr>
       <tr><td>Arranque y contrato</td><td>Como siempre. Lo acordado en Jira termina en el commit del contrato</td><td>El OpenAPI</td></tr>
       <tr><td>Se construye un criterio</td><td>El builder lee las reglas comunes, las de su lado y los patrones del encargo</td><td>—</td></tr>

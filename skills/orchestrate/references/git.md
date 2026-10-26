@@ -36,15 +36,16 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 - Two kinds: `design/<ID>` → integration branch (the new story) and `story/<ID>` → integration branch (the finished story). The halves merge into `story/<ID>` directly, with your human's ok.
 - Title: `<ID>: <story title>`. Body for a finished story: the output of `node <storiesDir>/stories.mjs --pr <ID>`, the review summary if there was one, and any ⚠️ manual steps.
 - Bitbucket has no official CLI. Open the pull request in the web UI with your human, or through the REST API (`POST /2.0/repositories/<workspace>/<repo>/pullrequests`) when the machine has a token for it. Never write the token into a file the repository tracks.
-- Merge only on your human's ok. A merge through the API (`POST …/pullrequests/<id>/merge`) is a merge: the guard asks your human to confirm it and blocks it for role agents.
+- A pull request merges only after at least one person other than its author approves it (`orchestrate` skill, §6.1). The halves are not pull requests: they merge into `story/<ID>` with your human's ok.
+- Merge only on your human's ok. A merge through the API (`POST …/pullrequests/<id>/merge`) is a merge: the guard asks your human to confirm it and blocks it for role agents. Before it, read the pull request (`GET …/pullrequests/<id>`): some participant other than the `author` must have `approved: true`. If none has, do not merge; tell your human it is waiting for an approval.
 - Never merge on a red pipeline.
 
-## Optional: repository settings
+## Repository settings
 
 The human applies these in Bitbucket, because they change a shared repository.
 
-- Branch restrictions on `main` and `develop`: no direct pushes, merge only through a pull request. No minimum number of approvals: the author may merge their own pull request, so the work goes on when someone is away (`orchestrate` skill, §6.1). Bitbucket does not let authors approve their own pull requests, so a required approval would block them.
-- Merge checks: a green pipeline on the pull request. Bitbucket enforces merge checks only on some plans; where it does not, they are a warning and the team keeps the rule by hand.
+- Branch restrictions on `main` and `develop`: no direct pushes, merge only through a pull request, with a minimum of 1 approval. Bitbucket does not let authors approve their own pull requests, so that approval is always someone else's (`orchestrate` skill, §6.1).
+- Merge checks: that approval and a green pipeline on the pull request. Bitbucket enforces merge checks only on some plans; where it does not, they are a warning and the team keeps the rule by hand.
 - Required pipeline steps: the project's verification commands plus `node <storiesDir>/stories.mjs --tests --check`.
 - Default reviewers, to keep others informed, never required: the contract spec to one developer of each side.
 
