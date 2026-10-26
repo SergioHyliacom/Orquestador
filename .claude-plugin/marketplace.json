@@ -1,6 +1,6 @@
 {
-  "name": "easyone-orchestrator-local",
-  "description": "Local marketplace for Hyliacom's EASY One orchestrator",
+  "name": "hyliacom",
+  "description": "Hyliacom's plugins: the EASY One orchestrator",
   "owner": { "name": "Hyliacom" },
   "plugins": [
     {

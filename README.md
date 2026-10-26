@@ -34,15 +34,24 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 
 ## Instalar el plugin
 
-El fork está de momento solo en local. Desde su carpeta:
+**Se instala solo en el proyecto de EASY One, no en todo el equipo.** Abre una terminal en la carpeta del proyecto y ejecuta:
 
 ```
-claude plugin validate .
-claude plugin marketplace add .
-claude plugin install easyone-orchestrator@easyone-orchestrator-local
+claude plugin marketplace add SergioHyliacom/Orquestador
+claude plugin install easyone-orchestrator@hyliacom --scope project
 ```
 
-Para probarlo sin instalarlo: `claude --plugin-dir <ruta de esta carpeta>`.
+Claude Code tiene tres alcances para un plugin:
+
+| Alcance | Dónde funciona | Dónde lo apunta |
+|---|---|---|
+| `--scope project` (el nuestro) | Solo en este repositorio, para todo el equipo | `.claude/settings.json`, que se sube |
+| `--scope local` | Solo en este repositorio y solo para ti, por ejemplo para probarlo | `.claude/settings.local.json`, que no se sube |
+| `--scope user` (el que se usa si no dices nada) | En todos tus proyectos | Tu configuración de usuario. **No lo uses** |
+
+La primera persona que lo instala con `--scope project` deja el plugin activado en `.claude/settings.json`, y eso se sube con el resto del proyecto. Las demás, al hacer pull, lo tienen activado pero sin descargar: cada una ejecuta los dos comandos de arriba una sola vez. Si el repositorio del fork es privado, cada persona necesita acceso de lectura a él.
+
+Para probar el plugin desde una copia en tu equipo, sin instalarlo: `claude --plugin-dir <ruta de esta carpeta>`.
 
 Claude Code carga los plugins al arrancar. Después de instalar, abre una sesión nueva: hay que reiniciar el CLI, no basta con `/clear`.
 

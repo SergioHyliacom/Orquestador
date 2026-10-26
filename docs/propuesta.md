@@ -254,6 +254,8 @@ El stack no sale de las historias: el esqueleto se monta antes, porque el propio
    - la CI en Bitbucket.
 
    **No** se hacen tablas de negocio, el módulo de identidad ni un CRUD genérico «por si acaso».
+
+   Mientras duran los cimientos, «¿qué me toca?» enseña a cada desarrollador su estado: cada pieza con ✅, ❌ o ⚠️ y su prueba, las decisiones abiertas y qué conviene cerrar primero. Es la misma lista que comprobará la parte 2, así que, cuando todo está en ✅, la sesión propone lanzarla. Después, ese estado no vuelve a aparecer.
 3. **Instalación, parte 2.** Mide comandos, contrato, rutas y tests. Comprueba que los agentes llegan al grafo de código y que sus hooks conviven con la guardia. **Congela la definición** y escribe los patrones de cada lado. Sus comprobaciones son el criterio de salida de los cimientos.
 4. **Primera historia, como piloto.** Pequeña, pero que pase por todas las piezas y todas las etapas. Lo que falle se corrige en el plugin antes de que entre todo el equipo.
 
@@ -459,5 +461,6 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 - **Elegir el generador del contrato:** Huma (el OpenAPI sale del código Go) u oapi-codegen (el OpenAPI se escribe y genera el código Go). Es una decisión abierta desde el día uno y se cierra con las pruebas técnicas de los cimientos. Si gana oapi-codegen, donde este documento dice «OpenAPI generado desde Go» pasa a ser «OpenAPI escrito por el backend», y la instalación, parte 2, mide ese comando en lugar de `generateSpec`.
 - **Subir el fork a Bitbucket**, para que cada miembro del equipo lo instale desde allí.
 - **Hacer la historia piloto** y corregir el plugin con lo que salga.
+- **Al cerrar la entrega 0**, reducir «Cómo arrancamos» (sección 6 aquí y punto 6 del esquema) a una línea con la fecha de cierre y el enlace a la auditoría de los cimientos.
 - **Migrar Hyliable** al monorepo y a claves de Jira, cuando se decida.
 - **Decidir quién cierra la auditoría de cada entrega:** una persona (`audit.confirm: human`) o el orquestador por su cuenta (`auto`). Mientras tanto la confirma una persona.

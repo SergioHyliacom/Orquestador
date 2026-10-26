@@ -7,6 +7,7 @@
 import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const WIN = process.platform === "win32";
 const stripBom = (s) => s.replace(/^﻿/, "");
@@ -40,6 +41,12 @@ if (!existsSync(configPath)) process.exit(0);
 let config;
 try { config = JSON.parse(stripBom(readFileSync(configPath, "utf8"))); }
 catch (e) { block(`${STATE}.json is not valid JSON (${e.message}). Fix it before continuing.`); }
+
+// A person's own settings, in .orchestrator/me.json (never committed), win over the shared ones where the
+// choice is theirs: today, the mode their Orca workers launch in.
+let me = {};
+try { me = JSON.parse(stripBom(readFileSync(path.join(root, STATE, "me.json"), "utf8"))); } catch { /* no personal settings */ }
+const workerModeSetting = me.orca?.workerPermissionMode || config.orca?.workerPermissionMode;
 
 const git = config.git ?? {};
 const protectedBranches = git.protectedBranches ?? ["main", git.integrationBranch ?? "develop"];
@@ -103,8 +110,16 @@ if (input.hook_event_name === "SessionStart") {
   const harness = orca
     ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
     : "Harness, detected now: plain Claude Code.";
+  // The pipeline runs the project's copies of two of the plugin's scripts: say when they fall behind it.
+  const assets = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "skills", "install", "assets");
+  const text = (p) => stripBom(readFileSync(p, "utf8")).replace(/\r\n?/g, "\n");
+  const stale = config.storiesDir ? ["stories.mjs", "jira-sync.mjs"].filter((f) => {
+    const mine = path.join(root, config.storiesDir, f), plugin = path.join(assets, f);
+    return existsSync(mine) && existsSync(plugin) && text(mine) !== text(plugin);
+  }) : [];
+  const scripts = stale.length ? ` The project's ${stale.join(" and ")} in ${config.storiesDir}/ ${stale.length > 1 ? "differ" : "differs"} from this plugin's version: tell your human once, and offer to update them through a chore/ pull request (orchestrate skill, §6.11).` : "";
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: `This project uses easyone-orchestrator. Load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}` } }));
+    additionalContext: `This project uses easyone-orchestrator. Load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${scripts}` } }));
   process.exit(0);
 }
 
@@ -280,11 +295,11 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     // Orca workers run in orca.workerPermissionMode, or else in this session's mode, never in Orca's
     // default arguments (harness.md, Launch).
     if (/^orca(\.exe)?$/i.test(tokens[0]) && tokens[1] === "worktree" && /^(rm|remove)$/.test(tokens[2] ?? "") && tokens.includes("--force")) block("orca worktree rm --force discards uncommitted work. Remove it without --force, or leave it and name it in the close report.");
-    const workerMode = cliMode(config.orca?.workerPermissionMode || input.permission_mode);
+    const workerMode = cliMode(workerModeSetting || input.permission_mode);
     if (/^orca(\.exe)?$/i.test(tokens[0]) && workerMode) {
-      if (!PERMISSION_MODES.includes(workerMode)) block(`orca.workerPermissionMode "${workerMode}" is not a permission mode (${PERMISSION_MODES.join(", ")}). Fix .orchestrator.json.`);
+      if (!PERMISSION_MODES.includes(workerMode)) block(`orca.workerPermissionMode "${workerMode}" is not a permission mode (${PERMISSION_MODES.join(", ")}). Fix it in .orchestrator/me.json or .orchestrator.json.`);
       const want = `--permission-mode ${workerMode}`;
-      const from = config.orca?.workerPermissionMode ? "orca.workerPermissionMode" : "this session's mode";
+      const from = me.orca?.workerPermissionMode ? "your me.json's orca.workerPermissionMode" : config.orca?.workerPermissionMode ? "orca.workerPermissionMode" : "this session's mode";
       if (tokens[1] === "orchestration" && tokens[2] === "worker-start" && tokens.includes("--agent")) block(`launch the worker's terminal yourself with \`orca terminal create --command "claude ${want}"\`, then \`worker-start --terminal <handle>\`. --agent uses Orca's default arguments.`);
       const cmd = tokens[tokens.indexOf("--command") + 1] ?? "";
       if (tokens[1] === "terminal" && tokens[2] === "create" && /(^|[;&|]\s*)claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in ${from}: --command "claude ${want}".`);

@@ -83,7 +83,7 @@ A fresh worker means a fresh terminal, not a new Git worktree.
 
 ### Launch: the worker mode, not Orca's default
 
-`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs, which the project does not control. So launch the terminal yourself and dispatch into it. The worker mode is `orca.workerPermissionMode` in `.orchestrator.json` when set (for example `bypassPermissions`), otherwise the permission mode your own session runs in. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names the mode:
+`worker-start --agent claude` launches Claude with Orca's default arguments for new agent tabs, which the project does not control. So launch the terminal yourself and dispatch into it. The worker mode is `orca.workerPermissionMode` in your human's `.orchestrator/me.json` when set, which is their own choice; else the one in `.orchestrator.json` (for example `bypassPermissions`); else the permission mode your own session runs in. The guard blocks `worker-start --agent` and a `claude` terminal in any other mode, and its message names the mode:
 
 ```
 orca terminal create --worktree <current | the writer's worktree> --title "<role>-<scope>" --command "claude --permission-mode <worker mode>" --json
