@@ -57,14 +57,16 @@ Claude Code carga los plugins al arrancar. Después de instalar, abre una sesió
 
 **Si tienes instalado el orquestador original** (`orchestrator`), sus hooks también actuarían en el repositorio de EASY One. La instalación lo desactiva para ese proyecto en `.claude/settings.json`, que es un fichero compartido. Cada miembro del equipo necesita tener el plugin instalado.
 
+**Los hooks de tus otros plugins también se ejecutan en el proyecto**, aunque no uses sus skills: un plugin con un hook después de cada edición que necesita una herramienta que no tienes (por ejemplo, Python) falla en cada edición. En tu primera sesión, Claude te dice qué plugins tienen hooks y te ofrece desactivarlos solo en este proyecto (`claude plugin disable <nombre> --scope local`).
+
 ## Preparar un proyecto
 
 Abre el proyecto y ejecuta `/easyone-orchestrator:install`. La instalación tiene dos partes:
 
-1. **Parte 1, historias (el día uno).** Carpeta de historias y validador, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») y los campos de persona Backend y Frontend, ajustes de git y de Bitbucket y un pipeline mínimo. También la definición en `docs/definicion.md`, `README.md`, `CLAUDE.md`, `docs/rules/` con la semilla de reglas y los pendientes técnicos como decisiones abiertas. Con esto diseño ya puede escribir historias.
-2. **Parte 2, desarrollo (al acabar los cimientos).** Se ejecuta cuando un endpoint de prueba va de Go al panel pasando por el OpenAPI y una prueba E2E, con PostgreSQL real. Mide los comandos de verificación, el contrato y sus generadores, las rutas y comprobaciones de cada lado y los informes de tests, y completa el pipeline. Congela la definición y escribe los patrones de cada lado.
+1. **Parte 1, historias (el día uno).** Carpeta de historias y validador, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») y los campos de persona Backend y Frontend, ajustes de git y de Bitbucket y un pipeline mínimo. También `README.md`, `CLAUDE.md` y `docs/rules/` con la semilla de reglas. Casi no pregunta: el idioma (español), `develop`, las etiquetas de riesgo y quién cierra cada decisión están fijados; lee de Jira el proyecto, los estados que faltan y los campos, y lo confirma en un solo mensaje. No hay documento de definición: el contexto de Claude es el código que se va construyendo (los patrones, las reglas, las historias y las decisiones). Con esto diseño ya puede escribir historias.
+2. **Parte 2, desarrollo (al acabar los cimientos).** Se ejecuta cuando un endpoint de prueba va de Go al panel pasando por el OpenAPI y una prueba E2E, con PostgreSQL real. Mide los comandos de verificación, el contrato y sus generadores, las rutas y comprobaciones de cada lado y los informes de tests, y completa el pipeline. Escribe los patrones de cada lado, que desde ahí son el contexto de Claude.
 
-La primera vez que cada persona abre Claude en el proyecto, su sesión le pregunta quién es y de qué lado trabaja (`.orchestrator/me.json`, que es personal y no entra en git).
+La primera vez que cada persona abre Claude en el proyecto, su sesión le pregunta quién es, de qué lado trabaja y en qué idioma quiere que le hable (`.orchestrator/me.json`, que es personal y no entra en git). Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va siempre en español.
 
 **Variables del pipeline** (repositorio de Bitbucket, como variables protegidas): `JIRA_EMAIL` y `JIRA_API_TOKEN`. Ningún token se escribe en un fichero del repositorio.
 
@@ -120,7 +122,7 @@ git switch main && git merge --ff-only upstream/main
 git switch easyone && git merge main
 ```
 
-Las skills y los agentes siguen en inglés, como en el original: los lee el modelo, y así se fusionan mejor las mejoras. Cada proyecto escribe sus historias en su propio idioma.
+Las skills y los agentes siguen en inglés, como en el original: los lee el modelo, y así se fusionan mejor las mejoras. Lo que el plugin escribe en el proyecto de EASY One va en español.
 
 ## Estado
 

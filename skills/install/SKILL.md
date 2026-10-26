@@ -1,6 +1,6 @@
 ---
 name: install
-description: Install easyone-orchestrator in one project, in two parts. Part 1 (day one) sets up the stories, Jira and git so the design team can start writing stories, and the project's documents: the definition, README.md, CLAUDE.md, the seed rules in docs/rules/ and the open decisions. Part 2 (once the foundations exist) measures the verification commands, the OpenAPI contract and its generators, each side's paths and checks and the test reports, adds the pipeline that moves the Jira cards, writes each side's patterns and freezes the definition. Run only when the human asks for /easyone-orchestrator:install. Not for spec-driven (SDD) setups.
+description: Install easyone-orchestrator in one project, in two parts. Part 1 (day one) sets up the stories, Jira and git so the design team can start writing stories, and the project's documents: README.md, CLAUDE.md and the seed rules in docs/rules/. Part 2 (once the foundations exist) measures the verification commands, the OpenAPI contract and its generators, each side's paths and checks and the test reports, adds the pipeline that moves the Jira cards, and writes each side's patterns. Run only when the human asks for /easyone-orchestrator:install. Not for spec-driven (SDD) setups.
 disable-model-invocation: true
 ---
 
@@ -9,8 +9,10 @@ disable-model-invocation: true
 The install has three layers. Store each one in its own place:
 
 - **Method:** fixed. It lives in the plugin (`orchestrate`, `stories`, the agents, the guard). Never copy it into the project.
-- **Plugs:** measured in this repo. Commands, paths, the contract, each side's checks, Jira, language. They go into `.orchestrator.json` and the `CLAUDE.md` block.
-- **Rules:** `docs/rules/` starts with the seed in `assets/rules/`: every seed rule cites the definition or the method. The rest come only from real failures and audits in this project (`orchestrate` skill, §11.2).
+- **Plugs:** measured in this repo. Commands, paths, the contract, each side's checks, Jira. They go into `.orchestrator.json` and the `CLAUDE.md` block.
+- **Rules:** `docs/rules/` starts with the seed in `assets/rules/`: 13 rules the team agreed at the start, or that come from the method. The rest come only from real failures and audits in this project (`orchestrate` skill, §11.2).
+
+The project has no architecture document for Claude to read. Claude learns the project from its code: the patterns the foundations leave, the rules, and the stories. A definition or design document the team keeps for itself stays outside the repository, and the install never asks for it.
 
 Never copy a rule from another project. Where each thing lives is the `orchestrate` skill's §11; the install creates those homes and nothing else.
 
@@ -19,28 +21,35 @@ Never copy a rule from another project. Where each thing lives is the `orchestra
 The install runs in two parts, because design can start before there is any code:
 
 - **Part 1, stories.** Day one, on an empty or almost empty repository: the story folder and its validator, Jira, the git settings, the personal files and the project's documents. Enough for design to write the first stories while the developers lay the foundations.
-- **Part 2, development.** When the foundations are in place, at the close of delivery 0: one endpoint goes from Go through the OpenAPI spec and the generated client to the panel and an end-to-end test, on a real PostgreSQL. Part 2 measures all of that, adds the pipeline, writes the patterns and freezes the definition.
+- **Part 2, development.** When the foundations are in place, at the close of delivery 0: one endpoint goes from Go through the OpenAPI spec and the generated client to the panel and an end-to-end test, on a real PostgreSQL. Part 2 measures all of that, adds the pipeline and writes the patterns.
 
 No `.orchestrator.json` → Part 1. Ask the human whether the foundations already exist; if they do, run Part 2 right after. A `.orchestrator.json` without `roles` → Part 2.
 
 ## Part 1: stories
 
-### 1.1 Ask
+### 1.1 Read, then confirm in one message
 
-Ask the human, all at once:
-- the language of the project's docs and UI;
-- the product's personas and the release names;
-- the Jira site, the project key, and the exact name of the Jira status for each stage: design, contract, build, integration, visual review, done, and discarded (seven statuses). The workflow must let any status move to any other (in Jira's workflow editor, "allow all statuses to transition to this one" on each status), because the pipeline moves cards both ways: a reopened story leaves Done, and a discarded one leaves any stage;
-- two people fields on the cards, **Backend** and **Frontend** (create them if they do not exist): whoever hands out the work fills them from the backlog, and the pipeline assigns the card to whoever's turn it is from them and the card's reporter, the designer. Read their IDs with the Jira tools (`GET /rest/api/3/field`) for `jira.fields`;
-- the risk tags that matter (the template lists account isolation, identity, payments, fiscal, personal data and production);
-- the name of the integration branch (default `develop`);
-- the path of the project's definition document (for EASY One, `Definición EASY One.md`);
-- who closes each kind of decision: product and business (usually management) and architecture (the technical lead);
-- the design project's Figma files, and whether the design team uses Mobbin for references.
+Do not run a questionnaire. Most of what Part 1 needs is fixed by the method or can be read; read it, then show the human one message to confirm.
+
+**Fixed, never asked:**
+- the project's language is Spanish (`language: es`): stories, rules, markers and docs. Each person's language with Claude is theirs, set in their `me.json` at their first session (`orchestrate` skill, §1);
+- the integration branch is `develop`;
+- the risk tags are those of `assets/orchestrator.json`; they change later through a pull request;
+- decisions are closed by role: management for product and business, the technical lead for architecture;
+- Mobbin is a reference for design, and the Figma files come with each story, so the install asks for neither;
+- the releases start as `Entrega 1`, `Entrega 2` and `Más adelante`; the team renames them through a pull request when it plans;
+- the personas are not listed up front: design adds each one with its first story.
+
+**Read from Jira**, with the Jira tools this machine has:
+- the site and the project: the projects the person can see; propose the one that fits;
+- the seven statuses (design, contract, build, integration, visual review, done, discarded), named `Diseño`, `Contrato`, `Desarrollo`, `Integración`, `Revisión visual`, `Hecha` and `Descartada`: say which are missing. The workflow must let any status move to any other ("allow all statuses to transition to this one" on each status), because the pipeline moves cards both ways;
+- the people fields **Backend** and **Frontend** (`GET /rest/api/3/field`): their IDs go to `jira.fields`. Whoever hands out the work fills them from the backlog, and the pipeline assigns each card to whoever's turn it is from them and the card's reporter, the designer. If they are missing, offer to create them, with the human's ok.
+
+**The one message:** what you will use, what is missing in Jira and what you offer to create, and "shall I go on?". Ask a question only when reading cannot answer it: no Jira tool works, or more than one project fits.
 
 ### 1.2 Write `.orchestrator.json`
 
-From `assets/orchestrator.json`, write only `language`, `storiesDir`, `riskTags`, `jira` and `git`. Leave out everything Part 2 measures: `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams`, `orca`. No `{{` may remain in what you write.
+From `assets/orchestrator.json`, write only `language` (`es`), `storiesDir`, `riskTags`, `jira` and `git`. Leave out everything Part 2 measures: `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams`, `orca`. No `{{` may remain in what you write.
 
 ### 1.3 Create the story folder
 
@@ -48,16 +57,17 @@ From `assets/orchestrator.json`, write only `language`, `storiesDir`, `riskTags`
 2. Copy `assets/stories.mjs` and `assets/jira-sync.mjs` into it unchanged. The pipeline runs these copies. They must stay identical to the plugin's: at session start the guard says when they differ, and the session offers to update them through a `chore/` pull request.
 3. Write `<storiesDir>/stories.config.json` from `assets/stories.config.json`, without `tests` and `contractSpec` (Part 2 adds them):
    - `idPrefix` is the Jira project key.
-   - `labels` holds every heading, marker, status and map text **translated into the project's language**. Translate the English defaults in `stories.mjs` (`DEFAULTS`). If the project language is English, delete `labels`.
+   - `releases` and `mainRelease`: `Entrega 1`, `Entrega 2`, `Más adelante`, with `Entrega 1` as the main one. Leave out `personas`: the validator then accepts any, and design adds them with its stories.
+   - `labels` holds every heading, marker, status and map text **in Spanish**. Translate the English defaults in `stories.mjs` (`DEFAULTS`).
    - Translate the vague-word and hedge lists too. They are what the ready check flags.
 4. Write `<storiesDir>/activities.json` with the backbone activities. If none exist yet, write one activity and ask the human for the rest at the first story session.
-5. Write `<storiesDir>/templates/story.md` and `templates/decision.md`: the plugin templates from `skills/stories/templates/`, translated into the project's language. Keep the frontmatter keys in English.
-6. Write `<storiesDir>/README.md` from `assets/stories-readme.md`, translated.
+5. Write `<storiesDir>/templates/story.md` and `templates/decision.md`: the plugin templates from `skills/stories/templates/`, in Spanish. Keep the frontmatter keys in English.
+6. Write `<storiesDir>/README.md` from `assets/stories-readme.md`, in Spanish.
 7. Create `<storiesDir>/stories/` and `<storiesDir>/decisions/`.
 8. Add `<storiesDir>/.test-results*` and `<storiesDir>/map.md` to `.gitignore`. The map is generated on each machine: committed, every two pull requests would conflict on it.
 9. Run `node <storiesDir>/stories.mjs`. It must run clean on the empty folder.
 
-All files the project reads are in one language: the project's.
+All files the project reads are in Spanish.
 
 ### 1.4 Git and Claude Code
 
@@ -65,6 +75,7 @@ All files the project reads are in one language: the project's.
 2. Add `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/`, `.orchestrator/role.json` and `.claude/settings.local.json` to `.gitignore`. They are personal: who the human is and their own settings, their ledger, their briefs and reports, a worker's role, and their own Claude Code settings for this project (permissions, model, their own MCP servers). None of them may travel with a branch: a pull would hand one person's settings to everyone. What is shared goes in `.claude/settings.json` and `.orchestrator.json`, through a pull request.
 3. **This plugin only in this project.** It is meant to be installed at project scope (`claude plugin install easyone-orchestrator@hyliacom --scope project`), so it is on in this repository for everyone and nowhere else: `.claude/settings.json` gets `"enabledPlugins": { "easyone-orchestrator@hyliacom": true }`. If `claude plugin list` shows it at user scope, tell the human it would load in every project on this machine, and offer to move it: uninstall it at user scope and install it at project scope. Tell the human that each teammate runs the install command once in the project's folder; the README of the plugin says how.
 4. If the upstream `orchestrator` plugin is installed on this machine (`claude plugin list`), its guard would run here too. Disable it for this project in `.claude/settings.json`: `"enabledPlugins": { "orchestrator@<its marketplace>": false }`. Tell the human every teammate needs the same, and that the file is shared.
+   Then look at the other plugins enabled on this machine (`claude plugin list`). A plugin's hooks run on their events in every project where it is enabled, whether or not anyone uses its skills: a hook after each edit that calls a tool this machine lacks fails on every edit here. For each plugin that has hooks (`hooks/hooks.json` under its path, or `hooks` in its manifest), say which events it hooks and what it runs, and offer to disable it for this project only: `claude plugin disable <name> --scope local`, which writes to the person's `.claude/settings.local.json` and travels with no one. Each teammate's session does the same at their first session (`orchestrate` skill, §1).
 5. Write a first `bitbucket-pipelines.yml` from `assets/bitbucket-pipelines.yml`: only the `stories` step, with `image: node:22`, on `design/*`, the integration branch and every other branch (`default`), so every pull request has a build for the merge check. That is enough for the card to move from design to contract when a story's pull request merges, and to Discarded when a discard merges. Ask the human to add the secured repository variables `JIRA_EMAIL` and `JIRA_API_TOKEN` in Bitbucket; never write a token into a tracked file.
 6. Give the human the Bitbucket repository settings in the `orchestrate` skill's `references/git.md`, with the minimum of 1 approval on `main` and `develop` and Merge commit as the default strategy, before the first story's pull request. Do not apply them yourself.
 7. **Each person's Bitbucket access for the session.** Sessions open, read and merge pull requests through the Bitbucket REST API. Each person creates a Bitbucket API token with pull request read and write scopes and sets `BITBUCKET_USER` and `BITBUCKET_TOKEN` in their own environment, never in a tracked file. Without them the session still works, but the person opens and merges pull requests in the web UI.
@@ -73,28 +84,28 @@ All files the project reads are in one language: the project's.
 
 Each one has its home in the `orchestrate` skill's §11. Create these and nothing else: no `CONTRIBUTING.md`, `CODING_STANDARDS.md` or `docs/adr/`.
 
-1. **The definition.** Copy the definition document unchanged to `docs/definicion.md`. It is edited through pull requests until Part 2 freezes it.
-2. **The rules.** Copy `assets/rules/comunes.md`, `backend.md` and `frontend.md` to `docs/rules/`. They are written in Spanish, EASY One's language; translate them only if the project's language is another. Check that every section and decision they cite exists in `docs/definicion.md`. Do not add rules of your own.
-3. **`README.md`**, in the project's language: what the product is, in at most five lines taken from the definition's summary; the folder map; how to run it locally and how to generate the code graph (`pending: delivery 0` until the foundations name the commands, which live once in a single task file that the README and `.orchestrator.json` both use); and how the team works, as a link to this plugin. If a README exists, merge into it; do not overwrite it.
-4. **Open decisions.** Read the definition's pending list (§14). For each pending technical choice that affects the build (a library, a tool, a test the foundations must run), propose a decision file to the human from `<storiesDir>/templates/decision.md`: numbered from `DEC-031` (D1–D30 live in the definition), `status: Open`, `decides` the technical lead. Business, legal and team pendings stay in the definition unless a story is blocked by one. Write only the decisions the human confirms.
+1. **The rules.** Copy `assets/rules/comunes.md`, `backend.md` and `frontend.md` to `docs/rules/` as they are. Do not add rules of your own.
+2. **`README.md`**, in Spanish: what the product is, in at most five lines the human gives or confirms; the folder map; how to run it locally and how to generate the code graph (`pending: delivery 0` until the foundations name the commands, which live once in a single task file that the README and `.orchestrator.json` both use); and how the team works, as a link to this plugin. If a README exists, merge into it; do not overwrite it.
+
+No decisions are written up front. A decision is born when it is needed: a technical choice the foundations must settle (opened by the technical lead), or a choice that blocks a story (`stories` skill, "Decisions").
 
 ### 1.6 CLAUDE.md
 
-Write the root `CLAUDE.md` from `assets/claude-md.md`, filled and translated. It imports `README.md` and `docs/rules/comunes.md`, points to the definition's sections by topic, and carries the orchestrator block between its markers. Write `pending: install Part 2` on every line of the block Part 2 measures (contract, sides, done means, tests cannot prove, seams, delegation, code graph). A re-install replaces only what is between the markers.
+Write the root `CLAUDE.md` from `assets/claude-md.md`, filled. It imports `README.md` and `docs/rules/comunes.md` and carries the orchestrator block between its markers. Write `pending: install Part 2` on every line of the block Part 2 measures (contract, sides, done means, tests cannot prove, seams, delegation, code graph). A re-install replaces only what is between the markers.
 
 `CLAUDE.md` has no lessons section: lessons are rules (`orchestrate` skill, §11.2). If an existing `CLAUDE.md` has one, propose each lesson to the human as a rule in the `docs/rules/` file of its side, with its origin, and remove the section once they agree.
 
 ### 1.7 Verify Part 1
 
 - `grep -r "{{" .orchestrator.json CLAUDE.md README.md docs/rules <storiesDir>` returns nothing.
-- Every `@` import in `CLAUDE.md` resolves to a file, and every section the pointers and the rules cite exists in `docs/definicion.md`.
+- Every `@` import in `CLAUDE.md` resolves to a file.
 - `node <storiesDir>/stories.mjs` runs clean, with the open decisions in the map.
 - **Jira answers.** Read one card of the project with the Jira tools this machine has (the Atlassian MCP server or `acli`), and check that each status in `jira.statuses` exists in the project's workflow and that the fields in `jira.fields` exist on its cards. If no tool works, record it in the `CLAUDE.md` block: sessions will ask the human for the queue.
 - **Design's machines can do their part.** On the machine of at least one designer, without creating anything: `node --version` (20 or later) and `git --version` answer, or the session offers to install them; the Jira account may create and edit issues in the project (Jira's permissions query for the project: `CREATE_ISSUES`, `EDIT_ISSUES`); the Figma connector reads each Figma file of the project; Mobbin answers one search, if the team uses it. Record the files and the result in the `CLAUDE.md` block's **Design** line. Each designer's session checks its own machine at start (`orchestrate` skill, §1).
 - `node <storiesDir>/jira-sync.mjs --dry-run` reads the configuration without errors.
 - The guard is active: ask the human to try `git push --force` in a fresh session and confirm it is blocked.
 
-Report each check as ✅ measured and working, ⚠️ not verified (with the manual step), ❌ failed. Then tell the human that design can start, and what Part 2 needs: the foundations of §15 of the project's definition, entrega 0.
+Report each check as ✅ measured and working, ⚠️ not verified (with the manual step), ❌ failed. Then tell the human that design can start, and what Part 2 needs: the foundations, entrega 0, which are what Part 2 checks (2.1 and 2.3). Until then, a developer's "¿qué me toca?" shows their state (`que-hago` skill, §5).
 
 ## Part 2: development
 
@@ -120,9 +131,9 @@ Ask the human only what you cannot measure, all at once: the code owner if any; 
 2. Add `tests` (the three reports from 2.1) and `contractSpec` (`contract.spec`) to `<storiesDir>/stories.config.json`.
 3. Replace the Part 1 `bitbucket-pipelines.yml` with the whole of `assets/bitbucket-pipelines.yml`, with the project's image, setup and verification commands. Keep `stories.mjs --tests --check` right after the setup: the card moves on the test results even when a later check fails. The verification lines are the commands of `verify.all` that the test sources do not already run.
 4. Fill the lines of the `CLAUDE.md` block that Part 1 left pending, and the local run section of `README.md` with the names of the task file's commands.
-5. **The rules meet the machine.** For each rule in `docs/rules/` that a check measured in 2.1 already enforces (a linter setting, an architecture test, a pipeline step, the checks §12.1 of the definition asks of the CI), move its line to *Checked by the machine* as `R-xx → <the command or setting>`. Prove each one first: it fails on a deliberately bad line and passes once the line is fixed. A check that stays green on the bad line does not count.
+5. **The rules meet the machine.** For each rule in `docs/rules/` that a check measured in 2.1 already enforces (a linter setting, an architecture test, a pipeline step, the security checks of the CI), move its line to *Checked by the machine* as `R-xx → <the command or setting>`. Prove each one first: it fails on a deliberately bad line and passes once the line is fixed. A check that stays green on the bad line does not count.
 6. **The patterns.** Under *Patterns* in `docs/rules/backend.md` and `docs/rules/frontend.md`, list the reference code of the foundations each side's briefs will cite: the reference module, the module generator, the toy endpoint and its screen. One line each: what it shows and its path.
-7. **Freeze the definition.** Add at the top of `docs/definicion.md` one line: it was frozen on the date of this install, at the close of delivery 0, and changes since then are decisions in `<storiesDir>/decisions/`, with a notice under each heading they change (`orchestrate` skill, §11.3). Tell the human that from now on the definition is not edited except for those notices.
+7. **The code is the context from now on.** The patterns of step 6 are what every brief cites under "Read first". Tell the human that the foundations' audit (`orchestrate` skill, §10) is the next step, because every story will copy these patterns.
 
 The first audit is the one of the foundations (`orchestrate` skill, §10). Everything Part 2 writes reaches the integration branch in one pull request the humans merge.
 
@@ -131,7 +142,8 @@ The first audit is the one of the foundations (`orchestrate` skill, §10). Every
 - `grep -r "{{" .orchestrator.json CLAUDE.md README.md docs/rules <storiesDir> bitbucket-pipelines.yml` returns nothing, and no `pending:` is left in `CLAUDE.md` or `README.md`.
 - Every command in `.orchestrator.json` runs, the two generators included.
 - Every path cited in the `CLAUDE.md` block, in `roles.*.paths` and under *Patterns* exists.
-- No role's paths include `docs/rules/`, `docs/definicion.md` or `<storiesDir>/`: builders never edit the rules, the definition or the stories.
+- The big architecture choices that shape the code are written as closed `DEC` files, each of half a page with its why (`que-hago` skill, §5). The code shows what was chosen, never why; without them the reason is lost the day someone wants to change it.
+- No role's paths include `docs/rules/` or `<storiesDir>/`: builders never edit the rules or the stories.
 - The code graph answers from a builder run, updates after an edit, and leaves the guard working (2.1, step 9). `git status` shows none of its files.
 - `node <storiesDir>/stories.mjs --tests --check` passes. The pipeline runs the same command.
 - The first pipeline run on a branch prints the stage `jira-sync.mjs` computed. With `--dry-run` locally, the computed stages match what the human expects for the stories that exist.

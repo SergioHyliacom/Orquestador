@@ -13,7 +13,7 @@ Read all of this before you say anything. Run the independent reads in parallel.
 
 **First, the phase.** If `.orchestrator.json` has no `roles`, Part 2 of the install is not done yet and the developers are laying the foundations (delivery 0). A designer works on stories as usual. For a developer, gather only who they are, their git, their pull requests and the ledger (1, 2, 5 and 6 below), and then follow §5, "During the foundations", instead of §2.
 
-1. **Who.** `.orchestrator/me.json`: their name, side (`design`, `backend` or `frontend`) and Jira account. If it is missing, ask once and write it (`orchestrate` skill, §1).
+1. **Who.** `.orchestrator/me.json`: their name, side (`design`, `backend` or `frontend`), Jira account and the language they talk to you in. If it is missing, ask once and write it (`orchestrate` skill, §1).
 2. **Git.**
    - Run `git fetch --prune` and `git status`, and note the current branch.
    - Note commits not pushed and changes not committed.
@@ -57,7 +57,7 @@ Take the first rule that applies. The rest become the other lines of your answer
 
 ## 3. Tell them
 
-In the project's language, at most 10 lines, with no git or Jira words beyond the card keys:
+In their language, at most 10 lines, with no git or Jira words beyond the card keys:
 
 ```
 <Name> · <side>
@@ -84,13 +84,14 @@ When the person asks for a step instead ("programa EO-123", "abre el PR", "fusi�
 
 While `.orchestrator.json` has no `roles`, a developer's "what is next" is the state of the foundations. It disappears once Part 2 is installed. Read only: run no generator, edit nothing, commit nothing.
 
-1. **The list.** Take the foundations of delivery 0 from `docs/definicion.md` (its §15). Add what Part 2 of the install will check (`install` skill, 2.1 and 2.3):
+1. **The list.** The foundations of delivery 0 are what Part 2 of the install will check (`install` skill, 2.1 and 2.3), plus the open decisions:
    - the verification commands run;
    - one endpoint goes from Go through the OpenAPI spec and the generated client to the panel and an end-to-end test, on a real PostgreSQL;
-   - the checks §12.1 of the definition asks of the CI;
+   - the security checks the CI runs (for EASY One: no concatenated SQL, gitleaks, govulncheck);
    - the module generator and a reference module;
    - the code graph, configured in the repository;
-   - the pipeline in Bitbucket.
+   - the pipeline in Bitbucket;
+   - the decisions that shape the code written down: the 5 to 10 big architecture choices the code cannot explain by itself (for EASY One, one database per account, the modular monolith, the OpenAPI generated from Go, the AI gateway…), each a `DEC` file of half a page with its why, written by the technical lead.
 2. **Each item gets one mark:**
    - ✅ with its evidence: a file, or a command and its result;
    - ❌ with what is missing;

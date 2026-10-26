@@ -92,11 +92,10 @@ A bug reopens the story it breaks (`orchestrate` skill, §6.9); an urgent one in
 
 ## Decisions
 
-A decision is a choice between options, of product or of architecture: a provider, a library, hosting, pricing. It is the only place for one; there is no separate folder of architecture records. File: `decisions/DEC-NNN-<title>.md`, numbered from `DEC-031`: D1–D30 live in the definition (`docs/definicion.md`, §14) and are never rewritten as files. IDs are never reused.
+A decision is a choice between options, of product or of architecture: a provider, a library, hosting, pricing. It is the only place for one; there is no separate folder of architecture records. File: `decisions/DEC-NNN-<title>.md`, numbered from `DEC-001`. IDs are never reused.
 
 A story names a decision in `blocked_by`. A story blocked by an open decision cannot be built. Decisions are human calls, and `decides` names who closes it: management for product and business, the technical lead for architecture. It closes through a pull request.
 
-A decision that changes the definition names the sections it changes under *What it changes in the definition*. Once the definition is frozen, the same pull request adds a one-line notice under each of those headings, linking to the decision (`orchestrate` skill, §11.3).
 
 ## Discarding
 

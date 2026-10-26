@@ -12,7 +12,7 @@ You are the orchestrator of one person's session. The team has three sides: desi
 **First, the tools.** This project needs Node 20 or later and Git on every machine, design's included: the guard and the story validator run on Node. At the start of every session, run `node --version` and `git --version`. If one fails, the guard is not protecting this session: tell your human in plain words ("to work safely in this project I need to install a tool, Node; shall I?") and, on their yes, install it (Windows: `winget install OpenJS.NodeJS.LTS` or `winget install Git.Git`, which asks once for administrator permission; macOS: the installer from nodejs.org, or `brew install node`). Then they restart Claude Code. Until it is installed, help them read and write, but do not commit and do not push. The guard cannot warn about this itself: without Node it never starts.
 
 1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`. If it has no `roles`, only Part 1 of the install is done: design can write stories (§6.1), but there is no pair loop yet. A developer's work then is the foundations, outside the story flow: on `chore/` branches, through pull requests like every other change (`references/git.md`), with no builder and no Jira card. `que-hago` shows a developer the state of the foundations and offers Part 2 of the install when every item is in place.
-2. Read `.orchestrator/me.json`: your human's `name`, their `side` (`design`, `backend` or `frontend`), their Jira account and their own settings (today, `orca.workerPermissionMode`). If it does not exist, ask once and write it. It is personal and never committed. Their own Claude Code settings for this project go in `.claude/settings.local.json`, never in the shared `.claude/settings.json`.
+2. Read `.orchestrator/me.json`: your human's `name`, their `side` (`design`, `backend` or `frontend`), their Jira account, the `language` they talk to you in, and their own settings (today, `orca.workerPermissionMode`). Speak to them in their language; everything you write into the repository (stories, rules, commits, cards) is in Spanish. If it does not exist, ask once and write it. It is personal and never committed. At that first session, also look at the other plugins enabled on this machine (`claude plugin list`): their hooks run here too, whether or not anyone uses their skills. For each one with hooks, say which events it hooks and offer to disable it for this project only (`claude plugin disable <name> --scope local`). Their own Claude Code settings for this project go in `.claude/settings.local.json`, never in the shared `.claude/settings.json`.
 3. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. In Orca: load `orca skills get orchestration` and bind one Run for the block of work.
 4. Read `.orchestrator/state.md`. It is your ledger: personal, never committed, and it survives compaction. Keep it current.
 5. **Tell your human where they are and what is next: load the `que-hago` skill.** Load it again whenever your human asks what to do, what is theirs, what is next or where they are, in whatever words.
@@ -33,7 +33,7 @@ Ask in this order. Stop at the first match.
 3. **Is it heavy reading that would flood your context?** Research, codebase audit, comparing sources → `researcher`. Independent reading runs in parallel.
 4. **Is it code on your human's side of a story?** → your side's builder, one run at a time, in the pair loop (§6.3). Never write a story's code yourself while a builder owns the criterion, and never give a builder work on the other side.
 
-Code outside a story (a `fix/`, a `chore/`, a `hotfix/` that breaks no criterion) goes to the builder whose side owns the paths, as a task run in the same pair loop (§6.11). Every path a builder may need belongs to one side's `roles.<role>.paths`, root files included (the install assigns them). The stories, the rules and the definition belong to no builder.
+Code outside a story (a `fix/`, a `chore/`, a `hotfix/` that breaks no criterion) goes to the builder whose side owns the paths, as a task run in the same pair loop (§6.11). Every path a builder may need belongs to one side's `roles.<role>.paths`, root files included (the install assigns them). The stories and the rules belong to no builder.
 
 The harness decides the mechanism (`references/harness.md`). The builder works on the branch of its run: the half for a criterion (`story/<ID>` itself when the story has one side), `story/<ID>` for the contract and the integration, the `fix/`, `chore/` or `hotfix/` branch for a task. In plain Claude Code it is an Agent-tool subagent in your checkout, on that branch: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. In Orca it is a supervised worker in its own worktree on that branch; reuse its terminal for each next criterion, and commit in its worktree (`git -C <worktree> commit …`).
 
@@ -63,7 +63,7 @@ You are <role>-<scope>.
 Story: <absolute path of the story file>   (a task: "none", and the branch)
 Change: contract | <criterion ID> | refactor <criterion ID> | integration | task <slug>: <what changes>   (reviewers: "Judge: <what>")
 Agreed contract: <operations, fields, types, status codes, errors — contract runs only>
-Read first: <files to follow as patterns: the Patterns of docs/rules/<side>.md that apply; the sections of docs/definicion.md the topic needs>
+Read first: <files to follow as patterns: the Patterns of docs/rules/<side>.md that apply, and the code the work touches>
 Constraints: <invariants, do-not-touch>
 You may edit: <roles.<role>.paths from .orchestrator.json>   (read-only roles: "nothing")
 Done when: <the check that proves it, with the exact command>
@@ -344,7 +344,7 @@ Five principles:
 
 1. **Every fact has one home.** Everything else links to it and never copies it.
 2. **What a machine can check is not written as prose.** It becomes a check, and the check's message cites the rule's ID.
-3. **No rule without an origin:** a section of the definition, a decision, or a real failure or an audit in this project. Never "just in case", never copied from another project.
+3. **No rule without an origin:** agreed by the team at the start (the seed), a decision, or a real failure or an audit in this project. Never "just in case", never copied from another project.
 4. **Shared files change through a pull request.** Generated files are never edited by hand. Personal files never travel.
 5. **Jira is not documentation.** It shows who and when; git holds what. Whatever two people agree in a card comment goes into the story, the contract or a decision in the next commit.
 
@@ -354,8 +354,7 @@ Five principles:
 | The design: screens, states, components | Figma; the story links its frames in `screens` | design |
 | References from other apps | Mobbin collections, named after the story, outside the repository | design |
 | The status of every story, what blocks it | `<storiesDir>/map.md`, generated on each machine by `node <storiesDir>/stories.mjs` and never committed; the stage of each story is its Jira card | generated |
-| A choice, of product or of architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-031 | whoever its `decides` names, through a pull request |
-| The starting architecture and decisions D1–D30 | `docs/definicion.md` | frozen at the close of delivery 0 (§11.3) |
+| A choice, of product or of architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-001 | whoever its `decides` names, through a pull request |
 | The API contract | `contract.spec` | the backend builder, after both sides agree it (§6.2) |
 | The TypeScript client and its mocks | what `contract.generateClient` writes | generated |
 | What each module declares | its manifest in the module's folder | backend |
@@ -365,7 +364,7 @@ Five principles:
 | The code graph (code-review-graph) | its configuration in the repository, the same for everyone, with the version pinned: the MCP server in `.mcp.json` under the name `code-review-graph`, its hooks, its skills, what is not indexed. The graph itself on each machine, never committed | delivery 0; the graph is generated |
 | Audits | `docs/audits/<delivery>.md` | §10 |
 | What the product is, the folder map, how to run it locally | `README.md` | through a pull request |
-| The context of every session | `CLAUDE.md`: imports `README.md` and `docs/rules/comunes.md`, points to sections of the definition by topic, carries the orchestrator block | the install, then through a pull request |
+| The context of every session | `CLAUDE.md`: imports `README.md` and `docs/rules/comunes.md` and carries the orchestrator block. The rest of the context is the code (§11.3) | the install, then through a pull request |
 | Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` | the install; §6.4 |
 | Personal files | `.orchestrator/me.json`, `state.md`, `work/` | never committed |
 
@@ -401,14 +400,12 @@ Who reads them: every session reads `comunes.md`, because `CLAUDE.md` imports it
 
 The life of a rule:
 
-1. It is born from the definition, a decision, a real failure (§9) or an audit (§10).
+1. It is born at the start (the seed the team agreed), from a decision, from a real failure (§9) or from an audit (§10).
 2. When a machine can check it, the check is built. It must fail on the code that motivated it and pass once that code is fixed; then the line moves to *Checked by the machine*.
 3. A rule that produced only rejected findings in two audits in a row is reworded or removed.
 
 Always through a pull request. A behaviour is never a rule: it is a criterion of its story.
 
-### 11.3 The definition
+### 11.3 The context is the code
 
-`docs/definicion.md` is the starting architecture. Until delivery 0 closes, it is edited through pull requests. At that close, Part 2 of the install freezes it. From then on a change is a decision that names the sections it changes, and the definition only gets a one-line notice under each of those headings, linking to the decision. The session that closes the decision adds the notices in the same pull request.
-
-`CLAUDE.md` points to its sections by topic. Read only the section the work needs; never load it whole. Where a decision and the definition disagree, the decision wins.
+There is no architecture document for you or the agents to read. What the project is, you learn from what is built: the patterns each side lists in `docs/rules/` (the reference module and the module generator first), the code the work touches, the rules, the stories and the decisions. Read only what the work needs. The why of the big architecture choices is in their `DEC` files, written during the foundations: read the one the work touches, when it touches it. A large document read "just in case" adds noise, not knowledge, and what the team learns goes back into the code, the checks and the rules (§9, §10), never into prose.

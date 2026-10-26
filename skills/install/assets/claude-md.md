@@ -1,21 +1,9 @@
 @README.md
 @docs/rules/comunes.md
 
-## The definition, by topic
+## Where the context is
 
-`docs/definicion.md` is the starting architecture. Never load it whole: read the section the work needs. A decision in `{{STORIES_DIR}}/decisions/` that names a section wins over its text.
-
-- Accounts and one database per account: §9.3. Domain model: §6. Permissions: §6.3
-- Users and identity: §7.2
-- Modules and their manifests: §7.4
-- Base services (domains, outgoing mail, literals and languages): §7.7
-- Backend: §9.2. API: §9.4
-- Panel: §9.7. Employee section: §9.8
-- Websites and Hyliable: §9.5, §9.13
-- File storage: §9.9
-- Stack: §10
-- AI and its gateway: §11
-- Security by design: §12.1
+There is no architecture document to read. The context is the code: the patterns listed in `docs/rules/backend.md` and `docs/rules/frontend.md`, the rules in `docs/rules/`, the stories and the decisions. Read the code the work touches, not more.
 
 <!-- ORCHESTRATOR:START -->
 ## Orchestrated work (easyone-orchestrator)
@@ -24,9 +12,9 @@ This project uses the easyone-orchestrator plugin. Every session follows the `ea
 
 - **Tools on this machine:** this project needs Node 20 or later and Git on every machine, design's included: the guard and the story validator run on Node. At the start of every session, run `node --version` and `git --version`. If one fails, the guard is not protecting this session: tell your human in plain words ("to work safely in this project I need to install a tool, Node; shall I?") and, on their yes, install it (Windows: `winget install OpenJS.NodeJS.LTS` or `winget install Git.Git`, which asks once for administrator permission; macOS: the installer from nodejs.org, or `brew install node`). Then they restart Claude Code. Until it is installed, help them read and write, but do not commit and do not push.
 
-- **Who you work with:** `.orchestrator/me.json` (personal: name, side, Jira account). Each person's session is the orchestrator for their side: design, backend or frontend.
-- **Shared state:** the story's Jira card in project {{JIRA_PROJECT_KEY}} shows its stage; the Bitbucket pipeline moves it. Stories: `{{STORIES_DIR}}/stories/`. Map: `{{STORIES_DIR}}/map.md`, generated on each machine by `node {{STORIES_DIR}}/stories.mjs` and never committed. Decisions, of product and of architecture: `{{STORIES_DIR}}/decisions/`, from DEC-031.
-- **Design:** Figma is the only source of the design: {{FIGMA_FILES}}. Mobbin is for references, never the design. Claude creates each story's Jira card with its title, its sentence and the links; the criteria live only in the story file. Checked on a designer's machine: {{DESIGN_TOOLS_STATUS}}
+- **Who you work with:** `.orchestrator/me.json` (personal: name, side, Jira account, and the language they speak with you). Answer each person in their language; everything written in the repository is in Spanish. Each person's session is the orchestrator for their side: design, backend or frontend.
+- **Shared state:** the story's Jira card in project {{JIRA_PROJECT_KEY}} shows its stage; the Bitbucket pipeline moves it. Stories: `{{STORIES_DIR}}/stories/`. Map: `{{STORIES_DIR}}/map.md`, generated on each machine by `node {{STORIES_DIR}}/stories.mjs` and never committed. Decisions, of product and of architecture: `{{STORIES_DIR}}/decisions/`, from DEC-001.
+- **Design:** Figma is the only source of the design; each story links its frames in `screens`. Mobbin is for references, never the design. Claude creates each story's Jira card with its title, its sentence and the links; the criteria live only in the story file. Checked on a designer's machine: {{DESIGN_TOOLS_STATUS}}
 - **Rules:** `docs/rules/`: `comunes.md` (imported above), `backend.md` and `frontend.md`. Where each thing lives, and how a rule is born and changes: the `orchestrate` skill, §11.
 - **Contract:** `{{CONTRACT_SPEC}}`, generated with `{{GENERATE_SPEC}}`. Client and mocks: `{{GENERATE_CLIENT}}`. Only the backend writes the contract, after both sides agree it.
 - **Sides:** backend edits {{BACKEND_PATHS}}; frontend edits {{FRONTEND_PATHS}}. The guard keeps each builder on its side.

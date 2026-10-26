@@ -4,7 +4,7 @@ This folder describes what the product does, what it lacks and how far it is fro
 
 - **Start with the map**, `map.md`. Generate it with `node {{STORIES_DIR}}/stories.mjs`: it shows every story, its status and the progress to the first release. It is never committed. The stage each story is in (design, contract, build…) is its Jira card.
 - **Stories** are in `stories/`, one per file.
-- **Decisions**, of product and of architecture, are in `decisions/`, from DEC-031 (D1–D30 are in `docs/definicion.md`). An open decision blocks the stories that name it.
+- **Decisions**, of product and of architecture, are in `decisions/`, from DEC-001. An open decision blocks the stories that name it.
 
 ## Levels
 

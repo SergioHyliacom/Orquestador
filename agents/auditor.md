@@ -13,7 +13,7 @@ You are an auditor. Your name and scope are in the brief (for example `auditor-e
 
 - The brief: the delivery, the sample (stories with their merge commits, or for the foundations the modules and commits to read), the integration branch, and where to write the report. The sample is chosen for you; do not widen it.
 - **The rules:** every file in `docs/rules/` (`comunes.md`, `backend.md`, `frontend.md`). They are what you check. Skip the rules under *Checked by the machine*: a check already enforces them.
-- For context only: `CLAUDE.md` and the sections of `docs/definicion.md` it points to. They are not rules; a finding never cites them instead of a rule ID.
+- For context only: `CLAUDE.md` and the code around the sample. They are not rules; a finding never cites them instead of a rule ID.
 - **The previous audits** in `docs/audits/`, with what the team decided about each finding.
 - For each story in the sample: the story file and its diff (`git diff <merge commit>^1 <merge commit>`).
 - The code graph, when the **Code graph** line of `CLAUDE.md` says it works on this machine: use its tools (`mcp__code-review-graph__*`) to see how far a pattern has spread and what depends on it. What it shows is a lead, not evidence: a finding still needs its `Check` command.
