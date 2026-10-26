@@ -175,7 +175,7 @@
 
 <header>
   <h1>Orquestador EASY One · Cómo trabajamos</h1>
-  <p>Diseño, backend y frontend trabajan sobre las mismas historias de usuario. Cada persona tiene su propia sesión de Claude, que orquesta su parte del trabajo. Git guarda <b>qué</b> se construye; Jira muestra <b>a quién le toca y cuándo</b>. Este es el detalle, para quienes llevan el proyecto; la versión corta para todo el equipo está en <a href="equipo.html">equipo.html</a>.</p>
+  <p>Diseño, backend y frontend trabajan sobre las mismas historias de usuario. Cada persona tiene su propia sesión de Claude, que orquesta su parte del trabajo. Git guarda <b>qué</b> se construye; Jira muestra <b>a quién le toca y cuándo</b>. Este es el detalle, para quienes llevan el proyecto; la versión corta para todo el equipo está en <a href="resumido.html">resumido.html</a>.</p>
   <nav>
     <a href="#piezas">1 · Las piezas</a><a href="#historia">2 · Vida de una historia</a><a href="#pareja">3 · Bucle en pareja</a>
     <a href="#ramas">4 · Ramas</a><a href="#guardia">5 · La guardia</a><a href="#arranque">6 · Arranque</a><a href="#auditoria">7 · Auditoría</a>
@@ -236,7 +236,7 @@
 
   <h3 class="sub">Tu primer día</h3>
   <div class="kinds">
-    <div class="kind"><b>Todos</b><span class="ex">Instala el plugin solo para este proyecto: en su carpeta, <code>claude plugin install easyone-orchestrator@hyliacom --scope project</code>. Después reinicia Claude Code (no basta con <code>/clear</code>). Node 20 o posterior.</span><span>La primera sesión te pregunta quién eres y de qué lado trabajas, y lo guarda en <code>.orchestrator/me.json</code>, que es personal. Necesita leer Jira con el servidor MCP de Atlassian o con <code>acli</code>; si no puede, te pide la lista. Cada persona crea su token de Bitbucket (<code>BITBUCKET_USER</code> y <code>BITBUCKET_TOKEN</code>), para que la sesión abra y fusione los PR.</span></div>
+    <div class="kind"><b>Todos</b><span class="ex">Instala el plugin solo para este proyecto: en su carpeta, <code>claude plugin install easyone-orchestrator@hyliacom --scope project</code>. Después reinicia Claude Code (no basta con <code>/clear</code>). Node 20 o posterior: si falta, Claude lo detecta y ofrece instalarlo.</span><span>La primera sesión te pregunta quién eres y de qué lado trabajas, y lo guarda en <code>.orchestrator/me.json</code>, que es personal. Necesita leer Jira con el servidor MCP de Atlassian o con <code>acli</code>; si no puede, te pide la lista. Cada persona crea su token de Bitbucket (<code>BITBUCKET_USER</code> y <code>BITBUCKET_TOKEN</code>), para que la sesión abra y fusione los PR.</span></div>
     <div class="kind"><b>Diseño</b><span class="ex">El conector de Figma, con acceso a los ficheros del proyecto, y Mobbin si lo usáis.</span><span>Tu cuenta de Jira tiene que poder crear y editar tarjetas. Si Figma no responde, la sesión te lo dice y describes tú las pantallas.</span></div>
     <div class="kind"><b>Qué hago</b><span class="ex">Al abrir Claude, o cuando le preguntas «¿qué me toca?» como te salga.</span><span>Tu sesión mira tus tarjetas, lo que te han pedido, tu rama, tus historias y tus PR, y te dice en qué punto estás: primero lo que tiene parado a otros (una petición, un PR que revisar o ya aprobado), después lo tuyo, y lo que te recomienda. Respondes sí o no. No hace falta ningún comando. Si le pides algo que aún no toca, te dice qué falta y qué va antes.</span></div>
   </div>

@@ -22,6 +22,8 @@
 
 This project uses the easyone-orchestrator plugin. Every session follows the `easyone-orchestrator:orchestrate` skill. Stories follow the `easyone-orchestrator:stories` skill.
 
+- **Tools on this machine:** this project needs Node 20 or later and Git on every machine, design's included: the guard and the story validator run on Node. At the start of every session, run `node --version` and `git --version`. If one fails, the guard is not protecting this session: tell your human in plain words ("to work safely in this project I need to install a tool, Node; shall I?") and, on their yes, install it (Windows: `winget install OpenJS.NodeJS.LTS` or `winget install Git.Git`, which asks once for administrator permission; macOS: the installer from nodejs.org, or `brew install node`). Then they restart Claude Code. Until it is installed, help them read and write, but do not commit and do not push.
+
 - **Who you work with:** `.orchestrator/me.json` (personal: name, side, Jira account). Each person's session is the orchestrator for their side: design, backend or frontend.
 - **Shared state:** the story's Jira card in project {{JIRA_PROJECT_KEY}} shows its stage; the Bitbucket pipeline moves it. Stories: `{{STORIES_DIR}}/stories/`. Map: `{{STORIES_DIR}}/map.md`, generated on each machine by `node {{STORIES_DIR}}/stories.mjs` and never committed. Decisions, of product and of architecture: `{{STORIES_DIR}}/decisions/`, from DEC-031.
 - **Design:** Figma is the only source of the design: {{FIGMA_FILES}}. Mobbin is for references, never the design. Claude creates each story's Jira card with its title, its sentence and the links; the criteria live only in the story file. Checked on a designer's machine: {{DESIGN_TOOLS_STATUS}}

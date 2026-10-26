@@ -13,7 +13,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 - **Cada cosa tiene un solo sitio.** El comportamiento, en las historias; las elecciones, en decisiones; el contrato, en el OpenAPI; cómo se escribe el código, en comprobaciones de la máquina y, cuando no es posible, en las reglas del proyecto (`docs/rules/`: comunes, backend y frontend). Si algo no encaja en ninguno, no se escribe. El método está en la skill `orchestrate`, §11.
 - **Al cerrar cada entrega, una auditoría por muestreo** comprueba el código contra las reglas de `docs/rules/` y convierte cada error que puede repetirse en una comprobación de la máquina o, si no es posible, en una regla. Lo aprendido vive en el repositorio. Está pendiente decidir si la confirma una persona al final (`audit.confirm`).
 
-**Para todo el equipo, la versión corta:** [`docs/equipo.html`](docs/equipo.html). **El detalle, para quienes llevan el proyecto:** [`docs/esquema-orquestador.html`](docs/esquema-orquestador.html). **El porqué de cada decisión:** [`docs/propuesta.md`](docs/propuesta.md).
+**Para todo el equipo, la versión corta:** [`docs/resumido.html`](docs/resumido.html). **El detalle, para quienes llevan el proyecto:** [`docs/detallado.html`](docs/detallado.html). **El porqué de cada decisión:** [`docs/propuesta.md`](docs/propuesta.md).
 
 ## Contenido
 
@@ -75,7 +75,7 @@ La primera vez que cada persona abre Claude en el proyecto, su sesión le pregun
 ## Requisitos
 
 - Claude Code con soporte de plugins.
-- Node.js 20 o posterior en el `PATH`. Lo usan la guardia, el validador y la sincronización con Jira.
+- Node.js 20 o posterior en el `PATH`, también en los equipos de diseño. Lo usan la guardia, el validador y la sincronización con Jira. Sin Node la guardia no arranca y no puede avisar, así que lo comprueba Claude al empezar cada sesión (por eso está en el bloque de `CLAUDE.md`) y ofrece instalarlo; en Windows, con `winget install OpenJS.NodeJS.LTS`. Mientras falte, no hace commits ni push.
 - Git y un repositorio en Bitbucket con Pipelines. Cada persona, un token de Bitbucket con permiso sobre los PR, en `BITBUCKET_USER` y `BITBUCKET_TOKEN` de su entorno. Sin él, abre y fusiona los PR desde la web.
 - Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`. Sin ninguno de los dos, la sesión pide la lista a la persona.
 - Para diseño: el conector de Figma en Claude, con acceso a los ficheros del proyecto, y Mobbin si el equipo lo usa. Su cuenta de Jira tiene que poder crear y editar tarjetas.

@@ -23,7 +23,7 @@ Read all of this before you say anything. Run the independent reads in parallel.
    - **Requests to them:** a comment that mentions them with no later comment of theirs.
    - **Their requests to others:** a comment of theirs that mentions someone who has not answered since. Note how old each is.
    - **Available cards:** only when nothing is theirs, the cards in their side's stages with their side's field empty, in backlog order.
-4. **Stories.** Run `node <storiesDir>/stories.mjs --json` once. For the story of each card: the criteria by marker, and what waits for whom.
+4. **Stories.** Run `node <storiesDir>/stories.mjs --json` once. If `node` is missing, say so first and offer to install it (`orchestrate` skill, §1, "First, the tools"). For the story of each card: the criteria by marker, and what waits for whom.
 5. **Pull requests.** With `BITBUCKET_USER` and `BITBUCKET_TOKEN` (`orchestrate` skill, `references/git.md`):
    - their open pull requests, and for each: approved, changes requested, build green or red;
    - the pull requests where they are a reviewer and have not approved yet.
