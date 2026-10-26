@@ -334,6 +334,8 @@ Antes de escribir nada, estas preguntas, por orden. Vale la primera que encaje:
 
 No hay documento de arquitectura en el repositorio. Claude aprende el proyecto de lo que se va construyendo: los patrones de cada lado (el módulo de referencia y el generador de módulos), el código que toca el trabajo, las reglas, las historias y las decisiones. Si el equipo guarda una definición o un documento de diseño para sí, queda fuera del repositorio y Claude no lo usa. Todo lo que hay en el repositorio (historias, reglas, commits, tarjetas) se escribe en español; cada persona habla con Claude en su idioma.
 
+**Cuando un texto y el código se contradicen.** Un estudio de 2026 (Georgia Tech y Colorado Boulder, arXiv 2610.30571) vio que Claude Code y Codex siguen el `CLAUDE.md` viejo en 9 de cada 10 casos, aunque noten la contradicción. Por eso hay una regla escrita en `CLAUDE.md`, en la sesión y en los agentes. Si lo que choca con el código es una descripción de cómo se escribe (una convención, una librería, un comando, un patrón), manda el código: Claude sigue el código, enumera cada contradicción y te ofrece corregir el texto con un PR `chore/`. Si es una regla de `docs/rules/` o un criterio de una historia, manda la regla: Claude no copia el código, lo trata como un fallo y te lo dice.
+
 ### Las reglas
 
 **Tres niveles, de más fuerte a más débil:**
@@ -441,6 +443,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Documentación | Cada cosa tiene un solo sitio (sección 8). Sin `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/` ni web de documentación |
 | Reglas | En `docs/rules/` (comunes, backend y frontend), con ID, porqué y origen; lo que la máquina puede comprobar pasa a ella. Semilla de 13 reglas acordadas al arrancar. Sin sección de lecciones en `CLAUDE.md` |
 | Contexto de Claude | Sin documento de definición en el repositorio: el contexto es el código (los patrones, el código que toca el trabajo), las reglas, las historias y las decisiones, desde `DEC-001`. Las decisiones nacen cuando hacen falta |
+| Texto y código que se contradicen | Una descripción de cómo se escribe el código pierde frente al código: Claude sigue el código, enumera las contradicciones y propone corregir el texto. Una regla o un criterio gana: si el código lo rompe, es un fallo |
 | Idioma | Todo lo del repositorio (historias, reglas, commits, tarjetas) en español. Cada persona elige en qué idioma le habla Claude, en su primera sesión (`me.json`) |
 | Origen de la semilla | Las 13 reglas: 11 acordadas al arrancar y 2 del método del orquestador |
 

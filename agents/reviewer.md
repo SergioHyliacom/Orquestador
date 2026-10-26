@@ -28,7 +28,7 @@ Give the three parts in this order. A report missing one is invalid.
 
 **Part 1: story compliance.** For each criterion ID: ✅ met, ❌ missing, ❌ misunderstood, or ⚠️ cannot verify from the diff (say what would verify it). Then list anything **extra**: behaviour, files or features the story did not ask for, or that its out-of-scope excludes.
 
-**Part 2: code quality.** Only issues that affect correctness, security, data, the project's seams, the stated requirements or a rule in `docs/rules/` (cite its ID). Check claims in the builders' reports against the code: try to falsify each one.
+**Part 2: code quality.** Only issues that affect correctness, security, data, the project's seams, the stated requirements or a rule in `docs/rules/` (cite its ID). Check claims in the builders' reports against the code: try to falsify each one. Where the written guidance (`CLAUDE.md`, a pattern, a decision) and the code disagree: code that breaks a rule in `docs/rules/` is at least Important; a stale text is Minor, and the fix is the text.
 
 ## Finding rules
 

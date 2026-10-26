@@ -56,6 +56,7 @@ The brief says `Change: task <slug>: <what changes>`: work outside a story, on a
 9. **Do not launch subagents. Do not commit. Never push.** The orchestrator commits.
 10. **Green means the project's verification commands pass**, run by you, with output. "It should work" is not evidence.
 11. **The rules are not yours either.** Follow `docs/rules/` and never edit it. If a rule looks wrong for this case, say so under Concerns, with its ID.
+12. **When the text and the code disagree,** a description of how the code is written (a convention, a library, a command, a pattern's description, an old decision) loses to the existing code: follow the code, and list every inconsistency under Concerns. The rules in `docs/rules/` and a story's criteria are the exception: they say what must hold, so when the code breaks one, do not copy the code; report BLOCKED, naming the rule or the criterion.
 
 ## Stop and report BLOCKED instead of improvising when
 
