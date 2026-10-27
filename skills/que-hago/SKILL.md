@@ -11,9 +11,7 @@ The person does not know the method and does not need to. Find out where they ar
 
 Read all of this before you say anything. Run the independent reads in parallel.
 
-**First, the phase.** If `.orchestrator.json` has no `roles`, Part 2 of the install is not done yet and the developers are laying the foundations (delivery 0). A designer works on stories as usual. For a developer, gather only who they are, their git, their pull requests and the ledger (1, 2, 5 and 6 below), and then follow §5, "During the foundations", instead of §2.
-
-1. **Who.** `.orchestrator/me.json`: their name, side (`design`, `backend` or `frontend`), Jira account and the language they talk to you in. If it is missing, ask once and write it (`orchestrate` skill, §1).
+1. **Who.** `.orchestrator/me.json`: their name, side (`design`, `backend` or `frontend`), Jira account and the language they talk to you in. If it is missing, ask who they are first and write it (`orchestrate` skill, §1, step 2).
 2. **Git.**
    - Run `git fetch --prune` and `git status`, and note the current branch.
    - Note commits not pushed and changes not committed.
@@ -51,7 +49,7 @@ Take the first rule that applies. The rest become the other lines of your answer
 | Integration, assigned to them | Integrate, set the markers, the risk review, or the final pull request (§6.5–§6.8) |
 | Visual review, assigned to them as designer | Look at the screenshots: approved, or what to change (§6.6) |
 
-5. **Nothing of theirs.** The first available card of their side; offer to take it, which puts them in their side's field.
+5. **Nothing of theirs.** The first available card of their side; offer to take it, which puts them in their side's field. Before development opens (`.orchestrator.json` has no `roles`), a developer has nothing to build yet: say in one line that development opens when the technical leads finish setting the project up, and offer to write a story with no screen (§6.1). If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it and follow it instead of this line.
 6. **Their requests to others older than a day.** Offer to remind the person with a comment, with their ok on the text.
 7. **A delivery ready for its audit**, once (`orchestrate` skill, §1).
 
@@ -79,24 +77,3 @@ Never move a card. Never show code, and never give them git commands to run: the
 ## 4. When they ask for something specific
 
 When the person asks for a step instead ("programa EO-123", "abre el PR", "fusiónalo"), check first that it fits the story's stage (`orchestrate` skill, §6, "Check the stage before you act"). If it does not, say where the story is and what is missing, and offer the step that comes first, as a yes or no question.
-
-## 5. During the foundations
-
-While `.orchestrator.json` has no `roles`, a developer's "what is next" is the state of the foundations. It disappears once Part 2 is installed. Read only: run no generator, edit nothing, commit nothing.
-
-1. **The list.** The foundations of delivery 0 are what Part 2 of the install will check (`install` skill, 2.1 and 2.3), plus the open decisions:
-   - the verification commands run;
-   - one endpoint goes from Go through the OpenAPI spec and the generated client to the panel and an end-to-end test, on a real PostgreSQL;
-   - the security checks the CI runs (for EASY One: no concatenated SQL, gitleaks, govulncheck);
-   - the module generator and a reference module;
-   - the code graph, configured in the repository;
-   - the pipeline in Bitbucket;
-   - the decisions that shape the code written down: the 5 to 10 big architecture choices the code cannot explain by itself (for EASY One, one database per account, the modular monolith, the OpenAPI generated from Go, the AI gateway…), each a `DEC` file of half a page with its why, written by the technical lead.
-2. **Each item gets one mark:**
-   - ✅ with its evidence: a file, or a command and its result;
-   - ❌ with what is missing;
-   - ⚠️ when it cannot be checked without changing something.
-
-   Run only commands that read or test, such as the task file's lint and test commands. Skip anything that regenerates or writes. When the reading is long, brief a `researcher`.
-3. **Open decisions.** The files in `<storiesDir>/decisions/` with `status: Open`, and the items each one holds up.
-4. **Tell them.** In at most 10 lines: half-done work and pull requests first (§2, rules 1 and 3), then the items and the open decisions. Recommend one step, usually closing the decision that holds up the most items. When every item is ✅, offer Part 2 of the install (`/easyone-orchestrator:install`).

@@ -28,13 +28,14 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `skills/orchestrate/` | El día a día de cada sesión: etapas, contrato, bucle en pareja, integración, merge, auditoría y dónde vive cada cosa (§11). Git y Bitbucket en `references/git.md` |
 | `skills/que-hago/` | En qué punto está la persona y qué le toca: tarjetas, peticiones, rama, historias y PR. Claude la carga al empezar y cuando alguien pregunta qué le toca |
 | `skills/stories/` | Cómo se escriben y mantienen las historias |
-| `skills/install/` | Prepara un proyecto, en dos partes. Plantillas (también la semilla de reglas, en `assets/rules/`), validador (`stories.mjs`), sincronización con Jira (`jira-sync.mjs`) y pipeline |
+| `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto lleva una copia de cada uno, que es la que ejecuta el pipeline |
 | `hooks/guard.mjs` | La guardia |
 | `docs/` | El diagrama y la propuesta |
+| `cimientos/` | Otro plugin, `easyone-cimientos`, solo para los responsables técnicos: prepara el proyecto y sigue los cimientos hasta que se abre el desarrollo. Ver [`cimientos/README.md`](cimientos/README.md) |
 
 ## Instalar el plugin
 
-**Se instala solo en el proyecto de EASY One, no en todo el equipo.** Abre una terminal en la carpeta del proyecto y ejecuta:
+**Lo instala todo el equipo, y solo en el proyecto de EASY One, no en todo el ordenador.** Abre una terminal en la carpeta del proyecto y ejecuta:
 
 ```
 claude plugin marketplace add SergioHyliacom/Orquestador
@@ -59,20 +60,18 @@ Claude Code carga los plugins al arrancar. Después de instalar, abre una sesió
 
 **Los hooks de tus otros plugins también se ejecutan en el proyecto**, aunque no uses sus skills: un plugin con un hook después de cada edición que necesita una herramienta que no tienes (por ejemplo, Python) falla en cada edición. En tu primera sesión, Claude te dice qué plugins tienen hooks y te ofrece desactivarlos solo en este proyecto (`claude plugin disable <nombre> --scope local`).
 
+## Tu primera sesión
+
+La primera vez que abres Claude en el proyecto, tu sesión empieza preguntándote quién eres: tu nombre y si trabajas en diseño, backend o frontend. Tu cuenta de Jira la lee de Jira, y el idioma lo toma de cómo le escribes. Lo guarda en `.orchestrator/me.json`, que es personal y no entra en git. Después va directa a tu trabajo:
+
+- **Diseño:** las historias que estás escribiendo, o qué diseño de Figma quieres convertir en historia.
+- **Backend y frontend:** tus tarjetas y lo que espera de ti. Si el desarrollo aún no está abierto, te lo dice en una línea y te ofrece escribir historias sin pantalla.
+
+Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va siempre en español.
+
 ## Preparar un proyecto
 
-Abre el proyecto y ejecuta `/easyone-orchestrator:install`. La instalación tiene dos partes:
-
-1. **Parte 1, historias (el día uno).** Carpeta de historias y validador, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») y los campos de persona Backend y Frontend, ajustes de git y de Bitbucket y un pipeline mínimo. También `README.md`, `CLAUDE.md` y `docs/rules/` con la semilla de reglas. Casi no pregunta: el idioma (español), `develop`, las etiquetas de riesgo y quién cierra cada decisión están fijados; lee de Jira el proyecto, los estados que faltan y los campos, y lo confirma en un solo mensaje. No hay documento de definición: el contexto de Claude es el código que se va construyendo (los patrones, las reglas, las historias y las decisiones). Con esto diseño ya puede escribir historias.
-2. **Parte 2, desarrollo (al acabar los cimientos).** Se ejecuta cuando un endpoint de prueba va de Go al panel pasando por el OpenAPI y una prueba E2E, con PostgreSQL real. Mide los comandos de verificación, el contrato y sus generadores, las rutas y comprobaciones de cada lado y los informes de tests, y completa el pipeline. Escribe los patrones de cada lado, que desde ahí son el contexto de Claude.
-
-La primera vez que cada persona abre Claude en el proyecto, su sesión le pregunta quién es, de qué lado trabaja y en qué idioma quiere que le hable (`.orchestrator/me.json`, que es personal y no entra en git). Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va siempre en español.
-
-**Variables del pipeline** (repositorio de Bitbucket, como variables protegidas): `JIRA_EMAIL` y `JIRA_API_TOKEN`. Ningún token se escribe en un fichero del repositorio.
-
-**Flujo de Jira:** cada estado tiene que poder recibir tarjetas desde cualquier otro («allow all statuses to transition to this one»), porque el pipeline mueve las tarjetas en los dos sentidos: una historia reabierta sale de Hecha, y una descartada sale de cualquier etapa.
-
-**Ajustes de Bitbucket** (los aplica una persona; la lista está en `skills/orchestrate/references/git.md`): `main` y `develop` sin push directo, sin borrado y sin reescritura; para fusionar, 1 aprobación, sin cambios pedidos, sin tareas abiertas y con el build en verde; a `main` solo fusionan las personas autorizadas; estrategia por defecto, Merge commit. Los PR los abre y los fusiona la sesión por la API, con la estrategia correcta para cada uno.
+Lo hacen los responsables técnicos con otro plugin, `easyone-cimientos`, que el resto del equipo no instala: [`cimientos/README.md`](cimientos/README.md). Mientras ponen los cimientos, diseño ya escribe historias. El desarrollo se abre para todos cuando terminan, sin que nadie tenga que instalar nada más.
 
 ## Requisitos
 
@@ -109,6 +108,8 @@ Cada vez que un cambio tiene que llegar al equipo, en el mismo commit:
 - **el último** (`0.2.0` → `0.2.1`) cuando solo se arregla algo.
 
 Cada persona lo actualiza con `claude plugin update easyone-orchestrator@hyliacom` y reinicia Claude Code.
+
+`easyone-cimientos` tiene su propia versión, en `cimientos/.claude-plugin/plugin.json`, con la misma regla. Sube la del plugin que cambia: un cambio en `scripts/` o en una plantilla de `skills/stories/templates/` es del plugin del equipo, aunque lo copie la instalación.
 
 Las copias de `stories.mjs` y `jira-sync.mjs` que hay en el proyecto no se actualizan con el plugin. Al abrir la sesión, Claude avisa si son distintas de las del plugin y ofrece actualizarlas con un PR `chore/`.
 

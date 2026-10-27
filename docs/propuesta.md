@@ -1,6 +1,6 @@
 # Metodología y adaptación del orquestador · EASY One
 
-**Versión 2.4 · 2026-10-26.** Sustituye a la versión 1 (`propuesta.md`, sin fecha). Recoge lo decidido al llevar aquella propuesta al stack de EASY One y al plugin. La 2.1 añade dónde vive cada cosa y qué reglas se siguen (sección 8). La 2.2 añade todas las ramas, las reglas de Bitbucket, cómo se fusiona cada PR y el trabajo fuera de las historias (sección 5), y qué pasa cuando una historia hecha se reabre o una historia se descarta (sección 4). La 2.3 añade «qué hago», los campos Backend y Frontend con el asignado automático, tu ok solo en el primer criterio de cada mitad y en la mitad terminada, y los PR que abre y fusiona la sesión (secciones 4 y 5). La 2.4 quita el documento de definición: el contexto de Claude es el código que se va construyendo, y todo lo del repositorio se escribe en español (secciones 6 y 8). Al final hay una lista de qué cambia respecto a la v1 y por qué.
+**Versión 2.5 · 2026-10-27.** Sustituye a la versión 1 (`propuesta.md`, sin fecha). Recoge lo decidido al llevar aquella propuesta al stack de EASY One y al plugin. La 2.1 añade dónde vive cada cosa y qué reglas se siguen (sección 8). La 2.2 añade todas las ramas, las reglas de Bitbucket, cómo se fusiona cada PR y el trabajo fuera de las historias (sección 5), y qué pasa cuando una historia hecha se reabre o una historia se descarta (sección 4). La 2.3 añade «qué hago», los campos Backend y Frontend con el asignado automático, tu ok solo en el primer criterio de cada mitad y en la mitad terminada, y los PR que abre y fusiona la sesión (secciones 4 y 5). La 2.4 quita el documento de definición: el contexto de Claude es el código que se va construyendo, y todo lo del repositorio se escribe en español (secciones 6 y 8). La 2.5 separa los cimientos en otro plugin, `easyone-cimientos`, que solo instalan los responsables técnicos: el resto del equipo empieza diciendo quién es y se pone con las historias de su departamento (secciones 6 y 10). Al final hay una lista de qué cambia respecto a la v1 y por qué.
 
 Este documento define cómo trabaja el equipo de Hyliacom (diseño, backend y frontend) para desarrollar EASY One con Claude Code, y qué se ha cambiado del plugin *Orchestrator* para conseguirlo. El plugin adaptado se llama `easyone-orchestrator`. El esquema visual para el equipo está en [`detallado.html`](detallado.html).
 
@@ -242,6 +242,8 @@ En local, `develop` y `main` solo se actualizan con `git pull --ff-only`; la gua
 
 El stack no sale de las historias: el esqueleto se monta antes, porque el propio flujo lo necesita. Las funcionalidades solo llegan a través de historias.
 
+Todo esto lo llevan los **responsables técnicos** con otro plugin, `easyone-cimientos`, instalado solo en sus equipos (`--scope local`): la instalación y el estado de los cimientos. El resto del equipo instala únicamente `easyone-orchestrator` y no ve nada de los cimientos. Su primera sesión empieza preguntándoles quién son (nombre, y si trabajan en diseño, backend o frontend) y va directa a las historias de su departamento.
+
 1. **Día uno.** Repositorio en Bitbucket, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») e **instalación, parte 1**: historias, Jira con los campos Backend y Frontend, git, pipeline mínimo y el token de Bitbucket de cada persona; `README.md` y `CLAUDE.md`, y `docs/rules/` con la semilla de reglas (sección 8). Casi no pregunta nada: el idioma (español), `develop`, las etiquetas de riesgo y quién cierra cada decisión ya están fijados; lee de Jira el proyecto, los estados que faltan y los campos Backend y Frontend, y lo confirma todo en un solo mensaje. Desde ese momento diseño escribe las historias de la entrega 1 (plataforma mínima), en paralelo con los cimientos.
 2. **Cimientos (entrega 0).** Los responsables técnicos, con Claude, fuera del flujo de historias: todavía no hay agentes que programan, bucle en pareja ni tarjetas, que llegan con la instalación, parte 2. Todo entra por PR desde ramas `chore/`, aprobado por otra persona:
    - las pruebas técnicas que necesitan las primeras historias; cada elección la abre el responsable técnico como decisión (desde `DEC-001`) y la cierra la prueba;
@@ -256,8 +258,8 @@ El stack no sale de las historias: el esqueleto se monta antes, porque el propio
 
    **No** se hacen tablas de negocio, el módulo de identidad ni un CRUD genérico «por si acaso».
 
-   Mientras duran los cimientos, «¿qué me toca?» enseña a cada desarrollador su estado: cada pieza con ✅, ❌ o ⚠️ y su prueba, las decisiones abiertas y qué conviene cerrar primero. Es la misma lista que comprobará la parte 2, así que, cuando todo está en ✅, la sesión propone lanzarla. Después, ese estado no vuelve a aparecer.
-3. **Instalación, parte 2.** Mide comandos, contrato, rutas y tests. Comprueba que los agentes llegan al grafo de código y que sus hooks conviven con la guardia. Escribe los patrones de cada lado, que desde ese momento son el contexto de Claude. Sus comprobaciones son el criterio de salida de los cimientos, y la misma lista que «¿qué me toca?» enseña mientras tanto.
+   Mientras duran los cimientos, a los responsables técnicos «¿qué me toca?» o «¿cómo van los cimientos?» les enseña su estado (skill `estado` de `easyone-cimientos`): cada pieza con ✅, ❌ o ⚠️ y su prueba, las decisiones abiertas y qué conviene cerrar primero. Es la misma lista que comprobará la parte 2, así que, cuando todo está en ✅, la sesión propone lanzarla. A los demás desarrolladores su sesión solo les dice que el desarrollo aún no está abierto y les ofrece escribir historias sin pantalla.
+3. **Instalación, parte 2.** Mide comandos, contrato, rutas y tests. Comprueba que los agentes llegan al grafo de código y que sus hooks conviven con la guardia. Escribe los patrones de cada lado, que desde ese momento son el contexto de Claude. Sus comprobaciones son el criterio de salida de los cimientos, y la misma lista que enseña la skill `estado` mientras tanto. Cuando su PR se fusiona, el desarrollo queda abierto para todo el equipo sin instalar nada más; tras la auditoría de los cimientos, los responsables técnicos pueden desinstalar `easyone-cimientos`.
 4. **Primera historia, como piloto.** Pequeña, pero que pase por todas las piezas y todas las etapas. Lo que falle se corrige en el plugin antes de que entre todo el equipo.
 
 ## 7. Auditoría al cerrar cada entrega
@@ -439,12 +441,13 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Commits | Los hace el orquestador. La persona da el ok en el primer criterio de cada mitad y en la mitad terminada; entre medias la sesión comprueba las pruebas y sigue sola |
 | Revisor | Solo en historias con riesgo, una vez al cerrar |
 | Hyliable | Lado de frontend; sigue en su repositorio hasta la migración |
-| Instalación | En dos partes: historias el día uno; desarrollo al acabar los cimientos |
+| Instalación | En dos partes: historias el día uno; desarrollo al acabar los cimientos. Las dos, y el estado de los cimientos, en `easyone-cimientos`, que solo instalan los responsables técnicos (`--scope local`) |
+| Primera sesión | Pregunta quién eres: nombre y departamento (diseño, backend o frontend). La cuenta de Jira la lee de Jira y el idioma lo toma de cómo le escribes. Después, directa a tu trabajo |
 | Documentación | Cada cosa tiene un solo sitio (sección 8). Sin `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/` ni web de documentación |
 | Reglas | En `docs/rules/` (comunes, backend y frontend), con ID, porqué y origen; lo que la máquina puede comprobar pasa a ella. Semilla de 13 reglas acordadas al arrancar. Sin sección de lecciones en `CLAUDE.md` |
 | Contexto de Claude | Sin documento de definición en el repositorio: el contexto es el código (los patrones, el código que toca el trabajo), las reglas, las historias y las decisiones, desde `DEC-001`. Las decisiones nacen cuando hacen falta |
 | Texto y código que se contradicen | Una descripción de cómo se escribe el código pierde frente al código: Claude sigue el código, enumera las contradicciones y propone corregir el texto. Una regla o un criterio gana: si el código lo rompe, es un fallo |
-| Idioma | Todo lo del repositorio (historias, reglas, commits, tarjetas) en español. Cada persona elige en qué idioma le habla Claude, en su primera sesión (`me.json`) |
+| Idioma | Todo lo del repositorio (historias, reglas, commits, tarjetas) en español. Cada persona habla con Claude en su idioma: el de su primera sesión, guardado en `me.json` |
 | Origen de la semilla | Las 13 reglas: 11 acordadas al arrancar y 2 del método del orquestador |
 
 ## 11. Qué cambia respecto a la versión 1

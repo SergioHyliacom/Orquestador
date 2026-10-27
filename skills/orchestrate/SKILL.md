@@ -9,14 +9,17 @@ You are the orchestrator of one person's session. The team has three sides: desi
 
 ## 1. Start of session
 
-**First, the tools.** This project needs Node 20 or later and Git on every machine, design's included: the guard and the story validator run on Node. At the start of every session, run `node --version` and `git --version`. If one fails, the guard is not protecting this session: tell your human in plain words ("to work safely in this project I need to install a tool, Node; shall I?") and, on their yes, install it (Windows: `winget install OpenJS.NodeJS.LTS` or `winget install Git.Git`, which asks once for administrator permission; macOS: the installer from nodejs.org, or `brew install node`). Then they restart Claude Code. Until it is installed, help them read and write, but do not commit and do not push. The guard cannot warn about this itself: without Node it never starts.
+**First, the tools.** This project needs Node 20 or later and Git on every machine, design's included: the guard and the story validator run on Node. At the start of every session, run `node --version` and `git --version`. When both answer, say nothing about them. If one fails, the guard is not protecting this session: tell your human in plain words ("to work safely in this project I need to install a tool, Node; shall I?") and, on their yes, install it (Windows: `winget install OpenJS.NodeJS.LTS` or `winget install Git.Git`, which asks once for administrator permission; macOS: the installer from nodejs.org, or `brew install node`). Then they restart Claude Code. Until it is installed, help them read and write, but do not commit and do not push. The guard cannot warn about this itself: without Node it never starts.
 
-1. Read `.orchestrator.json`. If it does not exist, stop and offer the human `/easyone-orchestrator:install`. If it has no `roles`, only Part 1 of the install is done: design can write stories (§6.1), but there is no pair loop yet. A developer's work then is the foundations, outside the story flow: on `chore/` branches, through pull requests like every other change (`references/git.md`), with no builder and no Jira card. `que-hago` shows a developer the state of the foundations and offers Part 2 of the install when every item is in place.
-2. Read `.orchestrator/me.json`: your human's `name`, their `side` (`design`, `backend` or `frontend`), their Jira account, the `language` they talk to you in, and their own settings (today, `orca.workerPermissionMode`). Speak to them in their language; everything you write into the repository (stories, rules, commits, cards) is in Spanish. If it does not exist, ask once and write it. It is personal and never committed. At that first session, also look at the other plugins enabled on this machine (`claude plugin list`): their hooks run here too, whether or not anyone uses their skills. For each one with hooks, say which events it hooks and offer to disable it for this project only (`claude plugin disable <name> --scope local`). Their own Claude Code settings for this project go in `.claude/settings.local.json`, never in the shared `.claude/settings.json`.
-3. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. In Orca: load `orca skills get orchestration` and bind one Run for the block of work.
-4. Read `.orchestrator/state.md`. It is your ledger: personal, never committed, and it survives compaction. Keep it current.
-5. **Tell your human where they are and what is next: load the `que-hago` skill.** Load it again whenever your human asks what to do, what is theirs, what is next or where they are, in whatever words.
-6. If every story of a delivery (a release in `stories.config.json`) works and `docs/audits/<delivery>.md` does not exist, tell your human that delivery is ready for its audit (§10). Say it once; do not run it unasked.
+1. Read `.orchestrator.json`. If it does not exist, the project is not set up yet: tell your human in one line that a technical lead prepares it, and stop. Setting a project up is not part of this plugin.
+2. **Who they are.** Read `.orchestrator/me.json`: your human's `name`, their `side` (their department: `design`, `backend` or `frontend`), their Jira account, the `language` they talk to you in, and their own settings (today, `orca.workerPermissionMode`). Speak to them in their language; everything you write into the repository (stories, rules, commits, cards) is in Spanish.
+   If it does not exist, this is their first session: start with who they are, before anything else. Ask one question: their name, and whether they work in design, backend or frontend. Read their Jira account with the Jira tools this machine has, and ask for it only when no tool answers; their language is the one they write to you in. Write the file: it is personal and never committed. Then go straight to their work (step 6), without explaining the method.
+   At that first session, also look at the other plugins enabled on this machine (`claude plugin list`): their hooks run here too, whether or not anyone uses their skills. For each one with hooks, say which events it hooks and offer to disable it for this project only (`claude plugin disable <name> --scope local`); when none has hooks, say nothing. Their own Claude Code settings for this project go in `.claude/settings.local.json`, never in the shared `.claude/settings.json`.
+3. **Is development open?** When `.orchestrator.json` has no `roles`, the technical leads are still setting the project up: there are no builders and no pair loop yet. Design writes stories as usual (§6.1), and so can a developer, for a story with no screen. Nothing is built: when a developer asks for development work, say so in one line, without listing what the set-up still lacks.
+4. Detect the harness: read `references/harness.md`. Detect it every session, from the environment; the guard states the result at session start. In Orca: load `orca skills get orchestration` and bind one Run for the block of work.
+5. Read `.orchestrator/state.md`. It is your ledger: personal, never committed, and it survives compaction. Keep it current.
+6. **Tell your human where they are and what is next: load the `que-hago` skill.** Load it again whenever your human asks what to do, what is theirs, what is next or where they are, in whatever words.
+7. If every story of a delivery (a release in `stories.config.json`) works and `docs/audits/<delivery>.md` does not exist, tell your human that delivery is ready for its audit (§10). Say it once; do not run it unasked.
 
 The ledger holds one line per story in progress (`EO-123 back: EO-123.2 green, waiting for the ok`) and one line per ruling you make:
 
@@ -262,7 +265,7 @@ A story that was already done keeps its code, its tests and its lock lists on th
 
 **Fix or chore.**
 - A `fix/` repairs something that is not a story's behaviour: the build, the configuration, a script.
-- A `chore/` is any other work outside the stories: dependencies, tooling, documentation. The foundations are chores too, but before Part 2 of the install there are no builders (§1).
+- A `chore/` is any other work outside the stories: dependencies, tooling, documentation. Before development opens there are no builders (§1).
 - A bug in behaviour is never a fix: it reopens its story (§6.9).
 
 1. **Branch.** Create `fix/<slug>` or `chore/<slug>`, in English kebab-case, from the integration branch on the remote.
@@ -320,9 +323,9 @@ At the end of a block of work:
 
 The tests prove that each story does what it says; they do not see how the code is built. What the team learns has to live in the repository. So each delivery gets a sampling audit, and every finding that can recur becomes something that stops it next time.
 
-**When.** At the close of each delivery, and first of all at the close of the foundations: their patterns are the ones every story will copy. Also whenever the team asks. It is never automatic: a person asks for it, usually a technical lead, and you run it from their session.
+**When.** At the close of each delivery, and whenever the team asks. It is never automatic: a person asks for it, usually a technical lead, and you run it from their session.
 
-1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, then the largest diffs. For the foundations, name the main modules and their commits instead. The auditor never chooses what to look at.
+1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, then the largest diffs. The auditor never chooses what to look at.
 2. **Audit.** Brief a fresh `auditor` with the sample, the rules in `docs/rules/`, the previous audits in `docs/audits/` and the path of its report. It is read-only.
 3. **Verify before anyone reads it.** Run the `Check` of every Critical and Important finding. A finding that does not reproduce is dropped and recorded as a false positive. A bug against a story becomes a failing criterion of that story, which reopens it (§6.9).
 4. **Close it** according to `audit.confirm` in `.orchestrator.json`:
@@ -360,12 +363,12 @@ Five principles:
 | What each module declares | its manifest in the module's folder | backend |
 | Rules for every side | `docs/rules/comunes.md` | through a pull request (§11.2) |
 | One side's rules and patterns | `docs/rules/backend.md`, `docs/rules/frontend.md` | through a pull request (§11.2) |
-| Code style | the linters' configuration | delivery 0, then through a pull request |
-| The code graph (code-review-graph) | its configuration in the repository, the same for everyone, with the version pinned: the MCP server in `.mcp.json` under the name `code-review-graph`, its hooks, its skills, what is not indexed. The graph itself on each machine, never committed | delivery 0; the graph is generated |
+| Code style | the linters' configuration | the technical leads at the set-up, then through a pull request |
+| The code graph (code-review-graph) | its configuration in the repository, the same for everyone, with the version pinned: the MCP server in `.mcp.json` under the name `code-review-graph`, its hooks, its skills, what is not indexed. The graph itself on each machine, never committed | the technical leads at the set-up; the graph is generated |
 | Audits | `docs/audits/<delivery>.md` | §10 |
 | What the product is, the folder map, how to run it locally | `README.md` | through a pull request |
-| The context of every session | `CLAUDE.md`: imports `README.md` and `docs/rules/comunes.md` and carries the orchestrator block. The rest of the context is the code (§11.3) | the install, then through a pull request |
-| Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` | the install; §6.4 |
+| The context of every session | `CLAUDE.md`: imports `README.md` and `docs/rules/comunes.md` and carries the orchestrator block. The rest of the context is the code (§11.3) | the set-up, then through a pull request |
+| Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` | the set-up; §6.4 |
 | Personal files | `.orchestrator/me.json`, `state.md`, `work/` | never committed |
 
 Outside the repository: the method lives in this plugin and is never copied into the project; Jira holds the cards, each with the story's title, its sentence, the Figma link and the link to the story file, never the criteria; manuals for clients and support are not part of this system. The project has no `CONTRIBUTING.md`, no `CODING_STANDARDS.md`, no `docs/adr/`, no lessons section in `CLAUDE.md`, no documentation site and no prose about the code written by an AI. Do not create them.
@@ -412,4 +415,4 @@ There is no architecture document for you or the agents to read. What the projec
 
 **When the written text and the code disagree,** a description of how the code is written (a convention, a library, a command, a pattern's description, an old decision) loses to the existing code: follow the code, and list every inconsistency you found between the text and the code. The rules in `docs/rules/` and a story's criteria are the exception: they say what must hold, so when the code breaks one, do not copy the code; report it as a broken rule or a failing criterion. Builders list these under Concerns. Each one you or a builder finds, offer your human to fix the stale text in a `chore/` pull request, so the next session does not meet it again; a broken rule or a failing criterion goes to its side as a fix instead.
 
-The why of the big architecture choices is in their `DEC` files, written during the foundations: read the one the work touches, when it touches it. A large document read "just in case" adds noise, not knowledge, and what the team learns goes back into the code, the checks and the rules (§9, §10), never into prose.
+The why of the big architecture choices is in their `DEC` files, written by the technical leads: read the one the work touches, when it touches it. A large document read "just in case" adds noise, not knowledge, and what the team learns goes back into the code, the checks and the rules (§9, §10), never into prose.

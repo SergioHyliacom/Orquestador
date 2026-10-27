@@ -71,7 +71,7 @@ The human applies these in Bitbucket, because they change a shared repository.
 - Merge permissions: anyone may merge into `develop`; into `main`, only the people the team authorizes in Bitbucket.
 - Default merge strategy: Merge commit. The sessions send the right strategy for each pull request; the default only matters for a merge made by hand.
 - Bitbucket blocks a merge on a failing check only on Premium; on the other plans the checks warn. The team rule is the same either way: no pull request merges with a check in red.
-- Required pipeline steps: the project's verification commands plus `node <storiesDir>/stories.mjs --tests --check`, on every branch (`default` covers `fix/`, `chore/` and `hotfix/`). Until Part 2 of the install the pipeline runs only `stories.mjs --check`, but on every branch too, so every pull request has a build.
+- Required pipeline steps: the project's verification commands plus `node <storiesDir>/stories.mjs --tests --check`, on every branch (`default` covers `fix/`, `chore/` and `hotfix/`). Until development opens (§1 of the `orchestrate` skill) the pipeline runs only `stories.mjs --check`, but on every branch too, so every pull request has a build.
 - Default reviewers, to keep others informed, never required: the contract spec to one developer of each side.
 
 ## Story IDs

@@ -236,7 +236,7 @@
 
   <h3 class="sub">Tu primer día</h3>
   <div class="kinds">
-    <div class="kind"><b>Todos</b><span class="ex">Instala el plugin solo para este proyecto: en su carpeta, <code>claude plugin install easyone-orchestrator@hyliacom --scope project</code>. Después reinicia Claude Code (no basta con <code>/clear</code>). Node 20 o posterior: si falta, Claude lo detecta y ofrece instalarlo.</span><span>La primera sesión te pregunta quién eres, de qué lado trabajas y en qué idioma quieres que te hable, y lo guarda en <code>.orchestrator/me.json</code>, que es personal. Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va siempre en español. Necesita leer Jira con el servidor MCP de Atlassian o con <code>acli</code>; si no puede, te pide la lista. Cada persona crea su token de Bitbucket (<code>BITBUCKET_USER</code> y <code>BITBUCKET_TOKEN</code>), para que la sesión abra y fusione los PR.</span></div>
+    <div class="kind"><b>Todos</b><span class="ex">Instala el plugin solo para este proyecto: en su carpeta, <code>claude plugin install easyone-orchestrator@hyliacom --scope project</code>. Después reinicia Claude Code (no basta con <code>/clear</code>). Node 20 o posterior: si falta, Claude lo detecta y ofrece instalarlo.</span><span>La primera sesión empieza preguntándote quién eres: tu nombre y si trabajas en diseño, backend o frontend. La cuenta de Jira la lee de Jira y el idioma lo toma de cómo le escribes; lo guarda en <code>.orchestrator/me.json</code>, que es personal. Luego va directa a tu trabajo. Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va siempre en español. Necesita leer Jira con el servidor MCP de Atlassian o con <code>acli</code>; si no puede, te pide la lista. Cada persona crea su token de Bitbucket (<code>BITBUCKET_USER</code> y <code>BITBUCKET_TOKEN</code>), para que la sesión abra y fusione los PR.</span></div>
     <div class="kind"><b>Diseño</b><span class="ex">El conector de Figma, con acceso a los ficheros del proyecto, y Mobbin si lo usáis.</span><span>Tu cuenta de Jira tiene que poder crear y editar tarjetas. Si Figma no responde, la sesión te lo dice y describes tú las pantallas.</span></div>
     <div class="kind"><b>Qué hago</b><span class="ex">Al abrir Claude, o cuando le preguntas «¿qué me toca?» como te salga.</span><span>Tu sesión mira tus tarjetas, lo que te han pedido, tu rama, tus historias y tus PR, y te dice en qué punto estás: primero lo que tiene parado a otros (una petición, un PR que revisar o ya aprobado), después lo tuyo, y lo que te recomienda. Respondes sí o no. No hace falta ningún comando. Si le pides algo que aún no toca, te dice qué falta y qué va antes.</span></div>
   </div>
@@ -540,6 +540,7 @@
 <section id="arranque">
   <h2><span class="num">6</span>Cómo arrancamos</h2>
   <p class="lead">El stack no sale de las historias: el esqueleto se monta antes, porque el propio flujo lo necesita. Las funcionalidades solo llegan a través de historias.</p>
+  <p style="margin:0 0 12px">Lo llevan los <b>responsables técnicos</b> con otro plugin, <code>easyone-cimientos</code>, instalado solo en sus equipos (<code>--scope local</code>). El resto del equipo no lo instala ni ve nada de esto.</p>
   <div class="timeline">
     <div class="step"><h3>Día uno</h3>Repositorio, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») y los campos Backend y Frontend, ajustes de Bitbucket, el token de Bitbucket de cada persona e <b>instalación, parte 1</b>:<ul>
       <li>carpeta de historias, validador, pipeline mínimo</li>
@@ -554,7 +555,7 @@
   </div>
   <div class="parallel"><b>En paralelo, desde el día uno:</b> diseño escribe las historias de la entrega 1 (plataforma mínima). Nadie espera a nadie.</div>
   <p style="margin:12px 0 0;font-size:14px;color:var(--muted)">En los cimientos <b>no</b> se hacen tablas de negocio, el módulo de identidad ni un CRUD genérico «por si acaso»: eso sería construir por capas a ciegas.</p>
-  <p style="margin:8px 0 0;font-size:14px;color:var(--muted)">Mientras duran los cimientos, «¿qué me toca?» enseña su estado: cada pieza con ✅, ❌ o ⚠️, las decisiones abiertas y qué cerrar primero. Es la misma lista que comprueba la parte 2; cuando todo está en ✅, la sesión propone lanzarla, y el estado de los cimientos desaparece.</p>
+  <p style="margin:8px 0 0;font-size:14px;color:var(--muted)">Mientras duran los cimientos, a los responsables técnicos «¿qué me toca?» o «¿cómo van los cimientos?» les enseña su estado (skill <code>estado</code> de <code>easyone-cimientos</code>): cada pieza con ✅, ❌ o ⚠️, las decisiones abiertas y qué cerrar primero. Es la misma lista que comprueba la parte 2; cuando todo está en ✅, la sesión propone lanzarla. Al resto de desarrolladores su sesión solo les dice que el desarrollo aún no está abierto y les ofrece escribir historias sin pantalla.</p>
 </section>
 
 <!-- 7 -->
@@ -757,7 +758,7 @@
   </div>
 </section>
 
-<footer>Plugin <code>easyone-orchestrator</code>, adaptado del Orchestrator de Sydney y Claude. El detalle está en las skills <code>orchestrate</code> (§11: dónde vive cada cosa), <code>stories</code> e <code>install</code> del plugin.</footer>
+<footer>Plugin <code>easyone-orchestrator</code>, adaptado del Orchestrator de Sydney y Claude. El detalle está en las skills <code>orchestrate</code> (§11: dónde vive cada cosa) y <code>stories</code> del plugin; la preparación del proyecto, en <code>install</code> y <code>estado</code> de <code>easyone-cimientos</code>.</footer>
 </div>
 </body>
 </html>

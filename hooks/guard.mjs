@@ -111,7 +111,7 @@ if (input.hook_event_name === "SessionStart") {
     ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
     : "Harness, detected now: plain Claude Code.";
   // The pipeline runs the project's copies of two of the plugin's scripts: say when they fall behind it.
-  const assets = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "skills", "install", "assets");
+  const assets = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts");
   const text = (p) => stripBom(readFileSync(p, "utf8")).replace(/\r\n?/g, "\n");
   const stale = config.storiesDir ? ["stories.mjs", "jira-sync.mjs"].filter((f) => {
     const mine = path.join(root, config.storiesDir, f), plugin = path.join(assets, f);
