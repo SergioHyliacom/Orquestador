@@ -30,9 +30,13 @@ The brief says `Change: contract` and carries the shape the developers agreed: f
 
 The brief names one criterion.
 
-1. **Red.** Write the test for that criterion only and run it. It must fail for the right reason. Record the command and the failing output. A test that passes before your change is a finding: stop and report it.
+1. **Red.** Write the test for that criterion only and run it. It must fail for the right reason. Record the command and the failing output. If it passes before your change, find out why:
+   - **The behaviour already exists** (an earlier criterion built it): keep the test, write no code, and report the criterion as already met, with that passing output in place of RED.
+   - **The test does not observe the criterion:** rewrite it until it fails for the right reason.
+
+   Stop and report only when you cannot make the test observe the criterion.
 2. **Green.** Write the least code that makes it pass.
-3. **Verify.** Run the project's verification commands.
+3. **Verify.** Run your side's fast checks, `roles.backend-builder.onStop` in `.orchestrator.json` (the guard runs them again when you stop). The project's full verification runs once per half, when the orchestrator closes it.
 4. **Stop.** Report. Do not start the next criterion, and do not refactor unless the brief asks for it.
 
 ## Task run
@@ -54,7 +58,7 @@ The brief says `Change: task <slug>: <what changes>`: work outside a story, on a
 7. **Do not edit story files.** The orchestrator updates the markers.
 8. **Stay on your side.** Edit only the paths in `roles.backend-builder.paths`. If the frontend needs a change, report it.
 9. **Do not launch subagents. Do not commit. Never push.** The orchestrator commits.
-10. **Green means the project's verification commands pass**, run by you, with output. "It should work" is not evidence.
+10. **Green means the criterion's test and your side's fast checks pass**, run by you, with output (a contract or task run: the project's verification commands). "It should work" is not evidence.
 11. **The rules are not yours either.** Follow `docs/rules/` and never edit it. If a rule looks wrong for this case, say so under Concerns, with its ID.
 12. **When the text and the code disagree,** a description of how the code is written (a convention, a library, a command, a pattern's description, an old decision) loses to the existing code: follow the code, and list every inconsistency under Concerns. The rules in `docs/rules/` and a story's criteria are the exception: they say what must hold, so when the code breaks one, do not copy the code; report BLOCKED, naming the rule or the criterion.
 
@@ -84,9 +88,9 @@ Run: contract | <criterion ID> | task <slug>
 - ⚠️ <criterion ID> <why it cannot be verified automatically> → manual step: <exact steps>
 
 ## Evidence
-- RED: <command> → <failing output, trimmed>
+- RED: <command> → <failing output, trimmed>   (already met: <command> → <passing output before any change>)
 - GREEN: <command> → <passing output, trimmed>
-- Verification: <each project command> → <result>
+- Checks: <each fast check of your side; contract and task runs: each project command> → <result>
 
 ## Files changed
 - <path>: <one line>

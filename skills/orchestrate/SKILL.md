@@ -88,7 +88,7 @@ The first line of every report is `<name>: <status>`.
 In Orca the report arrives as a message: `references/harness.md` maps these statuses onto `worker_done`, `escalation` and `ask`.
 
 Rules:
-- "Done" without evidence is not done. The evidence is the RED output and the GREEN output of the criterion's test, plus the verification commands. For a task: the output of its "Done when" commands and the verification commands, and RED and GREEN when it changes behaviour a test can show.
+- "Done" without evidence is not done. The evidence is the RED output and the GREEN output of the criterion's test, plus the fast checks of its side (a criterion already met: the test passing before any change, instead of RED). For a task: the output of its "Done when" commands and the verification commands, and RED and GREEN when it changes behaviour a test can show.
 - The test's name starts with the criterion ID. A test without it does not count for the criterion.
 - Reject a review that lacks a verdict. Reject a finding that contradicts the story or your human's instructions, and write down why.
 - Read the file the agent wrote when the summary is not enough. Do not redo the work in your own context.
@@ -180,7 +180,7 @@ Your side's criteria are those with something your side decides. Backend: what t
 Your human gives the ok on the first criterion of the half, where the pattern shows, and on the finished half. Between the two you carry on alone. For each of your side's criteria, in the story's order:
 
 1. **Brief** the builder for that one criterion (§4). Launch it for the first criterion; resume it for the next ones. Work only on the sides listed in the story's `sides`.
-2. **Read** its report (§5) and **check the evidence yourself**: the test's name starts with the criterion ID; RED failed on an assertion about the criterion, not on a compile error or a missing file; GREEN and the verification commands pass; every file changed is inside your side's paths and belongs to this criterion. A check that fails goes back to the same builder; failing twice, it goes to your human.
+2. **Read** its report (§5) and **check the evidence yourself**: the test's name starts with the criterion ID; RED failed on an assertion about the criterion, not on a compile error or a missing file (a criterion reported already met has no RED: check instead that its assertion observes the criterion, and commit the test alone); GREEN and the side's fast checks pass; every file changed is inside your side's paths and belongs to this criterion. A check that fails goes back to the same builder; failing twice, it goes to your human.
 3. **First criterion of the half: your human's ok.** Show them, in at most 8 lines: the criterion, the test's name, what its assertion checks in one line, the RED and GREEN lines, and the files changed. No code. Ask one question: "Does this assertion check what the criterion says?" They answer ok, a refactor or a change. A refactor or a change goes back to the same builder (`Change: refactor <criterion ID>`: behaviour and tests stay as they are, everything stays green).
 4. **Commit** (§8): stage the files from the report by name, check `git status`, message `<criterion ID>: <the rule, short>`. After the first criterion, commit each one without asking: your human approved the pattern, and the evidence stays in the report.
 5. **Carry on** with the next criterion. Stop and go to your human at: a BLOCKED or a concern, a check of step 2 that fails twice, the same failure 3 times, a change to the contract, or an irreversible step. Your human may also ask for the ok on every criterion: then step 3 applies to each.
@@ -194,9 +194,10 @@ A builder BLOCKED because the contract has to change: tell your human the exact 
 
 When every criterion of your side is green on your half:
 
-1. **Lock.** List the half's acceptance-test files, with the helpers they import and the runner's config, in `.orchestrator/locked/<ID>-<side>.txt`. Commit that list alone (`<ID>: lock <side> tests`). From here no builder can change those tests; the guard checks them against this commit.
-2. Run `node <storiesDir>/stories.mjs --tests`. Every criterion your side tests passes.
-3. With your human's ok on the result (§6.3, step 6), merge your half into `story/<ID>` (`git checkout story/<ID>`, then `git merge story/<ID>-<side>`) and push. A story with one side has no half: the lock commit on `story/<ID>` closes it; push. Post the status comment on the card (§6).
+1. **Verify the whole half.** Run the project's full verification (`verify.all`) yourself, once, where the half lives (in Orca, the builder's worktree): the builders ran only their side's fast checks on each criterion. A failure goes back to the builder, in the pair loop, as a refactor of the criterion it breaks, or as a task when it breaks none.
+2. **Lock.** List the half's acceptance-test files, with the helpers they import and the runner's config, in `.orchestrator/locked/<ID>-<side>.txt`. Commit that list alone (`<ID>: lock <side> tests`). From here no builder can change those tests; the guard checks them against this commit.
+3. Run `node <storiesDir>/stories.mjs --tests`. Every criterion your side tests passes.
+4. With your human's ok on the result (§6.3, step 6), merge your half into `story/<ID>` (`git checkout story/<ID>`, then `git merge story/<ID>-<side>`) and push. A story with one side has no half: the lock commit on `story/<ID>` closes it; push. Post the status comment on the card (§6).
 
 The lock list on `story/<ID>` is what tells the pipeline a side is closed, so a half branch is only a place to work: it is deleted after the story merges (§6.8).
 
@@ -207,7 +208,7 @@ The lock list on `story/<ID>` is what tells the pipeline a side is closed, so a 
 1. Bring your half up to date: merge `story/<ID>` into it, or create it again from `story/<ID>` if it was deleted. A story with one side works on `story/<ID>`.
 2. **Unlock only what changes.** Remove from `.orchestrator/locked/<ID>-<side>.txt` the tests of the criteria that change, and commit that alone (`<ID>: unlock <side> <criterion IDs>`) before you brief the builder: the guard reads the locks from that commit.
 3. Run the pair loop (§6.3) on those criteria. When the change is in the API's shape, agree the contract first (§6.2).
-4. Lock again (step 1 above), run the tests, and merge your half into `story/<ID>` with your human's ok on the result.
+4. Verify the half and lock again (steps 1 and 2 above), run the tests, and merge your half into `story/<ID>` with your human's ok on the result.
 
 ### 6.5 Integration (frontend side, or backend when the story has no front half)
 
@@ -313,7 +314,7 @@ Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` 
 
 At the end of a block of work:
 
-1. Run `node <storiesDir>/stories.mjs --tests`.
+1. Run `node <storiesDir>/stories.mjs` to refresh the map. It runs no tests: the full suites run when a half closes (§6.4), at the integration (§6.5) and in the pipeline.
 2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, every released terminal you launched is closed, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the role file of each released worker (`.orchestrator/roles/<handle>.json`) is gone. Do not end the turn before that.
 3. A real failure in this project that can happen again gets a prevention, in the order of §11.2: a machine check; else a rule in `docs/rules/` (the file of the side that owns it, `comunes.md` when it applies to every side), with the failure as its origin; else a pattern. A failure of behaviour is a failing criterion of its story, never a rule. The rules are shared: propose the prevention to your human, and it goes in through a pull request.
 4. Update `.orchestrator/state.md`.
