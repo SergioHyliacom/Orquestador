@@ -1,0 +1,58 @@
+/* Tokens del diseño: el único sitio de colores, tipografía, espaciados, radios y sombras.
+   Los componentes solo usan estas variables. Cambiar un valor aquí cambia todas las pantallas. */
+
+:root {
+  /* Color · marca */
+  --color-primario: #2b59c3;
+  --color-primario-hover: #234aa6;
+  --color-primario-suave: #e9effc;
+
+  /* Color · neutros */
+  --color-fondo: #f6f7f9;
+  --color-superficie: #ffffff;
+  --color-borde: #e3e6eb;
+  --color-texto: #16191f;
+  --color-texto-suave: #5b6472;
+  --color-texto-tenue: #8a93a1;
+
+  /* Color · estados */
+  --color-exito: #12805c;
+  --color-exito-suave: #e6f4ee;
+  --color-aviso: #b45309;
+  --color-aviso-suave: #fdf3e2;
+  --color-error: #c4321f;
+  --color-error-suave: #fdecea;
+  --color-info: #2b59c3;
+  --color-info-suave: #e9effc;
+
+  /* Tipografía */
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --texto-xs: 12px;
+  --texto-s: 13px;
+  --texto-m: 14px;
+  --texto-l: 16px;
+  --texto-xl: 20px;
+  --texto-xxl: 24px;
+  --peso-normal: 400;
+  --peso-medio: 500;
+  --peso-fuerte: 600;
+
+  /* Espaciado */
+  --esp-1: 4px;
+  --esp-2: 8px;
+  --esp-3: 12px;
+  --esp-4: 16px;
+  --esp-5: 24px;
+  --esp-6: 32px;
+  --esp-7: 48px;
+
+  /* Radios */
+  --radio-s: 6px;
+  --radio-m: 8px;
+  --radio-l: 12px;
+  --radio-total: 999px;
+
+  /* Sombras */
+  --sombra-s: 0 1px 2px rgb(16 24 40 / 0.06);
+  --sombra-m: 0 4px 12px rgb(16 24 40 / 0.08);
+}

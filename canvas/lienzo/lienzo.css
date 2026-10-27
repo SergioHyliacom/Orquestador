@@ -1,0 +1,190 @@
+/* Interfaz del lienzo: tablero, barras, avisos, portada y biblioteca.
+   No forma parte del diseño del producto: todo lleva el prefijo lz-. */
+
+.lz-ui, .lz-pagina, .lz-error { font: 13px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+
+/* Botones del lienzo */
+.lz-boton {
+  background: transparent; border: 1px solid transparent; color: inherit; font: inherit;
+  padding: 5px 10px; border-radius: 6px; cursor: pointer; text-decoration: none; line-height: 1.2; white-space: nowrap;
+}
+.lz-boton:hover { background: rgb(255 255 255 / 0.1); }
+.lz-activo, .lz-activo:hover { background: #3b6cf6; color: #fff; }
+.lz-titulo { font-weight: 600; margin: 0 6px; white-space: nowrap; }
+.lz-separador { flex: 1; }
+.lz-historia { font-size: 0.85em; font-weight: 600; background: #ece9fe; color: #5b3fd6; border-radius: 4px; padding: 0.05em 0.45em; }
+.lz-falta { font-size: 0.8em; background: #fff4d6; color: #8a5a00; border: 1px solid #f1d58a; padding: 0.1em 0.6em; border-radius: 999px; white-space: nowrap; }
+.lz-tenue { color: #6b7280; }
+.lz-error { padding: 40px; color: #7a1f13; }
+
+/* Tablero */
+.lz-tablero { margin: 0; height: 100vh; overflow: hidden; background: #e8e9ed; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.lz-barra {
+  position: fixed; inset: 0 0 auto 0; height: 48px; z-index: 10;
+  display: flex; align-items: center; gap: 4px; padding: 0 12px; background: #1e1f23; color: #f1f2f4;
+}
+.lz-lienzo {
+  position: fixed; inset: 48px 0 0 0; overflow: hidden; cursor: default; touch-action: none;
+  background-color: #e8e9ed; background-image: radial-gradient(#c9ccd3 1px, transparent 1px); background-size: 20px 20px;
+}
+.lz-lienzo, .lz-barra { user-select: none; -webkit-user-select: none; }
+/* Cursor de cada herramienta (html[data-herramienta]); Espacio mantenido es una mano temporal. */
+[data-herramienta="mano"] .lz-lienzo, .lz-espacio .lz-lienzo { cursor: grab; }
+[data-herramienta="senalar"] .lz-lienzo { cursor: crosshair; }
+.lz-lienzo.lz-arrastrando { cursor: grabbing !important; }
+.lz-arrastrando .lz-marco:hover iframe { box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 0 0 calc(1px * var(--lz-inv)) rgb(0 0 0 / 0.08); }
+/* Todo el tablero (pantallas y textos) escala con el zoom, en unidades del mundo: al alejar, los textos
+   se hacen más pequeños con todo lo demás. Sus tamaños son fijos, así que el zoom no cambia la maqueta
+   y lo que está bajo el cursor se queda quieto. Solo los bordes usan --lz-inv (la inversa del zoom),
+   para que se vean siempre finos; no ocupan sitio. */
+.lz-mundo {
+  --lz-inv: 1;
+  position: absolute; left: 0; top: 0; transform-origin: 0 0; width: max-content;
+  display: flex; flex-direction: column; gap: 240px; color: #1d2027;
+}
+.lz-mundo.lz-moviendo { will-change: transform; }
+.lz-pantalla { display: flex; flex-direction: column; gap: 120px; }
+.lz-fila { display: flex; gap: 56px; align-items: flex-start; }
+.lz-fila-cabecera {
+  flex: none; width: 380px; padding-top: 42px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px; text-align: right;
+  font-size: 22px; line-height: 1.3; color: #6b7280;
+}
+.lz-fila-cabecera h2 { margin: 0; font-size: 32px; color: #1d2027; }
+.lz-fila-cabecera code { font-size: 18px; }
+.lz-fila-cabecera .lz-falta { white-space: normal; font-size: 18px; }
+.lz-marcos { display: flex; gap: 72px; align-items: flex-start; }
+.lz-marco { margin: 0; }
+.lz-marco figcaption {
+  display: flex; align-items: center; gap: 10px; white-space: nowrap; line-height: 1.3;
+  font-size: 22px; color: #374151; margin-bottom: 12px;
+}
+.lz-marco iframe {
+  display: block; border: 0; background: #fff; pointer-events: none;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), 0 0 0 calc(1px * var(--lz-inv)) rgb(0 0 0 / 0.08);
+}
+[data-herramienta="mover"] .lz-marco:hover iframe { box-shadow: 0 0 0 calc(2px * var(--lz-inv)) #3b6cf6; }
+.lz-marco.lz-elegido iframe { box-shadow: 0 0 0 calc(3px * var(--lz-inv)) #3b6cf6 !important; }
+.lz-marco.lz-elegido figcaption { color: #3b6cf6; font-weight: 600; }
+/* Con Señalar, los clics entran en las pantallas; con Espacio pulsado, no (se arrastra el tablero). */
+[data-herramienta="senalar"] .lz-marco iframe { pointer-events: auto; }
+.lz-espacio .lz-marco iframe { pointer-events: none !important; }
+
+/* Barra de herramientas flotante */
+.lz-herramientas {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 20;
+  display: flex; align-items: center; gap: 2px; padding: 6px; border-radius: 12px;
+  background: #1e1f23; color: #f1f2f4; user-select: none; -webkit-user-select: none;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.lz-herr {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+  min-width: 36px; height: 36px; padding: 0 8px; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; font: inherit; cursor: pointer;
+}
+.lz-herr:hover { background: rgb(255 255 255 / 0.1); }
+.lz-herr.lz-activo { background: #3b6cf6; color: #fff; }
+.lz-herr-sep { width: 1px; height: 22px; margin: 0 4px; background: rgb(255 255 255 / 0.15); }
+.lz-herr-zoom { min-width: 76px; font-variant-numeric: tabular-nums; }
+/* Ayuda al pasar el ratón, con el atajo */
+.lz-herr[data-ayuda]:hover::after {
+  content: attr(data-ayuda); position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%);
+  white-space: pre; padding: 5px 9px; border-radius: 6px; background: #0f1013; color: #fff; font-size: 12px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.3); pointer-events: none;
+}
+.lz-zoom-caja { position: relative; }
+.lz-menu {
+  position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); min-width: 250px;
+  display: flex; flex-direction: column; padding: 6px; border-radius: 10px; background: #1e1f23;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+.lz-menu button {
+  display: flex; justify-content: space-between; gap: 24px; padding: 7px 10px; border: 0; border-radius: 6px;
+  background: transparent; color: #f1f2f4; font: inherit; text-align: left; cursor: pointer;
+}
+.lz-menu button:hover:not(:disabled) { background: #3b6cf6; }
+.lz-menu button:disabled { color: #6b6f78; cursor: default; }
+.lz-menu kbd { font: inherit; color: #9ca0a8; }
+.lz-menu button:hover:not(:disabled) kbd { color: #fff; }
+.lz-menu hr { border: 0; border-top: 1px solid rgb(255 255 255 / 0.1); margin: 4px 2px; }
+
+/* Ficha de la pantalla elegida */
+.lz-ficha {
+  position: fixed; top: 60px; right: 12px; z-index: 15; width: 290px;
+  display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 12px;
+  background: #fff; color: #1d2027; box-shadow: 0 8px 24px rgb(0 0 0 / 0.15), 0 0 0 1px rgb(0 0 0 / 0.06);
+}
+.lz-ficha strong { font-size: 14px; }
+.lz-ficha-ancla { display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 8px; border-radius: 6px; background: #f4f5f7; }
+.lz-ficha-ancla code { flex: 1; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lz-ficha-historias { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lz-ficha-acciones { display: flex; gap: 6px; margin-top: 4px; }
+.lz-boton-ficha { padding: 5px 10px; border: 1px solid #e3e6eb; border-radius: 6px; background: #fff; color: #1d2027; font: inherit; cursor: pointer; }
+.lz-boton-ficha:hover { background: #f4f5f7; }
+.lz-boton-ficha.lz-primario { border-color: #3b6cf6; background: #3b6cf6; color: #fff; }
+
+/* Avisos */
+.lz-aviso, .lz-aviso-prototipo {
+  background: #1e1f23; color: #f1f2f4; padding: 10px 14px; border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.25); max-width: min(720px, 90vw);
+}
+.lz-aviso { position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 20; }
+.lz-aviso strong, .lz-aviso-prototipo strong { color: #fff; }
+.lz-aviso small, .lz-aviso-prototipo small { display: block; color: #b6bac3; margin-top: 2px; }
+
+/* Modo selección (dentro de cada pantalla) */
+.lz-seleccionando, .lz-seleccionando * { cursor: crosshair !important; }
+.lz-resaltado { outline: 2px solid #3b6cf6 !important; outline-offset: 1px; }
+
+/* Modo prototipo */
+.lz-barra-prototipo {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 1000;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; padding: 6px; border-radius: 10px;
+  width: max-content; max-width: calc(100vw - 16px);
+  background: #1e1f23; color: #f1f2f4; box-shadow: 0 8px 24px rgb(0 0 0 / 0.25);
+}
+.lz-barra-prototipo .lz-boton:hover { background: rgb(255 255 255 / 0.1); }
+.lz-barra-prototipo .lz-activo { background: #3b6cf6; }
+.lz-aviso-prototipo { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: max-content; }
+.lz-select { background: #2b2d33; color: inherit; border: 1px solid #3a3d44; border-radius: 6px; padding: 4px 6px; font: inherit; }
+
+/* Portada y biblioteca */
+.lz-pagina { max-width: 1040px; margin: 0 auto; padding: 40px 24px 80px; color: #1d2027; }
+.lz-pagina h1 { font-size: 28px; letter-spacing: -0.02em; margin: 0; }
+.lz-pagina h2 { font-size: 17px; margin: 0; display: flex; align-items: baseline; gap: 10px; }
+.lz-pagina h2 code { font-size: 12px; color: #6b7280; font-weight: 400; }
+.lz-pagina p { margin: 4px 0 0; color: #5b6472; }
+.lz-pagina-cabecera { margin-bottom: 32px; }
+.lz-pagina-cabecera nav { margin-top: 12px; }
+.lz-enlace { color: #2b59c3; font-weight: 600; text-decoration: none; }
+.lz-boton-claro {
+  background: #1e1f23; color: #fff; text-decoration: none; font-weight: 600;
+  padding: 8px 14px; border-radius: 8px; white-space: nowrap;
+}
+.lz-area, .lz-ayuda, .lz-seccion { background: #fff; border: 1px solid #e3e6eb; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; }
+.lz-area-cabecera { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.lz-lista { list-style: none; margin: 16px 0 0; padding: 0; }
+.lz-lista li { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #eef0f3; }
+.lz-lista a { font-weight: 600; color: #1d2027; }
+.lz-ayuda ul { margin: 10px 0 0; padding-left: 18px; color: #374151; }
+.lz-ayuda li + li { margin-top: 6px; }
+
+.lz-seccion h2 { margin-bottom: 16px; }
+.lz-muestras { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.lz-muestra { margin: 0; border: 1px solid #e3e6eb; border-radius: 8px; overflow: hidden; }
+.lz-muestra div { height: 56px; border-bottom: 1px solid #e3e6eb; }
+.lz-muestra figcaption { padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.lz-muestra span { color: #6b7280; }
+.lz-tipo { display: flex; align-items: center; gap: 20px; padding: 8px 0; border-top: 1px solid #eef0f3; }
+.lz-tipo code { width: 160px; flex: none; font-size: 12px; color: #6b7280; }
+.lz-barra-esp { display: block; height: 12px; background: #3b6cf6; border-radius: 2px; }
+.lz-radios { display: flex; gap: 20px; margin-top: 16px; }
+.lz-radios figure { margin: 0; font-size: 12px; color: #6b7280; }
+.lz-radios div { width: 64px; height: 64px; background: #e9effc; border: 2px solid #3b6cf6; margin-bottom: 6px; }
+.lz-ejemplos { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.lz-ejemplo { margin: 0; border: 1px solid #e3e6eb; border-radius: 8px; overflow: hidden; }
+.lz-ejemplo-caja { padding: 20px; background: var(--color-fondo, #f6f7f9); display: flex; align-items: center; justify-content: center; min-height: 96px; }
+.lz-ejemplo-caja > * { max-width: 100%; }
+.lz-ejemplo-caja > .tabla, .lz-ejemplo-caja > .tarjeta, .lz-ejemplo-caja > .pestanas, .lz-ejemplo-caja > .aviso, .lz-ejemplo-caja > .campo { width: 100%; }
+.lz-ejemplo-caja > .tabla { background: #fff; }
+.lz-ejemplo figcaption { padding: 8px 12px; font-size: 12px; color: #374151; border-top: 1px solid #e3e6eb; }

@@ -1,0 +1,13 @@
+{
+  "_nota": "Lo genera la sesión a partir del campo screens de cada historia. No se edita a mano.",
+  "historias": {
+    "EO-12": "Consultar las facturas emitidas",
+    "EO-14": "Filtrar las facturas por estado de cobro",
+    "EO-15": "Emitir una factura"
+  },
+  "pantallas": {
+    "facturacion/lista": ["EO-12"],
+    "facturacion/lista/datos": ["EO-14"],
+    "facturacion/nueva": ["EO-15"]
+  }
+}
