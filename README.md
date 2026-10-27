@@ -52,6 +52,8 @@ Claude Code tiene tres alcances para un plugin:
 
 La primera persona que lo instala con `--scope project` deja el plugin activado en `.claude/settings.json`, y eso se sube con el resto del proyecto. Las demás, al hacer pull, lo tienen activado pero sin descargar: cada una ejecuta los dos comandos de arriba una sola vez. Si el repositorio del fork es privado, cada persona necesita acceso de lectura a él.
 
+**Cada carpeta lo instala por su cuenta.** Otro clon del proyecto, aunque esté dentro de la misma carpeta, no hereda la instalación: ejecuta allí también los dos comandos. Si se te olvida, Claude te lo dice al abrir la sesión (lo pide `CLAUDE.md`) y no hace commits ni push hasta que esté instalado.
+
 Para probar el plugin desde una copia en tu equipo, sin instalarlo: `claude --plugin-dir <ruta de esta carpeta>`.
 
 Claude Code carga los plugins al arrancar. Después de instalar, abre una sesión nueva: hay que reiniciar el CLI, no basta con `/clear`.

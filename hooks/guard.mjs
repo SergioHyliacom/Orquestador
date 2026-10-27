@@ -4,9 +4,9 @@
 // Exit 0 = allow. Exit 2 = block; stderr goes back to Claude. Exit 0 with permissionDecision "ask" on
 // stdout = Claude Code asks the human to confirm.
 
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync, execSync, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -119,7 +119,43 @@ function currentBranch(dir) {
 
 // ---------- SessionStart: load the procedure
 
+// The CLAUDE.md block's line for a folder where the plugin is not installed. The same text is in
+// easyone-cimientos, skills/install/assets/claude-md.md: change both together.
+const PLUGIN_LINE = "- **This plugin in this folder:** every session here needs the easyone-orchestrator plugin, and each folder (each clone) installs it on its own. If the `easyone-orchestrator:orchestrate` skill is not available, it is not installed here: tell your human in plain words and offer to install it (`claude plugin marketplace add SergioHyliacom/Orquestador`, then `claude plugin install easyone-orchestrator@hyliacom --scope project`, then restart Claude Code). Until then the guard is not protecting this session: help them read and write, but do not commit and do not push.";
+
+// A project installed with an older version lacks what the current install adds. Name what is missing.
+function installGaps() {
+  const gaps = [];
+  const probes = [[`${STATE}/me.json`, `${STATE}/me.json`], [`${STATE}/state.md`, `${STATE}/state.md`], [`${STATE}/work/x`, `${STATE}/work/`],
+    [`${STATE}/roles/x.json`, `${STATE}/roles/`], [`${STATE}/role.json`, `${STATE}/role.json`], [".claude/settings.local.json", ".claude/settings.local.json"],
+    ["backend-builder-x/x", "/*-builder-*/"]];
+  const r = spawnSync("git", ["check-ignore", "-v", "-n", "--no-index", ...probes.map(([p]) => p)], { cwd: root, encoding: "utf8" });
+  if (r.status === 0 || r.status === 1) {
+    // Each line is "<source>:<line>:<pattern>\t<path>". Only the project's .gitignore counts: a line in
+    // .git/info/exclude helps one machine, not the team.
+    const ignored = new Set(r.stdout.split(/\r?\n/).map((l) => l.match(/^(.*?):(\d+):.*\t(.*)$/))
+      .filter((m) => m && /(^|[\\/])\.gitignore$/.test(m[1])).map((m) => m[3].replace(/^"|"$/g, "")));
+    const missing = probes.filter(([p]) => !ignored.has(p)).map(([, line]) => `\`${line}\``);
+    if (missing.length) gaps.push(`in .gitignore: ${missing.join(", ")}`);
+  }
+  if (config.roles && !config.setup) gaps.push("`setup` in .orchestrator.json: the command that installs the dependencies in a fresh checkout, as in the setup line of bitbucket-pipelines.yml. A builder's worktree needs it");
+  const graphIgnore = path.join(root, ".code-review-graphignore");
+  if (existsSync(graphIgnore) && !readFileSync(graphIgnore, "utf8").includes("-builder-")) gaps.push("`*-builder-*/` in .code-review-graphignore, so the code graph does not index the builders' worktrees");
+  const claudeMd = path.join(root, "CLAUDE.md");
+  const block = existsSync(claudeMd) ? readFileSync(claudeMd, "utf8") : "";
+  if (block.includes("ORCHESTRATOR:START") && !block.includes("plugin install easyone-orchestrator@hyliacom")) {
+    gaps.push(`in the orchestrator block of CLAUDE.md, after the **Tools on this machine** line, this line: ${PLUGIN_LINE}`);
+  }
+  return gaps;
+}
+
 if (input.hook_event_name === "SessionStart") {
+  // A worker learns its job from its brief and its role's contract, not from the orchestrator's procedure.
+  if (agentType) {
+    process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
+      additionalContext: `This session is the Orca worker ${agentType}. Follow your brief and your role's contract. Do not load the orchestrate skill and do not delegate.` } }));
+    process.exit(0);
+  }
   // Detected now, from this session's environment: a harness line in the ledger can be stale.
   const orca = process.env.TERM_PROGRAM === "Orca" || Object.keys(process.env).some((k) => k.startsWith("ORCA_"));
   const harness = orca
@@ -133,8 +169,11 @@ if (input.hook_event_name === "SessionStart") {
     return existsSync(mine) && existsSync(plugin) && text(mine) !== text(plugin);
   }) : [];
   const scripts = stale.length ? ` The project's ${stale.join(" and ")} in ${config.storiesDir}/ ${stale.length > 1 ? "differ" : "differs"} from this plugin's version: tell your human once, and offer to update them through a chore/ pull request (orchestrate skill, §6.11).` : "";
+  const gaps = installGaps();
+  const install = gaps.length ? ` This project lacks what the current install adds: ${gaps.join("; ")}. Tell your human once, and offer a chore/ pull request that adds them (orchestrate skill, §6.11).` : "";
+  // A worker's role file is written right after its terminal starts, so it may not be there yet.
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: `This project uses easyone-orchestrator. Load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${scripts}` } }));
+    additionalContext: `This project uses easyone-orchestrator. If this session was started as an Orca worker to carry out a brief, none of what follows applies: follow your brief. Otherwise load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${scripts}${install}` } }));
   process.exit(0);
 }
 
@@ -231,7 +270,7 @@ function readsOnly(args) {
   return false;
 }
 
-function checkGit(args) {
+function checkGit(args, cwd) {
   // Skip global options to find the subcommand: git -C dir -c k=v push ...
   let i = 0;
   while (i < args.length && args[i].startsWith("-")) {
@@ -242,7 +281,7 @@ function checkGit(args) {
   const rest = args.slice(i + 1);
   const has = (re) => rest.some((a) => re.test(a));
   const dirArg = args.indexOf("-C") >= 0 ? path.resolve(cwd, args[args.indexOf("-C") + 1] ?? ".") : cwd;
-  if (builderRole && dirArg !== cwd && !readsOnly(args)) checkWorkspace(dirArg);
+  if (builderRole && !readsOnly(args)) checkWorkspace(dirArg);
 
   if (sub === "push") {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
@@ -284,6 +323,25 @@ function checkGit(args) {
 }
 
 const WRITERS = /^(rm|del|erase|rmdir|mv|move|cp|copy|tee|sed|truncate|remove-item|move-item|copy-item|set-content|add-content|out-file|clear-content|new-item)$/i;
+
+// The arguments a writer command may write. sed writes only in place (-i), and its script is not a file:
+// `sed -n '/Running/,/at D:/p' log` reads, and its expression must not be taken for a path.
+function writtenArgs(tokens) {
+  const args = tokens.slice(1);
+  if (!/^sed$/i.test(tokens[0])) return args;
+  if (!args.some((a) => /^--in-place/.test(a) || /^-[a-zA-Z]*i/.test(a))) return [];
+  const files = [];
+  let script = false;
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (/^(-e|-f|--expression|--file)$/.test(a)) { script = true; i++; continue; }
+    if (/^(--expression=|--file=)/.test(a)) { script = true; continue; }
+    if (a.startsWith("-")) continue;
+    if (!script) { script = true; continue; }
+    files.push(a);
+  }
+  return files;
+}
 const REMOVERS = /^(rm|del|erase|rmdir|rd|mv|move|remove-item|move-item|ri|mi)$/i;
 // The values `claude --permission-mode` accepts. Hooks can report the normal mode as "default",
 // which the CLI calls "manual".
@@ -312,6 +370,8 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
   if (gitSubs.some((c) => /\s(switch|checkout)\s/.test(c + " ")) && gitSubs.some((c) => /\scommit(\s|$)/.test(c))) {
     block("run the branch switch and the commit as separate commands.");
   }
+  // A cd earlier in the line moves where the later relative paths point: `cd apps/panel/src && echo x > a.ts`.
+  let here = cwd;
   for (const raw of cmds) {
     // Strip wrappers and VAR=value prefixes: `HUSKY=0 git commit` is still a git commit.
     let s = 0;
@@ -321,9 +381,15 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     }
     const tokens = raw.slice(s);
     if (!tokens.length) continue;
+    if (/^(cd|pushd|chdir|set-location|sl)$/i.test(tokens[0])) {
+      const dest = tokens.slice(1).find((t) => !t.startsWith("-"));
+      if (dest && dest !== "~" && !dest.startsWith("~/")) here = path.resolve(here, dest);
+      else if (dest) here = path.join(homedir(), dest.slice(1));
+      continue;
+    }
     if (isGit(tokens[0])) {
       if (readOnlyRole && !readsOnly(tokens.slice(1))) block(`${agentType} is read-only. It may only run git commands that read.`);
-      checkGit(tokens.slice(1));
+      checkGit(tokens.slice(1), here);
       continue;
     }
     // Orca workers run in orca.workerPermissionMode, or else in this session's mode, never in Orca's
@@ -348,15 +414,16 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     const bareTokens = (raw.bare ?? raw).slice(s);
     const split = bareTokens.flatMap((t) => t.split(/(>>?)/)).filter(Boolean);
     const redirTargets = split.filter((t, i) => i > 0 && /^>>?$/.test(split[i - 1])).map((t) => (raw.restore ? raw.restore(t) : t));
-    if (WRITERS.test(tokens[0])) checkPaths(tokens.slice(1), cwd);
-    if (REMOVERS.test(tokens[0])) checkPaths(/^(mv|move|move-item|mi)$/i.test(tokens[0]) ? tokens.slice(1, -1) : tokens.slice(1), cwd, true);
-    if (redirTargets.length) checkPaths(redirTargets, cwd);
+    const written = WRITERS.test(tokens[0]) ? writtenArgs(tokens) : [];
+    if (written.length) checkPaths(written, here);
+    if (REMOVERS.test(tokens[0])) checkPaths(/^(mv|move|move-item|mi)$/i.test(tokens[0]) ? tokens.slice(1, -1) : tokens.slice(1), here, true);
+    if (redirTargets.length) checkPaths(redirTargets, here);
     const notNull = (t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t);
-    const targets = [...(WRITERS.test(tokens[0]) ? tokens.slice(1).filter((t) => !t.startsWith("-")) : []), ...redirTargets].filter(notNull);
-    for (const t of targets) checkWorkspace(path.resolve(cwd, t), t);
-    for (const t of redirTargets.filter((t) => notNull(t) && !TMP_TOKEN.test(t))) checkRolePaths(relTo(toplevel(cwd) ?? root, path.resolve(cwd, t)));
+    const targets = [...written.filter((t) => !t.startsWith("-")), ...redirTargets].filter(notNull);
+    for (const t of targets) checkWorkspace(path.resolve(here, t), t);
+    for (const t of redirTargets.filter((t) => notNull(t) && !TMP_TOKEN.test(t))) checkRolePaths(relTo(toplevel(here) ?? root, path.resolve(here, t)));
     if (readOnlyRole) {
-      const outside = targets.find((t) => !key(path.resolve(cwd, t)).includes(`/${STATE}/work/`));
+      const outside = targets.find((t) => !key(path.resolve(here, t)).includes(`/${STATE}/work/`));
       if (outside) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/ (not ${outside}).`);
     }
   }
