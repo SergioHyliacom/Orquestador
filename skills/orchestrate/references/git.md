@@ -29,7 +29,7 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 - Check `git status` before staging. Unrelated changes stay out of the commit.
 - Never `--no-verify`, `reset --hard`, `clean -f` or force push. The guard blocks them.
 - Each half's locked tests live in `.orchestrator/locked/<ID>-<side>.txt`, so the two halves never touch the same list.
-- Personal files never travel: `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/` and `.orchestrator/role.json` are in `.gitignore`.
+- Personal files never travel: `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/`, `.orchestrator/roles/` and `.orchestrator/role.json` are in `.gitignore`, and so are the builders' worktrees when Orca puts them inside the repository (`/*-builder-*/`).
 
 ## Push and remote
 

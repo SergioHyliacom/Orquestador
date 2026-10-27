@@ -75,8 +75,11 @@ A gate is for a decision **you** own that blocks one Task while the rest of the 
 
 A fresh worker means a fresh terminal, not a new Git worktree.
 
-- **Writers** never share your workspace: create one with `orca worktree create --name <role>-<scope> --setup run --json` (no `--agent`). One worktree per writer, and the branch rules of `references/git.md` apply inside it.
-- **Read-only roles** (`reviewer`, `researcher`, `auditor`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout.
+- **Writers** never share your workspace: create one with `orca worktree create --name <role>-<scope> --base-branch <the base references/git.md names for its branch> --setup run --json` (no `--agent`). Without `--base-branch`, Orca starts it from the repository's default base. One worktree per writer, and the branch rules of `references/git.md` apply inside it. Before its first dispatch, settle three things Orca does not:
+  1. **Where it is.** Orca puts it in the repository's configured worktree location, which can be inside your checkout (`<repo>/<role>-<scope>/`). There `git status` lists it as untracked, and the code graph could index it. The install ignores `/*-builder-*/` in `.gitignore`; if `git status` still shows the folder, add it to `.git/info/exclude` and tell your human the `.gitignore` line is missing (a `chore/` pull request).
+  2. **Its branch.** Orca names the branch `<git user>/<name>`, not as `references/git.md` does. Rename it: `git -C <worktree> branch -m <Orca's branch> <the branch>` (`story/<ID>-back`, `chore/<slug>`…). When that branch already exists (a reopened half; `story/<ID>` itself for a one-side story), switch the worktree to it instead, `git -C <worktree> switch <the branch>`, and delete Orca's with `git -C <worktree> branch -d <Orca's branch>`. Git refuses the switch while your own checkout is on that branch: move yours off it first.
+  3. **Its dependencies.** `--setup run` runs only the setup hooks the repository defines in Orca; it installs no dependencies. Run `.orchestrator.json` → `setup` in the worktree (`cd <worktree> && <setup>`) and wait for it to pass: without it the builder's lint, typecheck and tests fail on what is not installed. If the key is missing, use the setup line of `bitbucket-pipelines.yml`, and tell your human that `setup` belongs in `.orchestrator.json`.
+- **Read-only roles** (`reviewer`, `researcher`, `auditor`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout. Their terminal's role file keeps them read-only in your checkout (**The guard**).
 - **Folder workspaces are first-class.** When the workspace is a folder, there is no worktree lineage and no branch: `git.md` does not apply, and the story's evidence is the verification commands alone. Say so in the close report.
 - **Name the work:** the terminal's `--title` and the `--task-title` are both `<role>-<scope>`.
 - Pass a model only when the human named one: put `--model <id>` in the `claude` command.
@@ -87,6 +90,7 @@ A fresh worker means a fresh terminal, not a new Git worktree.
 
 ```
 orca terminal create --worktree <current | the writer's worktree> --title "<role>-<scope>" --command "claude --permission-mode <worker mode>" --json
+# now write <that workspace>/.orchestrator/roles/<the handle it returned>.json (The guard)
 orca terminal wait --terminal <handle> --for tui-idle --timeout-ms 60000 --json
 orca orchestration worker-start --terminal <handle> --worktree <same selector> --spec "<the brief>" --task-title "<role>-<scope>" --json
 ```
@@ -139,21 +143,23 @@ What a real run taught:
 
 ## The guard
 
-`hooks/guard.mjs` reads the role from the hook's `agent_type`, which exists only for Agent-tool subagents. **An Orca worker is a full Claude Code session: `agent_type` is empty there.** Without a declared role, the read-only roles stop being read-only and a builder stops being held to its side and to red-to-green — silently. The git rules and the locked acceptance tests still apply, because those do not depend on the role.
+`hooks/guard.mjs` reads the role from the hook's `agent_type`, which exists only for Agent-tool subagents. **An Orca worker is a full Claude Code session: `agent_type` is empty there.** Without a declared role, the read-only roles stop being read-only and a builder stops being held to its side, to its workspace and to red-to-green — silently. The git rules and the locked acceptance tests still apply, because those do not depend on the role.
 
-So, for every Orca worker, before you dispatch it:
+So, for every Orca worker, right after `orca terminal create` and before `worker-start`:
 
-1. Write `<the worker's workspace>/.orchestrator/role.json`:
+1. Write `<the worker's workspace>/.orchestrator/roles/<its terminal handle>.json`: in the writer's worktree, or in your own checkout for a read-only role on `--worktree current`.
 
 ```json
 { "role": "backend-builder", "scope": "EO-123", "workspace": "<absolute path of that workspace>" }
 ```
 
-The guard reads it when `agent_type` is empty, checks that `workspace` is the workspace it is running in, and then applies the same role rules — plus the builder's stop checks for its role, on the worker's `Stop` instead of `SubagentStop`.
+The guard runs in the worker's session and finds the file named after its own terminal (`ORCA_TERMINAL_HANDLE`). It checks that `workspace` is the workspace it runs in, then applies the role's rules, plus the builder's stop checks on the worker's `Stop` instead of `SubagentStop`. Your own terminal has no file, so a read-only worker in your checkout never binds you. No role can change or delete these files; the folder is in `.gitignore`.
 
-2. **Never write it into your own workspace.** It would apply those rules to you. That is the second reason a writer gets its own workspace.
-3. Delete it when you release the worker.
-4. A workspace whose root has no `.orchestrator.json` is unguarded. Do not place a writer there.
+2. When you reuse a terminal for a Dispatch of another role, rewrite its file first. Delete it when you release the worker.
+3. A workspace whose root has no `.orchestrator.json` is unguarded. Do not place a writer there.
+4. A builder writes only inside its own workspace. Outside it, only its report under `.orchestrator/work/` and scratch files in the temporary folder. Where Orca puts the worktree inside your checkout, `../` is your checkout: the guard blocks it.
+
+Older projects declared a worker in `<workspace>/.orchestrator/role.json`. The guard still reads it in a linked worktree, never in the main checkout; write the per-terminal file instead.
 
 ## Prove it once per project
 

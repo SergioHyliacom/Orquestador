@@ -6,6 +6,7 @@
 
 import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -52,22 +53,32 @@ const git = config.git ?? {};
 const protectedBranches = git.protectedBranches ?? ["main", git.integrationBranch ?? "develop"];
 const broadAddBlocked = git.blockBroadAdd !== false;
 // The role of this session. A Claude Code subagent carries it in agent_type. An Orca worker is a
-// whole session and carries none, so the orchestrator declares it in the worker's own workspace.
+// whole session and carries none, so the orchestrator declares it for the worker's terminal, in
+// .orchestrator/roles/<ORCA_TERMINAL_HANDLE>.json of the workspace the worker runs in. Keyed by the
+// terminal, it also holds for the read-only roles that share the orchestrator's checkout, and it never
+// gags the orchestrator: its own terminal has no file.
+function readRole(file) {
+  let role;
+  try { role = JSON.parse(stripBom(readFileSync(file, "utf8"))); }
+  catch (e) { block(`${path.relative(root, file).split(path.sep).join("/")} is not valid JSON (${e.message}). Fix it or delete it.`); }
+  // A copy that travelled with the branch names someone else's workspace. Ignore it.
+  if (role.workspace && path.resolve(role.workspace) !== root) return "";
+  return String(role.role ?? "");
+}
+
 function declaredRole() {
+  const handle = process.env.ORCA_TERMINAL_HANDLE;
+  const byTerminal = handle && /^[\w.-]+$/.test(handle) ? path.join(root, STATE, "roles", `${handle}.json`) : null;
+  if (byTerminal && existsSync(byTerminal)) return readRole(byTerminal);
+  // The older declaration, .orchestrator/role.json, names the whole workspace. In the main checkout it
+  // would gag the orchestrator, so only a linked worktree, or a workspace with no git, can be a worker's own.
   const file = path.join(root, STATE, "role.json");
   if (!existsSync(file)) return "";
-  // A role file in the main checkout would gag the orchestrator. Only a linked worktree, or a
-  // workspace with no git at all, can be a worker's own.
   try {
     const gitDir = execFileSync("git", ["rev-parse", "--absolute-git-dir"], { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim();
     if (!gitDir.split(path.sep).join("/").includes("/worktrees/")) return "";
   } catch { /* folder workspace: nothing to compare, trust the file */ }
-  let role;
-  try { role = JSON.parse(stripBom(readFileSync(file, "utf8"))); }
-  catch (e) { block(`${STATE}/role.json is not valid JSON (${e.message}). Fix it or delete it.`); }
-  // A copy that travelled with the branch names someone else's workspace. Ignore it.
-  if (role.workspace && path.resolve(role.workspace) !== root) return "";
-  return String(role.role ?? "");
+  return readRole(file);
 }
 
 const agentType = String(input.agent_type ?? "") || declaredRole();
@@ -87,6 +98,10 @@ const relTo = (base, p) => key(path.relative(base, path.resolve(base, p)));
 const LOCK_REL = key(`${STATE}/locked-tests.txt`);
 const LOCK_DIR_REL = key(`${STATE}/locked`);
 const isLockList = (rel) => rel === LOCK_REL || rel === LOCK_DIR_REL || rel.startsWith(LOCK_DIR_REL + "/");
+// The orchestrator declares each worker's role (declaredRole). No role may change or remove a declaration.
+const ROLES_REL = key(`${STATE}/roles`);
+const isRoleFile = (rel) => rel === key(`${STATE}/role.json`) || rel === ROLES_REL || rel.startsWith(ROLES_REL + "/");
+const holdsRoles = (rel) => rel === "" || ROLES_REL.startsWith(rel + "/");
 const lockFiles = [path.join(root, STATE, "locked-tests.txt"),
   ...(existsSync(path.join(root, STATE, "locked")) ? readdirSync(path.join(root, STATE, "locked")).filter((f) => f.endsWith(".txt")).map((f) => path.join(root, STATE, "locked", f)) : [])];
 const lockedPaths = lockFiles.filter((f) => existsSync(f))
@@ -125,10 +140,25 @@ if (input.hook_event_name === "SessionStart") {
 
 // ---------- PreToolUse: file edits
 
+// A builder works in its own workspace. Outside it, it writes only its report (.orchestrator/work/) and
+// scratch files in the temporary folder: anything else would land in another checkout, out of reach
+// of its stop checks. Orca may put a builder's worktree inside the main checkout, so ../ is that checkout.
+const TMP = key(path.resolve(tmpdir()));
+const TMP_TOKEN = /^(\/tmp\/|\$\{?(TMPDIR|TMP|TEMP)\}?[\\/]|\$env:(TMP|TEMP)[\\/])/i;
+function checkWorkspace(absolute, token = "") {
+  if (!builderRole) return;
+  const r = path.relative(root, absolute);
+  if (r !== ".." && !r.startsWith(".." + path.sep) && !path.isAbsolute(r)) return;
+  const k = key(absolute);
+  if (k.includes(`/${key(STATE)}/work/`) || k === TMP || k.startsWith(TMP + "/") || TMP_TOKEN.test(token)) return;
+  block(`${agentType} works only in its own workspace, ${root}. ${absolute} is outside it: report what needs to change there instead.`);
+}
+
 // A builder stays on its side of the contract: it edits only the paths its role lists.
 function checkRolePaths(rel) {
   const allowed = roleConfig.paths;
   if (!builderRole || !Array.isArray(allowed) || !allowed.length) return;
+  // Outside the workspace, checkWorkspace has already decided.
   if (rel.startsWith("..") || rel.startsWith(`${key(STATE)}/work/`)) return;
   if (!allowed.some((a) => rel === key(a).replace(/\/$/, "") || rel.startsWith(key(a).replace(/\/$/, "") + "/"))) {
     block(`${agentType} edits only ${allowed.join(", ")}. ${rel} is outside its side of the contract: report what the other side needs to change.`);
@@ -136,9 +166,11 @@ function checkRolePaths(rel) {
 }
 
 function checkFileWrite(rel, absolute) {
+  checkWorkspace(absolute);
   if (locked.has(rel)) block(`${rel} is a locked acceptance test. Report the problem instead of changing the test; only the orchestrator unlocks it, on the product owner's request.`);
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
+  if (inSubagent && isRoleFile(rel)) block("roles cannot change the role declarations. Only the orchestrator writes them.");
   if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
   checkRolePaths(rel);
   if (readOnlyRole && !key(absolute).includes(`/${STATE}/work/`)) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/.`);
@@ -210,6 +242,7 @@ function checkGit(args) {
   const rest = args.slice(i + 1);
   const has = (re) => rest.some((a) => re.test(a));
   const dirArg = args.indexOf("-C") >= 0 ? path.resolve(cwd, args[args.indexOf("-C") + 1] ?? ".") : cwd;
+  if (builderRole && dirArg !== cwd && !readsOnly(args)) checkWorkspace(dirArg);
 
   if (sub === "push") {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
@@ -266,6 +299,7 @@ function checkPaths(tokens, dir, removes = false) {
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
     if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
     if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
+    if (inSubagent && (isRoleFile(rel) || (removes && holdsRoles(rel)))) block("roles cannot change the role declarations. Only the orchestrator writes them.");
     if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
     if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   }
@@ -317,10 +351,11 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     if (WRITERS.test(tokens[0])) checkPaths(tokens.slice(1), cwd);
     if (REMOVERS.test(tokens[0])) checkPaths(/^(mv|move|move-item|mi)$/i.test(tokens[0]) ? tokens.slice(1, -1) : tokens.slice(1), cwd, true);
     if (redirTargets.length) checkPaths(redirTargets, cwd);
-    for (const t of redirTargets.filter((t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t))) checkRolePaths(relTo(toplevel(cwd) ?? root, path.resolve(cwd, t)));
+    const notNull = (t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t);
+    const targets = [...(WRITERS.test(tokens[0]) ? tokens.slice(1).filter((t) => !t.startsWith("-")) : []), ...redirTargets].filter(notNull);
+    for (const t of targets) checkWorkspace(path.resolve(cwd, t), t);
+    for (const t of redirTargets.filter((t) => notNull(t) && !TMP_TOKEN.test(t))) checkRolePaths(relTo(toplevel(cwd) ?? root, path.resolve(cwd, t)));
     if (readOnlyRole) {
-      const targets = [...(WRITERS.test(tokens[0]) ? tokens.slice(1).filter((t) => !t.startsWith("-")) : []), ...redirTargets]
-        .filter((t) => !/^&?\d*$/.test(t) && !/^\/dev\/null$|^\$null$|^nul$/i.test(t));
       const outside = targets.find((t) => !key(path.resolve(cwd, t)).includes(`/${STATE}/work/`));
       if (outside) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/ (not ${outside}).`);
     }

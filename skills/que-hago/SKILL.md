@@ -28,6 +28,8 @@ Read all of this before you say anything. Run the independent reads in parallel.
 
    Without a token, skip this and say so once.
 6. **The ledger.** `.orchestrator/state.md`: what this session left half done last time.
+7. **Audit work,** for a developer. In the audits on the integration branch (`git ls-tree --name-only origin/<integration branch> docs/audits/`, then `git show origin/<integration branch>:<file>`): the accepted findings whose `Lado` is their side and whose `Estado` is `pendiente` (`orchestrate` skill, §10, step 6).
+8. **Set-up work.** If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it as well. It says what to add about the foundations and their audit.
 
 ## 2. Decide what is next
 
@@ -49,9 +51,10 @@ Take the first rule that applies. The rest become the other lines of your answer
 | Integration, assigned to them | Integrate, set the markers, the risk review, or the final pull request (§6.5–§6.8) |
 | Visual review, assigned to them as designer | Look at the screenshots: approved, or what to change (§6.6) |
 
-5. **Nothing of theirs.** The first available card of their side; offer to take it, which puts them in their side's field. Before development opens (`.orchestrator.json` has no `roles`), a developer has nothing to build yet: say in one line that development opens when the technical leads finish setting the project up, and offer to write a story with no screen (§6.1). If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it and follow it instead of this line.
-6. **Their requests to others older than a day.** Offer to remind the person with a comment, with their ok on the text.
-7. **A delivery ready for its audit**, once (`orchestrate` skill, §1).
+5. **Audit preventions of their side,** pending since an audit: offer to build the first one, on `chore/audit-<delivery>-<back | front>` (`orchestrate` skill, §10, step 4).
+6. **Nothing of theirs.** The first available card of their side; offer to take it, which puts them in their side's field. Before development opens (`.orchestrator.json` has no `roles`), a developer has nothing to build yet: say in one line that development opens when the technical leads finish setting the project up, and offer to write a story with no screen (§6.1). A technical lead with `estado` (§1, item 8) gets its lines instead of this one.
+7. **Their requests to others older than a day.** Offer to remind the person with a comment, with their ok on the text.
+8. **A delivery ready for its audit**, once (`orchestrate` skill, §1). The foundations' audit comes from `estado`.
 
 ## 3. Tell them
 

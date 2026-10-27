@@ -1,6 +1,7 @@
 {
   "language": "{{LANGUAGE: ISO code, e.g. es}}",
   "storiesDir": "{{STORIES_DIR: e.g. product}}",
+  "setup": "{{COMMAND: installs the dependencies in a fresh checkout, the same as the pipeline's setup line, e.g. pnpm install --frozen-lockfile && go mod download}}",
   "verify": {
     "all": ["{{FULL_VERIFICATION_COMMANDS: Go and TypeScript lint, typecheck, test, build}}"],
     "mutation": "{{OPTIONAL: mutation command for the changed files; remove if the project has none}}"
