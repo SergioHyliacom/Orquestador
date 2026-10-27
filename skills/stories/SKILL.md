@@ -25,7 +25,7 @@ Stories have no priority field. The release sets the order. The first release in
 - ID: the story's **Jira key**, e.g. `EO-123`. Create the Jira card first and use its key; the same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
 - Author: design writes every story with a screen. A story with no screen can be written by the developer who understands it, backend or frontend.
-- Approval: the story's pull request. At least one person other than its author approves it; then the author or that person merges it.
+- Approval: the story's pull request. By default another person of design reviews it; its author may also merge it alone, and the kickoff returns it when a criterion cannot be built (`orchestrate` skill, §6.1 and §6.2).
 - Tags: `tags` holds the risk tags (`.orchestrator.json` → `riskTags`) of the areas the story touches. Whoever writes the story sets them; a developer adds one at the kickoff when the story touches an area it does not name. A risk tag adds the reviewer at story close.
 - Sides: the `sides` field lists the halves the story has: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
 - Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story uses, existing or new. Design leaves it empty. The developers fill it at the kickoff, and the validator checks that each one is in the spec.
@@ -38,7 +38,7 @@ Sections, in order (the project uses its translated headings):
 2. **Acceptance criteria**: see below.
 3. **Out of scope**: what this story does not do, with the story ID that does it if one exists. Agents add unrequested features when nothing excludes them.
 4. **Verification**: the exact command that checks this story.
-5. **Open questions**: must be empty before the story is built.
+5. **Open questions**: must be empty before the story is built. The kickoff writes here what it cannot build, one line per criterion ID, and the story goes back to design until they are answered and the section is empty again.
 6. **Notes**: optional. Files to follow as patterns, context for the builder. Never restate the Definition of Done, the project conventions or the rules in `docs/rules/`.
 
 ## Acceptance criteria
@@ -127,7 +127,7 @@ Never split by layer ("API for…", "database for…", "front end of…"). A lay
 4. Add key examples where a rule is ambiguous.
 5. Fill out-of-scope and verification. Link the Figma frames in `screens`.
 6. Run `node <storiesDir>/stories.mjs --ready <ID>`.
-7. The story enters the integration branch through a pull request, which at least one person other than its author approves. Merging it is the approval: from then on it is the developers' turn.
+7. The story enters the integration branch through a pull request: another person approves it, or its author merges it alone. Merging it is the approval: from then on it is the developers' turn.
 
 ## From a Figma design
 

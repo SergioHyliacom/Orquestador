@@ -351,7 +351,7 @@ if (flag("--summary")) {
 
 if (flag("--json")) {
   finish(JSON.stringify({
-    stories: stories.map((st) => { const { secs, ...s } = st; return { ...s, ready: readyProblems(st) }; }),
+    stories: stories.map((st) => { const { secs, ...s } = st; return { ...s, openQuestions: Boolean(meaningful(section(secs, "openQuestions"))), ready: readyProblems(st) }; }),
     decisions: [...decisions.values()], errors, warnings,
   }, null, 2), errors.length ? 1 : 0);
 }

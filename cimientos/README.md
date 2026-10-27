@@ -45,7 +45,7 @@ Mientras tanto, a los desarrolladores que no llevan los cimientos su sesión sol
 
 **Flujo de Jira:** cada estado tiene que poder recibir tarjetas desde cualquier otro («allow all statuses to transition to this one»), porque el pipeline mueve las tarjetas en los dos sentidos: una historia reabierta sale de Hecha, y una descartada sale de cualquier etapa.
 
-**Ajustes de Bitbucket** (los aplica una persona; la lista está en `skills/orchestrate/references/git.md` del plugin del equipo): `main` y `develop` sin push directo, sin borrado y sin reescritura; para fusionar, 1 aprobación, sin cambios pedidos, sin tareas abiertas y con el build en verde; a `main` solo fusionan las personas autorizadas; estrategia por defecto, Merge commit. Los PR los abre y los fusiona la sesión por la API, con la estrategia correcta para cada uno.
+**Ajustes de Bitbucket** (los aplica una persona; la lista está en `skills/orchestrate/references/git.md` del plugin del equipo): `main` y `develop` sin push directo, sin borrado y sin reescritura; para fusionar, 1 aprobación, sin cambios pedidos, sin tareas abiertas y con el build en verde (sin Premium solo avisa, y así el autor de una historia puede fusionar su PR `design/<ID>` sin aprobación); a `main` solo fusionan las personas autorizadas; estrategia por defecto, Merge commit. Los PR los abre y los fusiona la sesión por la API, con la estrategia correcta para cada uno.
 
 ## Versiones
 

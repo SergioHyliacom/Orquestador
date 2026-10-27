@@ -94,7 +94,8 @@ function storyBranchStage(id) {
 }
 
 // ---------- What this push proves: [{ id, stage, why, mode, ahead, holdVisual, sides, open }].
-// mode "forward" never moves a card back; only "set" with ahead moves a card out of Done.
+// mode "forward" never moves a card back; only "set" with ahead moves a card out of Done. "fromDesign" moves a
+// card only out of Design, and "toDesign" only from Contract back to Design.
 
 const plan = [];
 let m;
@@ -115,6 +116,9 @@ if ((m = branch.match(/^story\/([A-Z][A-Z0-9]+-\d+)-(back|front)$/))) {
   for (const s of state.stories) {
     if (s.discarded) plan.push({ id: s.id, stage: "discarded", why: `the story is discarded on ${INTEGRATION}`, mode: "set" });
     else if (verified(s) && !reopened(s)) plan.push({ id: s.id, stage: "done", why: `every criterion is verified on ${INTEGRATION}`, mode: "forward" });
+    // The kickoff returns a story it cannot build by writing what is missing in its open questions: the card goes
+    // back from Contract to Design, to the designer. Design answers by emptying them, and the card comes back.
+    else if (s.openQuestions) plan.push({ id: s.id, stage: "design", why: `the story on ${INTEGRATION} has open questions: the kickoff returned it`, mode: "toDesign" });
     else plan.push({ id: s.id, stage: "contract", why: `the story is on ${INTEGRATION}: design approved it`, mode: "fromDesign", sides: s.sides });
   }
 } else {
@@ -168,7 +172,8 @@ for (const p of plan) {
       || (current === "done" && !p.ahead && p.stage !== "discarded")
       || (p.holdVisual && current === "visual")
       || (p.mode === "forward" && FLOW.indexOf(current) > FLOW.indexOf(p.stage))
-      || (p.mode === "fromDesign" && current !== "design");
+      || (p.mode === "fromDesign" && current !== "design")
+      || (p.mode === "toDesign" && current !== "contract");
     let stage = current;
     if (skip) { if (current !== p.stage && p.mode !== "fromDesign") console.log(`${p.id}: stays ${currentName} (${p.why}).`); }
     else if (DRY) { console.log(`${p.id}: would move ${currentName} → ${label(p.stage)} (${p.why})`); continue; }

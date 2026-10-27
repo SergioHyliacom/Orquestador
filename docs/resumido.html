@@ -146,9 +146,9 @@ claude plugin install easyone-orchestrator@hyliacom --scope project</div>
   <h2>La vida de una historia</h2>
   <ol class="flow">
     <li><span class="n">1</span><div><b>Diseño escribe la historia</b><span class="who w-design">Diseño</span>
-      <span class="ask">Claude lee el Figma, propone las historias y escribe cada una. Te pregunta: <b>«¿Esta lista está bien?»</b> y <b>«¿Creo la tarjeta con este texto?»</b> Otra persona aprueba la historia.</span></div></li>
+      <span class="ask">Claude lee el Figma, propone las historias y escribe cada una. Te pregunta: <b>«¿Esta lista está bien?»</b> y <b>«¿Creo la tarjeta con este texto?»</b> La revisa otra persona de diseño; si la ves bien, puedes fusionarla tú sin esperar.</span></div></li>
     <li><span class="n">2</span><div><b>Arranque</b><span class="who w-back">Backend</span>
-      <span class="ask">Lo hace la persona de backend de la tarjeta; si no tiene, la de frontend. Claude lee la historia y te propone qué lados toca y si cambia la API. Te pregunta: <b>«¿Es así?»</b></span></div></li>
+      <span class="ask">Lo hace la persona de backend de la tarjeta; si no tiene, la de frontend. Claude lee la historia y te propone qué lados toca y si cambia la API. Te pregunta: <b>«¿Es así?»</b> Si un criterio no se puede construir tal como está, Claude escribe lo que falta en «Preguntas abiertas» y la historia vuelve a diseño.</span></div></li>
     <li><span class="n">3</span><div><b>Contrato, solo si cambia la API</b><span class="who w-back">Backend</span><span class="who w-front">Frontend</span>
       <span class="ask">Claude de backend escribe la propuesta de endpoints y te pregunta si la manda. A frontend le llega como petición: <b>sí, no o «hablamos»</b>. Sin reunión obligatoria.</span></div></li>
     <li><span class="n">4</span><div><b>Desarrollo</b><span class="who w-back">Backend</span><span class="who w-front">Frontend</span>

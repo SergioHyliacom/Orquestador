@@ -39,14 +39,14 @@ Take the first rule that applies. The rest become the other lines of your answer
 2. **Requests to them.** They are holding someone else up.
 3. **Pull requests:**
    - review another person's pull request;
-   - merge one of theirs that is approved (`orchestrate` skill, §6.8);
+   - merge one of theirs that is approved (`orchestrate` skill, §6.8), or a story of theirs they want to merge alone (§6.1);
    - fix one of theirs with changes requested or a red build.
 4. **Their cards, by stage:**
 
 | Stage | What is next for them |
 |---|---|
-| Design, they are the reporter | Go on writing the story, or open its pull request (§6.1) |
-| Contract, assigned to them | The kickoff (§6.2), or the contract proposal waiting for an answer |
+| Design, they are the reporter | Go on writing the story, or open its pull request (§6.1). A story the kickoff returned: answer its open questions (§6.2) |
+| Contract, assigned to them | Read the story, then the kickoff, or return it to design when a criterion cannot be built (§6.2); or the contract proposal waiting for an answer |
 | Build, their side open | The next criterion (§6.3), or the ok on the finished half (§6.4) |
 | Integration, assigned to them | Integrate, set the markers, the risk review, or the final pull request (§6.5–§6.8) |
 | Visual review, assigned to them as designer | Look at the screenshots: approved, or what to change (§6.6) |

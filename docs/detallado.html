@@ -251,7 +251,7 @@
       <h3>Diseño</h3><div class="who"><span class="tag t-design">Diseño</span> <span class="tag t-back">Desarrollo si no hay pantalla</span></div>
       <dl><dt>Qué pasa</dt><dd>Claude lee el diseño en Figma y propone las historias; crea la tarjeta y escribe cada historia con sus estados y los enlaces a Figma</dd>
       <dt>Rama</dt><dd><code>design/EO-123</code></dd>
-      <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación. Lo aprueba al menos una persona distinta de quien lo crea <span class="human">· humano</span></dd></dl></div>
+      <dt>Avanza cuando</dt><dd>El PR de la historia entra en <code>develop</code>: es la aprobación. Lo revisa otra persona de diseño, o lo fusiona su autor si la ve bien <span class="human">· humano</span>. Vuelve aquí si el arranque la devuelve con preguntas abiertas</dd></dl></div>
     <div class="stage"><div class="bar" style="background:linear-gradient(90deg,var(--back) 50%,var(--front) 50%)"></div>
       <h3>Contrato</h3><div class="who"><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span></div>
       <dl><dt>Qué pasa</dt><dd>Arranque: lo hace la persona de Backend de la tarjeta (la de Frontend si no hay) y anota qué lados tiene la historia. <b>Solo si cambia la API</b>, backend propone el contrato por escrito en la tarjeta y frontend responde sí, no o «hablamos»</dd>
@@ -286,7 +286,7 @@
     <div class="astep"><span class="n" style="background:var(--design)">3</span><div><b class="t">La diseñadora confirma la lista</b>Qué historias salen, cómo se dividen y a qué actividad pertenece cada una.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">4</span><div><b class="t">Claude crea la tarjeta en Jira</b>Con el ok de la diseñadora sobre el texto. Lleva solo el título, la frase «Como… quiero… para…» y el enlace a Figma. <b>Nunca los criterios</b>: viven en el fichero. Su clave es el ID: <code>EO-123</code>.</div></div>
     <div class="astep"><span class="n" style="background:var(--design)">5</span><div><b class="t">Claude escribe la historia</b>En <code>design/EO-123</code>, con los enlaces a las pantallas de Figma en <code>screens</code>. La pasa por <code>--ready</code> hasta que está lista.</div></div>
-    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>, que Claude abre con un revisor distinto de ti y con el enlace al fichero en la tarjeta. Cuando está aprobado, tu «qué hago» te lo dice y Claude lo fusiona con tu ok. Cuando entra, la tarjeta pasa a Contrato.</div></div>
+    <div class="astep"><span class="n" style="background:var(--design)">6</span><div><b class="t">PR y aprobación</b>Push y PR a <code>develop</code>, que Claude abre con un revisor distinto de ti (por defecto, otra persona de diseño) y con el enlace al fichero en la tarjeta. Puedes fusionarlo ya, si la ves bien, o esperar a la revisión; Claude lo fusiona con tu ok. Cuando entra, la tarjeta pasa a Contrato. Si el arranque encuentra un criterio que no se puede construir, lo escribe en «Preguntas abiertas» y la tarjeta vuelve a ti.</div></div>
   </div>
   <p style="margin:10px 0 0;font-size:13.5px;color:var(--muted)">Si después cambian el título o la frase, Claude actualiza la tarjeta con tu ok; nada más de la historia va a Jira. El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave.</p>
   <h3 style="margin:22px 0 8px;font-size:16px">No todas las historias tienen las dos mitades</h3>
@@ -304,7 +304,7 @@
   <h3 style="margin:22px 0 8px;font-size:16px">Ejemplo: una historia solo de backend, columna a columna</h3>
   <p style="margin:0 0 10px;font-size:14px;color:var(--muted)"><b>EO-140 · Las facturas rectificativas usan su propia serie.</b> Cambia una regla, no la API, y no tiene pantalla.</p>
   <div class="walk">
-    <div class="cell"><b>Diseño</b>La escribe un desarrollador, porque es técnica. Su PR a <code>develop</code> lo aprueba al menos otra persona</div>
+    <div class="cell"><b>Diseño</b>La escribe un desarrollador, porque es técnica. Su PR a <code>develop</code> lo revisa la persona de Backend, o lo fusiona su autor</div>
     <div class="cell"><b>Contrato</b>Arranque: crea <code>story/EO-140</code> con <code>sides: [back]</code> y sin endpoints. Sin reunión: pasa en minutos</div>
     <div class="cell"><b>Desarrollo</b>Sin rama de mitad: se trabaja en <code>story/EO-140</code>. Un criterio cada vez; tu ok en el primero y al terminar</div>
     <div class="cell"><b>Integración</b>El backend bloquea sus tests, pasan todos y pone los marcadores. La tarjeta espera aquí el merge</div>
@@ -323,7 +323,7 @@
   </div>
 
   <h3 class="sub">Descartar una historia</h3>
-  <p class="note">Es una decisión de producto. Quien la toma crea <code>design/EO-123</code> desde <code>develop</code>, pone <code>discarded: true</code> y el motivo, y abre el PR, que aprueba otra persona. Cuando entra, el pipeline mueve la tarjeta a <b>Descartada</b>, esté donde esté. La rama de la historia y sus mitades no se fusionan nunca (tienen trabajo sin terminar): se borran después, y las listas de bloqueo que solo vivían en ellas, también. Si la historia ya estaba hecha, su código, sus tests y sus listas de bloqueo siguen en <code>develop</code>; quitarlos es una tarea aparte, que desbloquea sus tests antes de borrarlos.</p>
+  <p class="note">Es una decisión de producto. Quien la toma crea <code>design/EO-123</code> desde <code>develop</code>, pone <code>discarded: true</code> y el motivo, y abre el PR, que aprueba otra persona o fusiona su autor. Cuando entra, el pipeline mueve la tarjeta a <b>Descartada</b>, esté donde esté. La rama de la historia y sus mitades no se fusionan nunca (tienen trabajo sin terminar): se borran después, y las listas de bloqueo que solo vivían en ellas, también. Si la historia ya estaba hecha, su código, sus tests y sus listas de bloqueo siguen en <code>develop</code>; quitarlos es una tarea aparte, que desbloquea sus tests antes de borrarlos.</p>
 </section>
 
 <!-- 3 -->
@@ -446,7 +446,7 @@
   </div>
   <ol class="steps">
     <li><span class="n" style="background:var(--design)">1</span><div><span class="tag t-design">Diseño</span> Con Claude, desde Figma: crea la tarjeta y escribe la historia en su rama, con reglas, estados de cada pantalla y enlaces a Figma.<span class="st">Tarjeta en <b>Diseño</b></span></div></li>
-    <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Lo aprueba al menos otra persona. Cuando entra, la historia está aprobada.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
+    <li><span class="n" style="background:var(--design)">2</span><div><span class="tag t-design">Diseño</span> Abre un PR a <code>develop</code>. Lo revisa otra persona de diseño, o lo fusiona su autor si la ve bien. Cuando entra, la historia está aprobada; el arranque aún puede devolverla con preguntas abiertas.<span class="st">La tarjeta pasa a <b>Contrato</b></span></div></li>
     <li><span class="n" style="background:var(--back)">3</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Arranque: la persona de Backend de la tarjeta crea la rama de la historia y anota sus lados. Si la API cambia, backend propone el contrato en la tarjeta, frontend lo acepta y backend lo sube.<span class="st">La tarjeta pasa a <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--ink)">4</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada lado de la historia abre su mitad y avanza un criterio por commit, en paralelo.<span class="st">Sigue en <b>Desarrollo</b></span></div></li>
     <li><span class="n" style="background:var(--shared)">5</span><div><span class="tag t-back">Backend</span> <span class="tag t-front">Frontend</span> Cada uno cierra su mitad con tu ok al resumen (bloquea sus tests) y la junta en la rama de la historia.<span class="st">Con todas dentro, pasa a <b>Integración</b></span></div></li>
@@ -476,7 +476,7 @@
   <h3 class="sub">Reglas en Bitbucket</h3>
   <ul style="margin:0;padding-left:20px;font-size:14px">
     <li>Ni <code>main</code> ni <code>develop</code> admiten push directo, borrado ni reescritura del historial: todo entra por PR.</li>
-    <li>Para fusionar un PR hace falta: al menos una aprobación de otra persona (Bitbucket no deja que el autor apruebe el suyo); que no haya cambios pedidos; que no queden tareas abiertas; que el último build esté en verde (hasta la instalación, parte 2, el pipeline solo valida las historias, pero en todas las ramas, para que cada PR tenga build); en <code>main</code>, además, que la rama de origen no vaya por detrás.</li>
+    <li>Para fusionar un PR hace falta: al menos una aprobación de otra persona (Bitbucket no deja que el autor apruebe el suyo), salvo en un PR de historia (<code>design/&lt;ID&gt;</code>), que su autor puede fusionar solo; que no haya cambios pedidos; que no queden tareas abiertas; que el último build esté en verde (hasta la instalación, parte 2, el pipeline solo valida las historias, pero en todas las ramas, para que cada PR tenga build); en <code>main</code>, además, que la rama de origen no vaya por detrás.</li>
     <li>A <code>develop</code> puede fusionar cualquiera; a <code>main</code>, solo las personas autorizadas en Bitbucket.</li>
     <li>La estrategia por defecto del repositorio es <b>Merge commit</b>.</li>
     <li><b>Estas comprobaciones avisan, pero no bloquean</b>, porque el bloqueo es de Bitbucket Premium. La regla del equipo es que <b>no se fusiona un PR con una comprobación en rojo</b>. Claude tampoco lo hace: antes de fusionar comprueba que otra persona lo ha aprobado, que nadie ha pedido cambios y que el build está en verde.</li>

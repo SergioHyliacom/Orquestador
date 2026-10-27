@@ -97,7 +97,7 @@ Rules:
 
 | Stage in Jira | Whose turn | It leaves the stage when |
 |---|---|---|
-| Design | design, or a developer for a story with no screen | the story's pull request, approved by someone other than its author, merges into the integration branch. That merge is the approval |
+| Design | design, or a developer for a story with no screen | the story's pull request merges into the integration branch, approved by another person or merged by its author alone (§6.1). That merge is the approval. The card comes back here when the kickoff returns the story with open questions (§6.2) |
 | Contract | the card's Backend person, or its Frontend person when it has none; both when the API changes | `story/<ID>` exists and the spec there has every operation in the story's `operations`. The contract is agreed only when the story changes the API |
 | Build | each side in `sides`, in parallel | every side in `sides` is closed: its lock list is on `story/<ID>` (§6.4) |
 | Integration | frontend, or backend when the story has no front half | on `story/<ID>`, every criterion is `[test]` and passes, or `[unverified]` waiting for design. A story with nothing for a person to check stays here until the merge |
@@ -116,14 +116,14 @@ The Bitbucket pipeline computes the stage from the repository and moves the card
 | Request | It fits when |
 |---|---|
 | Write or change the story | the card is in Design; or the story is done and is being reopened (§6.9); a discard fits any stage (§6.10) |
-| The kickoff | the story's design pull request has merged (the card is in Contract), and your human is the card's Backend person, or its Frontend person when it has none |
+| The kickoff | the story's design pull request has merged (the card is in Contract), and your human is the card's Backend person, or its Frontend person when it has none. A criterion that cannot be built as written returns the story instead (§6.2) |
 | Change the contract | the kickoff is done, and the other side said yes to the change (§6.2) |
 | Build a criterion | the kickoff is done, the contract is on `story/<ID>` when the API changes, and the criterion is on your human's side |
 | Close the half | every criterion of your side is green on it |
 | Integrate | every side in `sides` is closed |
 | Visual review | a criterion waits for design, and your human is the designer |
 | Open the final pull request | every criterion is a passing `[test]` or a `[manual]` |
-| Merge | someone other than the author approved it, nobody asked for changes, and the build is green |
+| Merge | someone other than the author approved it, nobody asked for changes, and the build is green. A `design/<ID>` pull request: or its author merges it alone, with the build green (§6.1) |
 
 When the request does not fit, do not do it. Say in one or two lines where the story is, what is missing and which step comes first, and offer that step: "EO-123 is still in Design: its story has not been approved yet. Shall I remind the designer?" If your human insists, do it only when skipping the order breaks none of the rules below, and log it in the ledger as a ruling.
 
@@ -132,7 +132,7 @@ Whatever your human says:
 - no criterion built before the kickoff, and none against a contract the other side has not agreed;
 - no change to the contract without the other side's yes;
 - no final pull request while a criterion is not a passing `[test]` or a `[manual]`;
-- no merge without an approval from someone other than the author.
+- no merge without an approval from someone other than the author, except a `design/<ID>` pull request, which its author may merge alone (§6.1).
 
 The guard blocks the rest of what is dangerous on its own (§8).
 
@@ -142,7 +142,7 @@ Load the `stories` skill to write or change a story.
 
 Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it, backend or frontend; the steps are the same.
 
-**Who approves.** The story's pull request is the approval. At least one person other than its author approves it; then the author or that person merges it. Every pull request to the integration branch or `main` works the same way, except that only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
+**Who approves.** The story's pull request is the approval. Its reviewer is, by default, another person of design; when there is none, or a developer wrote the story, the card's Backend person. The author may also merge it alone, without waiting for the approval, when they see it right: the kickoff reads it again before anything is built, and returns it when a criterion cannot be built (§6.2). That holds only for `design/<ID>` pull requests. Every other pull request to the integration branch or `main` needs an approval from someone other than its author, and only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
 
 Design's stories start from the design project in Figma, the only home of the design: a story links its frames and never copies them. A developer's story with no screen skips steps 1 to 3.
 
@@ -152,7 +152,7 @@ Design's stories start from the design project in Figma, the only home of the de
 4. **Create the story's Jira card** in Design, after your human's ok on its text. The card carries the title, the story sentence ("As a <persona>, I want…, so that…") and the Figma link. Never the criteria: they live only in the story file (§11). Its key is the story's ID.
 5. **Write the story** with your human: the rules, the states of each screen as criteria, the Figma frame links in `screens`. Leave `operations` empty.
 6. Run `node <storiesDir>/stories.mjs --ready <ID>` until it is ready.
-7. Create `design/<ID>` from the integration branch on the remote (`git fetch`, then `git switch -c design/<ID> origin/<integration branch>`), commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Add as reviewer someone other than your human (ask who; by default the card's Backend person). When it is approved, merge it through the API on your human's ok (`references/git.md`); `que-hago` tells them when it is. When it merges, the story is the developers'.
+7. Create `design/<ID>` from the integration branch on the remote (`git fetch`, then `git switch -c design/<ID> origin/<integration branch>`), commit the story, push it (the guard asks your human to confirm) and open a pull request to the integration branch. Add to the card the link to the story file on the integration branch, which works once the pull request merges; until then, when Bitbucket is connected to Jira, the card shows the branch and the pull request by their key. Add as reviewer someone other than your human (ask who; by default another person of design, else the card's Backend person). Then ask your human whether to merge it now or wait for the review. Merge it through the API on their ok, with the build green: right away when they choose it, or once it is approved (`references/git.md`); `que-hago` tells them when it is. When it merges, the story is the developers'.
 
 If the story's title or sentence changes later, update the card in the same block of work, with your human's ok. Nothing else of the story goes to Jira.
 
@@ -166,6 +166,7 @@ Not every story changes the API. What decides it is whether the **shape** of the
 | Front only | it uses the API as it is: showing a field that already arrives, an empty state, a screen adjustment, the Hyliable editor | none | `[front]` |
 | Back only | no screen: a rule on the data, a periodic task, sending emails, an importer, correcting stored data | none, unless the API changes | `[back]` |
 
+0. **Return the story when it cannot be built as written.** Before the kickoff, the session reads the story with its human. When a criterion is ambiguous, contradicts another, lacks a state or an error, or cannot be built with what exists, do not start the kickoff: return the story to design. Create `design/<ID>` from the integration branch on the remote, write under **Open questions** what is missing, one line per criterion ID, and open its pull request with the designer as reviewer. Your human, its author, may merge it alone (§6.1). With their ok on the text, post a card comment that mentions the designer. When it merges, the pipeline moves the card back from Contract to Design, to the designer. Design answers by changing the story and emptying **Open questions** in another `design/<ID>` pull request; when it merges, the card comes back to Contract. If `story/<ID>` was already pushed with nothing but the kickoff, delete it with your human's ok.
 1. **Kickoff, by the card's Backend person** (its Frontend person when it has none: the card is assigned to them). Their session proposes the case of the table above from the story and asks them to confirm it. It creates `story/<ID>` from the integration branch on the remote (`git fetch`, then `git switch -c story/<ID> origin/<integration branch>`) and writes two fields in the story's frontmatter: `sides`, the halves it has, and `operations`, the `operationId`s it uses, existing or new. If the story touches a risk area that its `tags` do not name (`.orchestrator.json` → `riskTags`), add that tag too. They are the only edits a developer makes to a story's frontmatter. Commit (`<ID>: kickoff`) and push.
 2. **Contract, only when the story changes the API.** It is a written proposal, not a meeting. The backend session drafts the shape from the story (operations, fields, types, status codes, errors) and, with its human's ok, posts it as a card comment that mentions the Frontend person. Their session shows it to them and asks: yes, no (and what to change), or let's talk. On a yes, the backend side briefs its builder with `Change: contract` and the agreed shape, shows its human the operations it generated and, on the ok, commits on `story/<ID>` (`<ID>: contract`) and pushes.
 3. **The other side** sees the card in its `que-hago` when it reaches Build, and fetches.
@@ -257,7 +258,7 @@ When the behaviour of a done story must change, or a bug breaks one of its crite
 
 Discarding is a product call (§7). The person who decides it does it from their session, design or developer.
 
-1. **Discard it on the integration branch.** Create `design/<ID>` from the integration branch on the remote. Set `discarded: true` and add the **Discard reason** section (`stories` skill, "Discarding"). Open a pull request to the integration branch, approved by someone other than its author (§6.1). When it merges, the pipeline moves the card to Discarded from whatever stage it was in.
+1. **Discard it on the integration branch.** Create `design/<ID>` from the integration branch on the remote. Set `discarded: true` and add the **Discard reason** section (`stories` skill, "Discarding"). Open a pull request to the integration branch; like any `design/<ID>` pull request, another person approves it or its author merges it alone (§6.1). When it merges, the pipeline moves the card to Discarded from whatever stage it was in.
 2. **Delete its branches.** Never merge `story/<ID>` or its halves: they hold unfinished work. Once the discard is merged, delete them, with your human's ok (`git push origin --delete …`). The lock lists that lived only on them go with them.
 
 A story that was already done keeps its code, its tests and its lock lists on the integration branch. Removing that code is work of its own: a task (§6.11) that unlocks its tests (§6.4) before deleting them. The validator does not ask a discarded story for its tests.

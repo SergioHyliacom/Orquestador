@@ -1,6 +1,6 @@
 # Metodología y adaptación del orquestador · EASY One
 
-**Versión 2.6 · 2026-10-27.** Sustituye a la versión 1 (`propuesta.md`, sin fecha). Recoge lo decidido al llevar aquella propuesta al stack de EASY One y al plugin. La 2.1 añade dónde vive cada cosa y qué reglas se siguen (sección 8). La 2.2 añade todas las ramas, las reglas de Bitbucket, cómo se fusiona cada PR y el trabajo fuera de las historias (sección 5), y qué pasa cuando una historia hecha se reabre o una historia se descarta (sección 4). La 2.3 añade «qué hago», los campos Backend y Frontend con el asignado automático, tu ok solo en el primer criterio de cada mitad y en la mitad terminada, y los PR que abre y fusiona la sesión (secciones 4 y 5). La 2.4 quita el documento de definición: el contexto de Claude es el código que se va construyendo, y todo lo del repositorio se escribe en español (secciones 6 y 8). La 2.5 separa los cimientos en otro plugin, `easyone-cimientos`, que solo instalan los responsables técnicos: el resto del equipo empieza diciendo quién es y se pone con las historias de su departamento (secciones 6 y 10). La 2.6 quita verificaciones repetidas del bucle en pareja: en cada criterio, solo el test y las comprobaciones rápidas de su lado; la verificación completa, una vez al cerrar la mitad (sección 4). Al final hay una lista de qué cambia respecto a la v1 y por qué.
+**Versión 2.7 · 2026-10-27.** Sustituye a la versión 1 (`propuesta.md`, sin fecha). Recoge lo decidido al llevar aquella propuesta al stack de EASY One y al plugin. La 2.1 añade dónde vive cada cosa y qué reglas se siguen (sección 8). La 2.2 añade todas las ramas, las reglas de Bitbucket, cómo se fusiona cada PR y el trabajo fuera de las historias (sección 5), y qué pasa cuando una historia hecha se reabre o una historia se descarta (sección 4). La 2.3 añade «qué hago», los campos Backend y Frontend con el asignado automático, tu ok solo en el primer criterio de cada mitad y en la mitad terminada, y los PR que abre y fusiona la sesión (secciones 4 y 5). La 2.4 quita el documento de definición: el contexto de Claude es el código que se va construyendo, y todo lo del repositorio se escribe en español (secciones 6 y 8). La 2.5 separa los cimientos en otro plugin, `easyone-cimientos`, que solo instalan los responsables técnicos: el resto del equipo empieza diciendo quién es y se pone con las historias de su departamento (secciones 6 y 10). La 2.6 quita verificaciones repetidas del bucle en pareja: en cada criterio, solo el test y las comprobaciones rápidas de su lado; la verificación completa, una vez al cerrar la mitad (sección 4). La 2.7 cambia quién aprueba una historia: por defecto la revisa otra persona de diseño, su autor puede fusionarla sin esperar, y el arranque la devuelve a Diseño si un criterio no se puede construir (secciones 4 y 10). Al final hay una lista de qué cambia respecto a la v1 y por qué.
 
 Este documento define cómo trabaja el equipo de Hyliacom (diseño, backend y frontend) para desarrollar EASY One con Claude Code, y qué se ha cambiado del plugin *Orchestrator* para conseguirlo. El plugin adaptado se llama `easyone-orchestrator`. El esquema visual para el equipo está en [`detallado.html`](detallado.html).
 
@@ -100,7 +100,8 @@ La diseñadora trabaja con su sesión de Claude. **Figma es el único sitio del 
 3. **La diseñadora confirma la lista:** qué historias salen, cómo se dividen y a qué actividad pertenece cada una.
 4. **Claude crea la tarjeta en Jira**, con el ok de la diseñadora sobre el texto. La tarjeta lleva solo el título, la frase «Como… quiero… para…» y el enlace a Figma. **Nunca los criterios:** viven en el fichero. Su clave es el ID.
 5. **Claude escribe la historia** en `design/EO-123`, con los enlaces a las pantallas de Figma en `screens`, y la pasa por `--ready` hasta que está lista.
-6. **PR y aprobación.** Push y PR a `develop`, que Claude abre con un revisor distinto de ti (por defecto, la persona de Backend) y con el enlace al fichero de la historia en la tarjeta. Cuando está aprobado, tu «qué hago» te lo dice y Claude lo fusiona con tu ok.
+6. **PR y aprobación.** Push y PR a `develop`, que Claude abre con un revisor distinto de ti (por defecto, otra persona de diseño; si no hay, la de Backend) y con el enlace al fichero de la historia en la tarjeta. Claude te pregunta si lo fusiona ya o esperas a la revisión: si ves la historia bien, puedes fusionarla sin esperar. Si esperas, tu «qué hago» te avisa cuando está aprobado.
+7. **El arranque puede devolverla.** Antes de empezar, backend lee la historia. Si un criterio no se puede construir tal como está (ambiguo, contradictorio, le falta un estado o un error), escribe lo que falta en sus «Preguntas abiertas» y la tarjeta vuelve sola a Diseño, a ti. Respondes cambiando la historia y vaciando esa sección, y la tarjeta vuelve a Contrato.
 
 Si después cambian el título o la frase, Claude actualiza la tarjeta con el ok de la diseñadora; nada más de la historia va a Jira. El enlace al fichero apunta a la rama de integración, así que funciona cuando el PR entra. Mientras tanto, si Bitbucket está conectado con Jira, la rama y el PR salen en la propia tarjeta, porque llevan la clave. La historia de un desarrollador sin pantalla se salta los pasos 1 a 3.
 
@@ -116,7 +117,7 @@ La pregunta clave es: **¿cambia la forma de la API?** Es decir, sus endpoints, 
 
 **Ejemplo, EO-140 · «Las facturas rectificativas usan su propia serie».** Cambia una regla, no la API, y no tiene pantalla:
 
-1. **Diseño:** la escribe un desarrollador; su PR lo aprueba al menos otra persona.
+1. **Diseño:** la escribe un desarrollador; su PR lo revisa la persona de Backend, o lo fusiona su autor si la ve bien.
 2. **Contrato:** arranque con `sides: [back]` y sin endpoints; pasa en minutos.
 3. **Desarrollo:** sin rama de mitad: el backend trabaja directamente en `story/EO-140`, un criterio cada vez.
 4. **Integración:** el backend bloquea sus tests y pone los marcadores. La tarjeta espera aquí el merge.
@@ -166,7 +167,7 @@ Una mitad ya juntada puede tener que reabrirse: la E2E de la integración falla 
 
 Es una decisión de producto. Quien la toma lo hace desde su sesión:
 
-1. **Se descarta en `develop`.** Crea `design/EO-123` desde `develop`, pone `discarded: true` y el motivo, y abre el PR, que aprueba otra persona. Cuando entra, el pipeline mueve la tarjeta a **Descartada**, esté en la etapa que esté.
+1. **Se descarta en `develop`.** Crea `design/EO-123` desde `develop`, pone `discarded: true` y el motivo, y abre el PR, que aprueba otra persona o fusiona su autor. Cuando entra, el pipeline mueve la tarjeta a **Descartada**, esté en la etapa que esté.
 2. **Se borran sus ramas.** La rama de la historia y sus mitades nunca se fusionan, porque tienen trabajo sin terminar. Se borran después, y las listas de bloqueo que solo vivían en ellas, también.
 
 Si la historia ya estaba hecha, su código, sus tests y sus listas de bloqueo siguen en `develop`: quitarlos es una tarea aparte, que desbloquea sus tests antes de borrarlos (sección 5).
@@ -197,7 +198,7 @@ Las ramas de las historias llevan la clave de Jira. Las demás van en inglés y 
 
 - Ni `main` ni `develop` admiten push directo, borrado ni reescritura del historial: todo entra por PR.
 - Para fusionar un PR hace falta:
-  - al menos una aprobación de otra persona (Bitbucket no deja que el autor apruebe el suyo);
+  - al menos una aprobación de otra persona (Bitbucket no deja que el autor apruebe el suyo). La excepción son los PR de historia (`design/<ID>`), que su autor puede fusionar sin aprobación: sin Premium la comprobación solo avisa;
   - que no haya cambios pedidos;
   - que no queden tareas abiertas;
   - que el último build esté en verde (hasta la instalación, parte 2, el pipeline solo valida las historias, pero en todas las ramas, para que cada PR tenga build);
@@ -423,7 +424,8 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Contrato | OpenAPI generado desde Go, en el repositorio. Se acuerda solo cuando la historia cambia la API |
 | Mitades | Cada historia dice las suyas (`sides`): las dos, solo frontend o solo backend |
 | Autor de la historia | Diseño; las historias sin pantalla puede escribirlas un desarrollador, de backend o de frontend |
-| Aprobación de los PR | Todo PR a `develop` o a `main` lo aprueba al menos una persona distinta de quien lo crea; después lo fusiona la sesión del autor (a `main`, una persona autorizada). Bitbucket pide 1 aprobación y no deja que el autor apruebe el suyo, pero sin Premium solo avisa: la regla la cumple el equipo, y Claude la comprueba antes de fusionar |
+| Aprobación de los PR | Todo PR de código a `develop` o a `main` lo aprueba al menos una persona distinta de quien lo crea; después lo fusiona la sesión del autor (a `main`, una persona autorizada). Bitbucket pide 1 aprobación y no deja que el autor apruebe el suyo, pero sin Premium solo avisa: la regla la cumple el equipo, y Claude la comprueba antes de fusionar |
+| Aprobación de las historias | El PR `design/<ID>` lo revisa por defecto otra persona de diseño (si no hay, o la escribió un desarrollador, la de Backend). Su autor puede fusionarlo sin esperar si la ve bien. El arranque es la segunda lectura: si un criterio no se puede construir, lo escribe en «Preguntas abiertas» y la tarjeta vuelve a Diseño |
 | Ramas y merges | `main` es producción y `develop`, integración. Ramas de historia con la clave de Jira; `fix/`, `chore/` y `hotfix/` para lo demás. Squash para diseño, arreglos, tareas y hotfix; merge commit para la rama de la historia y para llevar un hotfix a `develop`; fast forward de `develop` a `main`. Merge commit es la estrategia por defecto del repositorio. Las mitades solo existen con los dos lados y se borran al fusionar la historia (sección 5) |
 | Qué hago | Al abrir Claude o al preguntar «¿qué me toca?», la sesión dice en qué punto estás y qué sigue (skill `que-hago`). Sin comandos |
 | A quién le toca | Campos Backend y Frontend en la tarjeta, que rellena quien reparte desde el backlog; el pipeline asigna la tarjeta a quien le toca en cada etapa. Arranca la persona de Backend (la de Frontend si no hay) |
