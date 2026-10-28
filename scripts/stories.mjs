@@ -7,6 +7,7 @@
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
 //   node stories.mjs --pr ID         print a PR checklist for one story
 //   node stories.mjs --json          print the computed state as JSON (for agents)
+//   node stories.mjs --summary       print only what needs attention (for the start of a session)
 //
 // Configuration: stories.config.json next to this file.
 
@@ -128,16 +129,17 @@ function parseCriteria(text, file, storyId) {
 
 function escape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
+// A marker the validator rejects counts as unverified in the map; invalid tells jira-sync it waits for no one.
 function classify(marker, file, id) {
   const M = L.markers;
-  if (!marker) { errors.push(`${file}: criterion ${id} does not end with its verification marker in brackets.`); return { kind: "unverified" }; }
+  if (!marker) { errors.push(`${file}: criterion ${id} does not end with its verification marker in brackets.`); return { kind: "unverified", invalid: true }; }
   const starts = (m) => new RegExp(`^${escape(m)}(?![\\p{L}\\p{N}])`, "iu").test(marker);
   if (starts(M.test)) {
     const ref = marker.match(new RegExp(`^${escape(M.test)}:\\s*(.+?)\\s*›\\s*"(.+)"$`, "i"));
     // A title made only of placeholders would match every test in the file.
     if (ref && !ref[2].replace(/%[sdifjo#%]/g, "").replace(/[\s\p{P}]/gu, "")) {
       errors.push(`${file}: criterion ${id} refers to a test title with no literal text ("${ref[2]}").`);
-      return { kind: "unverified" };
+      return { kind: "unverified", invalid: true };
     }
     return { kind: "test", ref: ref ? { file: ref[1].replace(/\\/g, "/"), title: ref[2] } : null };
   }
@@ -145,7 +147,7 @@ function classify(marker, file, id) {
     // [manual YYYY-MM-DD, who]: a check by hand counts only with its date and the person who made it.
     if (!new RegExp(`^${escape(M.manual)}\\s+\\d{4}-\\d{2}-\\d{2},\\s*\\S.*$`, "iu").test(marker)) {
       errors.push(`${file}: criterion ${id} has [${marker}]. Write [${M.manual} YYYY-MM-DD, who].`);
-      return { kind: "unverified" };
+      return { kind: "unverified", invalid: true };
     }
     return { kind: "manual" };
   }
@@ -153,7 +155,7 @@ function classify(marker, file, id) {
   if (new RegExp(`^${escape(M.unbuilt)}$`, "i").test(marker)) return { kind: "unbuilt" };
   if (starts(M.failing)) return { kind: "failing", reason: marker.replace(new RegExp(`^${escape(M.failing)}:\\s*`, "i"), "") };
   errors.push(`${file}: criterion ${id} has an unknown marker: [${marker}].`);
-  return { kind: "unverified" };
+  return { kind: "unverified", invalid: true };
 }
 
 function readDir(dir) {

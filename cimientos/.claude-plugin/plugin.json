@@ -4,9 +4,9 @@
   "description": "For Hyliacom's technical leads only: sets an EASY One project up for easyone-orchestrator (install, Parts 1 and 2), shows where the foundations stand before development opens, and runs the foundations' audit. The rest of the team does not install it.",
   "author": {
     "name": "Hyliacom",
-    "url": "https://github.com/sydneyhylia/Orchestrator"
+    "url": "https://github.com/SergioHyliacom/Orquestador"
   },
-  "homepage": "https://github.com/sydneyhylia/Orchestrator",
+  "homepage": "https://github.com/SergioHyliacom/Orquestador",
   "license": "MIT",
   "keywords": ["orchestration", "setup", "easyone"]
 }

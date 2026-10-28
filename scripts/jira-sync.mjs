@@ -63,8 +63,10 @@ let state;
 try { state = JSON.parse(run.stdout); } catch { fail(`stories.mjs --json gave no JSON:\n${run.stderr}`); }
 const story = (id) => state.stories.find((s) => s.id === id);
 
-// A criterion is settled when its tests all pass, a person checked it, or it waits for design.
-const settled = (c) => (c.kind === "test" && c.result === "pass") || c.kind === "manual" || c.kind === "unverified";
+// A criterion is settled when its tests all pass, a person checked it, or it waits for design. A marker the
+// validator rejects ([manual] without its date or name, an unknown one) waits for no one: it is not settled.
+const waitsForDesign = (c) => c.kind === "unverified" && !c.invalid;
+const settled = (c) => (c.kind === "test" && c.result === "pass") || c.kind === "manual" || waitsForDesign(c);
 
 // A side is closed when its lock list is on this branch: a half commits it before it merges into the story
 // branch, and a story with one side commits it on the story branch itself. The lists stay on the integration
@@ -84,12 +86,12 @@ function storyBranchStage(id) {
   if (s.contractMissing.length) return { ...base, stage: "contract", why: `the spec lacks ${s.contractMissing.join(", ")}` };
   const open = s.sides.filter((h) => !lockList(id, h));
   if (open.length) return { ...base, stage: "build", why: `${open.join(" and ")} not closed yet (no lock list)`, open };
-  const pending = s.criteria.filter((c) => !settled(c)).map((c) => c.id);
+  const pending = s.criteria.filter((c) => !settled(c)).map((c) => (c.invalid ? `${c.id} (invalid marker)` : c.id));
   if (pending.length) return { ...base, stage: "integration", why: `not settled yet: ${pending.join(", ")}` };
   // Visual review only while a criterion waits for design. Once nothing waits, the card waits for the merge
   // where it is: in Visual review after design approved, else in Integration. A [manual] check a developer
   // made (an email, a live service) never sends the card to design.
-  if (s.criteria.some((c) => c.kind === "unverified")) return { ...base, stage: "visual", why: "waiting for design" };
+  if (s.criteria.some(waitsForDesign)) return { ...base, stage: "visual", why: "waiting for design" };
   return { ...base, stage: "integration", why: "every criterion passes or a person checked it; waiting for the merge", holdVisual: true };
 }
 
