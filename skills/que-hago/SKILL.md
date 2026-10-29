@@ -16,7 +16,7 @@ Read all of this before you say anything. Run the independent reads in parallel.
    - Run `git fetch --prune` and `git status`, and note the current branch.
    - Note commits not pushed and changes not committed.
    - Note local branches whose remote is gone.
-3. **Jira.** Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so and ask for their cards. Never guess them.
+3. **Jira.** Use the Jira tools this machine has (the Atlassian MCP server or `acli`). If none works, say so, offer to set up their access (`orchestrate` skill, §1, step 2, "Their access to Jira and Bitbucket") and, until then, ask for their cards. Never guess them.
    - **Their cards:** the project's cards not in the done or discarded status where they are the assignee, the reporter, or in their side's field (`.orchestrator.json` → `jira.fields`). For each: its stage and who it is assigned to.
    - **Requests to them:** a comment that mentions them with no later comment of theirs.
    - **Their requests to others:** a comment of theirs that mentions someone who has not answered since. Note how old each is.
@@ -26,7 +26,7 @@ Read all of this before you say anything. Run the independent reads in parallel.
    - their open pull requests, and for each: approved, changes requested, build green or red;
    - the pull requests where they are a reviewer and have not approved yet.
 
-   Without a token, skip this and say so once.
+   Without a token, or when Bitbucket rejects it, skip this, say so once and offer to set it up (the same place).
 6. **The ledger.** `.orchestrator/state.md`: what this session left half done last time.
 7. **Audit work,** for a developer. In the audits on the integration branch (`git ls-tree --name-only origin/<integration branch> docs/audits/`, then `git show origin/<integration branch>:<file>`): the accepted findings whose `Lado` is their side and whose `Estado` is `pendiente` (`orchestrate` skill, §10, step 6).
 8. **Set-up work.** If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it as well. It says what to add about the foundations and their audit.

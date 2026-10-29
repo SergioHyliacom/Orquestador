@@ -64,7 +64,16 @@ Claude Code carga los plugins al arrancar. Después de instalar, abre una sesió
 
 ## Tu primera sesión
 
-La primera vez que abres Claude en el proyecto, tu sesión empieza preguntándote quién eres: tu nombre y si trabajas en diseño, backend o frontend. Tu cuenta de Jira la lee de Jira, y el idioma lo toma de cómo le escribes. Lo guarda en `.orchestrator/me.json`, que es personal y no entra en git. Después va directa a tu trabajo:
+La primera vez que abres Claude en el proyecto, tu sesión empieza preguntándote quién eres: tu nombre y si trabajas en diseño, backend o frontend. Tu cuenta de Jira la lee de Jira, y el idioma lo toma de cómo le escribes. Lo guarda en `.orchestrator/me.json`, que es personal y no entra en git.
+
+Después comprueba que puede leer tus tarjetas de Jira y abrir tus PR en Bitbucket, cada uno con tus credenciales:
+
+- **Jira:** si no responde, te ofrece instalar `acli`, la herramienta de Atlassian, y te pide que inicies sesión tú (`acli jira auth login --web`, que abre el navegador para que aceptes).
+- **Bitbucket:** `acli` no sirve para Bitbucket, así que te guía para crear un token de API con permisos de PR y guardarlo en tu entorno: `BITBUCKET_USER`, que es el email de tu cuenta Atlassian, no tu usuario de Bitbucket, y `BITBUCKET_TOKEN`.
+
+El token nunca se escribe en el chat ni en un fichero del repositorio. Si dices que no o no funciona, sigues trabajando igual: la sesión te pide la lista de tarjetas y los PR se abren desde la web.
+
+Luego va directa a tu trabajo:
 
 - **Diseño:** las historias que estás escribiendo, o qué diseño de Figma quieres convertir en historia.
 - **Backend y frontend:** tus tarjetas y lo que espera de ti. Si el desarrollo aún no está abierto, te lo dice en una línea y te ofrece escribir historias sin pantalla.
@@ -79,8 +88,8 @@ Lo hacen los responsables técnicos con otro plugin, `easyone-cimientos`, que el
 
 - Claude Code con soporte de plugins.
 - Node.js 20 o posterior en el `PATH`, también en los equipos de diseño. Lo usan la guardia, el validador y la sincronización con Jira. Sin Node la guardia no arranca y no puede avisar, así que lo comprueba Claude al empezar cada sesión (por eso está en el bloque de `CLAUDE.md`) y ofrece instalarlo; en Windows, con `winget install OpenJS.NodeJS.LTS`. Mientras falte, no hace commits ni push.
-- Git y un repositorio en Bitbucket con Pipelines. Cada persona, un token de Bitbucket con permiso sobre los PR, en `BITBUCKET_USER` y `BITBUCKET_TOKEN` de su entorno. Sin él, abre y fusiona los PR desde la web.
-- Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`. Sin ninguno de los dos, la sesión pide la lista a la persona.
+- Git y un repositorio en Bitbucket con Pipelines. Cada persona, un token de API de Bitbucket con permiso sobre los PR, en `BITBUCKET_USER` (el email de su cuenta Atlassian) y `BITBUCKET_TOKEN` de su entorno; la primera sesión la guía para crearlo. Sin él, abre y fusiona los PR desde la web.
+- Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`; si no hay ninguno, la primera sesión ofrece instalar `acli` y guía el login. Sin ninguno de los dos, la sesión pide la lista a la persona.
 - Para diseño: el conector de Figma en Claude, con acceso a los ficheros del proyecto, y Mobbin si el equipo lo usa. Su cuenta de Jira tiene que poder crear y editar tarjetas.
 - En el proyecto: `gotestsum` para el informe de los tests de Go, Vitest y un runner E2E con informe JUnit.
 - Opcional: [Orca](https://orca.dev). Sin él, los agentes funcionan como subagentes de Claude Code.
