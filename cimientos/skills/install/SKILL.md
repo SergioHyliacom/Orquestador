@@ -53,12 +53,12 @@ Do not run a questionnaire. Most of what Part 1 needs is fixed by the method or 
 
 ### 1.2 Write `.orchestrator.json`
 
-From `assets/orchestrator.json`, write only `language` (`es`), `storiesDir`, `riskTags`, `jira` and `git`. Leave out everything Part 2 measures: `setup`, `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams`, `orca`. No `{{` may remain in what you write.
+From `assets/orchestrator.json`, write only `language` (`es`), `storiesDir`, `riskTags`, `jira`, `git` and `plugin` (the `version` in `<team plugin>/.claude-plugin/plugin.json`: the copies below match it). Leave out everything Part 2 measures: `setup`, `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams`, `orca`. No `{{` may remain in what you write.
 
 ### 1.3 Create the story folder
 
 1. Create `<storiesDir>/` (default `product/`; use the project-language word if the project names folders in its language).
-2. Copy `<team plugin>/scripts/stories.mjs` and `<team plugin>/scripts/jira-sync.mjs` into it unchanged. The pipeline runs these copies. They must stay identical to the team plugin's: at session start its guard says when they differ, and the session offers to update them through a `chore/` pull request.
+2. Copy `<team plugin>/scripts/stories.mjs` and `<team plugin>/scripts/jira-sync.mjs` into it unchanged. The pipeline runs these copies. They must stay identical to the team plugin's: when a newer plugin brings changes, the guard says so at session start, and a developer's session brings the project up to date on its own (`orchestrate` skill, §6.11, "Plugin update").
 3. Write `<storiesDir>/stories.config.json` from `assets/stories.config.json`, without `tests` and `contractSpec` (Part 2 adds them):
    - `idPrefix` is the Jira project key.
    - `releases` and `mainRelease`: `Entrega 1`, `Entrega 2`, `Más adelante`, with `Entrega 1` as the main one. Leave out `personas`: the validator then accepts any, and design adds them with its stories.

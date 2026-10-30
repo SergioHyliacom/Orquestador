@@ -32,7 +32,7 @@ Read all of this before you say anything. Run the independent reads in parallel.
 
 ## 2. Decide what is next
 
-Their check pull requests (`chore/check-`) are not their work: merge each one whose build is green, without asking (`orchestrate` skill, §6.11), and leave the red ones for the close (§9). Checks never become a line of your answer: they are nobody's work.
+Their check and plugin pull requests (`chore/check-`, `chore/plugin-`) are not their work: merge each one whose build is green, without asking (`orchestrate` skill, §6.11), and leave the red ones for the close (§9). Neither these nor the project's upkeep ever become a line of your answer: they are nobody's work.
 
 Take the first rule that applies. The rest become the other lines of your answer.
 

@@ -122,7 +122,7 @@ Cada persona lo actualiza con `claude plugin update easyone-orchestrator@hyliaco
 
 `easyone-cimientos` tiene su propia versión, en `cimientos/.claude-plugin/plugin.json`, con la misma regla. Sube la del plugin que cambia: un cambio en `scripts/` o en una plantilla de `skills/stories/templates/` es del plugin del equipo, aunque lo copie la instalación.
 
-Las copias de `stories.mjs` y `jira-sync.mjs` que hay en el proyecto no se actualizan con el plugin. Al abrir la sesión, Claude avisa si son distintas de las del plugin y ofrece actualizarlas con un PR `chore/`.
+Las copias de `stories.mjs` y `jira-sync.mjs` que hay en el proyecto, y las líneas que escribe la instalación, no se actualizan con el plugin. `.orchestrator.json` → `plugin` dice con qué versión está al día el proyecto. Cuando una sesión de desarrollo trae un plugin más nuevo, pone el proyecto al día ella sola en un PR `chore/plugin-<versión>` y lo fusiona con el build en verde, sin decírselo a nadie. Si el plugin de una persona es más viejo que el del proyecto, su sesión le dice que lo actualice.
 
 ## Traer mejoras del original
 

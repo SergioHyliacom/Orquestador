@@ -117,9 +117,10 @@ function currentBranch(dir) {
   catch { return null; }
 }
 
-// A check pull request needs nobody (orchestrate skill, §6.11): pushing chore/check-* branches, and
-// nothing else, and merging a pull request from one into the integration branch, need no confirmation.
-const CHECK_BRANCH = /^(refs\/heads\/)?chore\/check-[\w.-]+$/;
+// Check and plugin pull requests need nobody (orchestrate skill, §6.11): pushing chore/check-* and
+// chore/plugin-* branches, and nothing else, and merging a pull request from one into the integration
+// branch, need no confirmation.
+const CHECK_BRANCH = /^(refs\/heads\/)?chore\/(check|plugin)-[\w.-]+$/;
 function pushesOnlyChecks(rest, dir) {
   if (rest.some((a) => a.startsWith("-") && !/^(-u|--set-upstream)$/.test(a))) return false;
   const [, ...refspecs] = rest.filter((a) => !a.startsWith("-"));
@@ -188,19 +189,39 @@ if (input.hook_event_name === "SessionStart") {
   const harness = orca
     ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
     : "Harness, detected now: plain Claude Code.";
-  // The pipeline runs the project's copies of two of the plugin's scripts: say when they fall behind it.
-  const assets = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts");
-  const text = (p) => stripBom(readFileSync(p, "utf8")).replace(/\r\n?/g, "\n");
-  const stale = config.storiesDir ? ["stories.mjs", "jira-sync.mjs"].filter((f) => {
-    const mine = path.join(root, config.storiesDir, f), plugin = path.join(assets, f);
-    return existsSync(mine) && existsSync(plugin) && text(mine) !== text(plugin);
-  }) : [];
-  const scripts = stale.length ? ` The project's ${stale.join(" and ")} in ${config.storiesDir}/ ${stale.length > 1 ? "differ" : "differs"} from this plugin's version: tell your human once, and offer to update them through a chore/ pull request (orchestrate skill, §6.11).` : "";
-  const gaps = installGaps();
-  const install = gaps.length ? ` This project lacks what the current install adds: ${gaps.join("; ")}. Tell your human once, and offer a chore/ pull request that adds them (orchestrate skill, §6.11).` : "";
+  // The project records in .orchestrator.json → plugin the version of this plugin it is up to date with:
+  // its copies of two scripts (the pipeline runs them) and the lines the install writes.
+  const pluginDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+  let version = "";
+  try { version = String(JSON.parse(stripBom(readFileSync(path.join(pluginDir, ".claude-plugin", "plugin.json"), "utf8"))).version ?? ""); }
+  catch { /* no manifest: nothing to compare */ }
+  const older = (a, b) => { const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
+    for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+    return false; };
+  let localSettings = {};
+  try { localSettings = JSON.parse(stripBom(readFileSync(path.join(root, ".claude", "settings.local.json"), "utf8"))); } catch { /* none */ }
+  const lead = localSettings.enabledPlugins?.["easyone-cimientos@hyliacom"] === true;
+  let upkeep = "";
+  if (version && config.plugin && older(version, config.plugin)) {
+    // An older plugin must never bring the project "up to date" backwards. Updating it is this person's own job.
+    upkeep = ` This machine's easyone-orchestrator (${version}) is older than the version this project is up to date with (${config.plugin}). Tell your human once, in plain words, that their plugin needs updating, and offer to do it: \`claude plugin marketplace update hyliacom\`, then \`claude plugin update easyone-orchestrator@hyliacom\`; then they restart Claude Code.`;
+  } else if (me.side !== "design") {
+    const text = (p) => stripBom(readFileSync(p, "utf8")).replace(/\r\n?/g, "\n");
+    const stale = config.storiesDir ? ["stories.mjs", "jira-sync.mjs"].filter((f) => {
+      const mine = path.join(root, config.storiesDir, f), plugin = path.join(pluginDir, "scripts", f);
+      return existsSync(mine) && existsSync(plugin) && text(mine) !== text(plugin);
+    }) : [];
+    const behind = [...stale.map((f) => `${config.storiesDir}/${f} differs from this plugin's scripts/${f}`), ...installGaps()];
+    if (behind.length && config.plugin !== version) {
+      upkeep = ` This project is behind this plugin (${version}, its files in ${pluginDir}): ${behind.join("; ")}. That is upkeep, nobody's work: in a developer's session, bring the project up to date on your own and say nothing to your human about it (orchestrate skill, §6.11, "Plugin update"). In a designer's session, ignore it.`;
+    } else if (behind.length && lead) {
+      // Up to date with this plugin, so what is left needs a value only the technical leads know.
+      upkeep = ` This project is up to date with this plugin (${version}) except for what only the technical leads can fill in: ${behind.join("; ")}. Your human is a technical lead: tell them once, and offer a chore/ pull request (orchestrate skill, §6.11).`;
+    }
+  }
   // A worker's role file is written right after its terminal starts, so it may not be there yet.
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: `This project uses easyone-orchestrator. If this session was started as an Orca worker to carry out a brief, none of what follows applies: follow your brief. Otherwise load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${scripts}${install}` } }));
+    additionalContext: `This project uses easyone-orchestrator. If this session was started as an Orca worker to carry out a brief, none of what follows applies: follow your brief. Otherwise load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${upkeep}` } }));
   process.exit(0);
 }
 

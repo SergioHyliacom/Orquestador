@@ -141,7 +141,7 @@ Whatever your human says:
 - no criterion built before the kickoff, and none against a contract the other side has not agreed;
 - no change to the contract without the other side's yes;
 - no final pull request while a criterion is not a passing `[test]` or a `[manual]`;
-- no merge without an approval from someone other than the author, except a `design/<ID>` pull request, which its author may merge alone (§6.1), and a check pull request, which your session merges alone (§6.11).
+- no merge without an approval from someone other than the author, except a `design/<ID>` pull request, which its author may merge alone (§6.1), and a check or plugin pull request, which your session merges alone (§6.11).
 
 The guard blocks the rest of what is dangerous on its own (§8).
 
@@ -151,7 +151,7 @@ Load the `stories` skill to write or change a story.
 
 Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it, backend or frontend; the steps are the same.
 
-**Who approves.** The story's pull request is the approval. Its reviewer is, by default, another person of design; when there is none, or a developer wrote the story, the card's Backend person. The author may also merge it alone, without waiting for the approval, when they see it right: the kickoff reads it again before anything is built, and returns it when a criterion cannot be built (§6.2). That holds only for `design/<ID>` pull requests and check pull requests (§6.11). Every other pull request to the integration branch or `main` needs an approval from someone other than its author, and only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
+**Who approves.** The story's pull request is the approval. Its reviewer is, by default, another person of design; when there is none, or a developer wrote the story, the card's Backend person. The author may also merge it alone, without waiting for the approval, when they see it right: the kickoff reads it again before anything is built, and returns it when a criterion cannot be built (§6.2). That holds only for `design/<ID>` pull requests, and for check and plugin pull requests (§6.11). Every other pull request to the integration branch or `main` needs an approval from someone other than its author, and only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
 
 Design's stories start from the design project in Figma, the only home of the design: a story links its frames and never copies them. A developer's story with no screen skips steps 1 to 3.
 
@@ -287,10 +287,22 @@ A story that was already done keeps its code, its tests and its lock lists on th
 
 1. **Branch.** `chore/check-<slug>` from the integration branch on the remote. Your side's builder builds it as a task (`Change: task check-<slug>: <the check and the rule it enforces>`); a one-line lint setting you do yourself.
 2. **It proves itself.** Before the commit, show that the check fails on the code that motivated it and passes once that code is fixed, and that `verify.all` is green. A check that stays green on the bad code catches nothing: drop it.
-3. **Push and open the pull request** to the integration branch, with the failing and passing lines in its body and no reviewer. The guard lets the push and the merge of a `chore/check-` branch through without asking your human to confirm.
+3. **Push and open the pull request** to the integration branch, with the failing and passing lines in its body and no reviewer. The guard lets the push and the merge of a `chore/check-` or `chore/plugin-` branch through without asking your human to confirm.
 4. **Merge it** through the API with squash once its build is green (`que-hago` does it when it gathers; §9 at the close). A red build is fixed at the next close, in the same pull request.
 
 It is not a check pull request, and it goes to your human like any task, when it creates or changes a rule, touches a risk area (`riskTags`), comes from a Critical finding, or cannot pass without changing a locked test.
+
+**Plugin update.** The project keeps copies of two of this plugin's scripts, `<storiesDir>/stories.mjs` and `<storiesDir>/jira-sync.mjs`, which the pipeline runs, and some lines the install writes. `.orchestrator.json` → `plugin` records the plugin version they are up to date with. When the guard says at session start that the project is behind this plugin, a developer's session brings it up to date on its own, at the close of the block of work (§9). It is upkeep, nobody's work: say nothing to your human about it. A designer's session never does it.
+
+1. **Is it done or under way?** `git fetch`. When `.orchestrator.json` on `origin/<integration branch>` already has this plugin's version in `plugin`, or the remote has its branch (`git ls-remote --heads origin chore/plugin-<version>`), do nothing: your branch gets it when it brings in the integration branch.
+2. **Branch** `chore/plugin-<version>` from the integration branch on the remote. No builder: it is copying, and text you write.
+   - Copy this plugin's `scripts/stories.mjs` and `scripts/jira-sync.mjs` over the project's, unchanged (the guard names the plugin's folder).
+   - Add each line the guard says is missing, as it words it.
+   - `setup`: the commands of the pipeline's build step, before `stories.mjs --tests --check`, that install the project's dependencies (for example `pnpm install --frozen-lockfile`, `go mod download`), joined with `&&`. Leave out those that install tools on the machine: a Go or Node toolchain, `corepack enable`. When you cannot tell which they are, leave `setup` out: the technical leads' sessions get it.
+   - Set `plugin` in `.orchestrator.json` to this plugin's version.
+3. **Check, push and merge.** Run `node <storiesDir>/stories.mjs --check`. Push, open the pull request to the integration branch with no reviewer, and merge it like a check pull request (step 4 above). When the push is rejected because the branch already exists, another session got there first: delete your branch and do nothing more.
+
+When the guard says instead that this machine's plugin is older than the project's, nothing in the project changes: that is your human's own update, and the guard says how.
 
 **Hotfix.** An urgent bug in production.
 
@@ -317,7 +329,7 @@ It is not a check pull request, and it goes to your human like any task, when it
 
 Your human gives the ok on the first criterion of each half and on the finished half (§6.3), and you stop for them whenever §6.3 says. Beyond that, always ask before:
 
-1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira cards, comments that carry your human's decision, pull requests. A comment that only states a fact (§6) and a check pull request (§6.11) need no ok.
+1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira cards, comments that carry your human's decision, pull requests. A comment that only states a fact (§6), and a check or plugin pull request (§6.11), need no ok.
 2. **Product calls:** scope, criteria, the shape of the contract (both developers agree it), discarding a story.
 3. **What a machine cannot verify:** the runner limit in `.orchestrator.json`. The visual review is design's; other checks only a person can do belong to the developer of the side (§6.5).
 
@@ -327,7 +339,7 @@ When you ask: give a short summary, name the decision, give your recommendation 
 
 ## 8. Git
 
-Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves, `fix/`, `chore/` and `hotfix/` for the rest; each pull request merges with its own strategy, through you; one commit per criterion, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it, except a check pull request (§6.11). The guard blocks the dangerous commands.
+Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves, `fix/`, `chore/` and `hotfix/` for the rest; each pull request merges with its own strategy, through you; one commit per criterion, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it, except a check or plugin pull request (§6.11). The guard blocks the dangerous commands.
 
 ## 9. Close
 
@@ -336,7 +348,7 @@ At the end of a block of work:
 1. Run `node <storiesDir>/stories.mjs` to refresh the map. It runs no tests: the full suites run when a half closes (§6.4), at the integration (§6.5) and in the pipeline.
 2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, every released terminal you launched is closed, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the role file of each released worker (`.orchestrator/roles/<handle>.json`) is gone. Do not end the turn before that.
 3. **Preventions.** A real failure in this project that can happen again gets one, in the order of §11.2. A machine check that enforces a rule already in `docs/rules/`: build it now as a check pull request (§6.11), without asking. Otherwise, a rule in `docs/rules/` (the file of the side that owns it, `comunes.md` when it applies to every side), with the failure as its origin, or a pattern: the rules are shared, so propose it to your human, and it goes in through a pull request. A failure of behaviour is a failing criterion of its story, never a rule.
-   Then, in a developer's session once development is open, the checks the audits left for your side: in `docs/audits/` on the integration branch (`git ls-tree --name-only origin/<integration branch> docs/audits/`, then `git show origin/<integration branch>:<file>`), the findings whose `Lado` is your side and whose `Estado` is `pendiente`. Build them the same way, one check pull request per audit, which also sets their `Estado` to `hecha (<commit>)`. Merge your check pull requests whose build is green, and fix the red ones. Your human does not need to do anything: say so in one line, and let them leave.
+   Then, in a developer's session once development is open, the checks the audits left for your side: in `docs/audits/` on the integration branch (`git ls-tree --name-only origin/<integration branch> docs/audits/`, then `git show origin/<integration branch>:<file>`), the findings whose `Lado` is your side and whose `Estado` is `pendiente`. Build them the same way, one check pull request per audit, which also sets their `Estado` to `hecha (<commit>)`. When the guard said the project is behind this plugin, bring it up to date (§6.11, "Plugin update"). Merge your check and plugin pull requests whose build is green, and fix the red ones. Your human does not need to do anything: when this takes a while, say so in one line, and let them leave.
 4. Update `.orchestrator/state.md`.
 5. Tell your human, bad news first: what was committed, what was pushed, what waits for the other side, your technical rulings, and any work that ran unsupervised.
 
