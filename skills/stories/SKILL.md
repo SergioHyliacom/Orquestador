@@ -29,6 +29,7 @@ Stories have no priority field. The release sets the order. The first release in
 - Tags: `tags` holds the risk tags (`.orchestrator.json` → `riskTags`) of the areas the story touches. Whoever writes the story sets them; a developer adds one at the kickoff when the story touches an area it does not name. A risk tag adds the reviewer at story close.
 - Sides: the `sides` field lists the sides that build the story: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
 - Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story uses, existing or new. Design leaves it empty. The developers fill it at the kickoff, and the validator checks that each one is in the spec.
+- Changes: the `changes` field lists the existing operations whose shape the story changes (a new parameter, field or error); each one is also in `operations`. Design leaves it empty; the kickoff fills it when the API changes. On a story branch, the validator counts the contract as missing until the spec there differs from the integration branch's for each of them.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
 - Status is never written by hand. The script computes it from the criteria and the decisions.
 

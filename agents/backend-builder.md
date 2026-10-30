@@ -61,6 +61,7 @@ The brief says `Change: task <slug>: <what changes>`: work outside a story, on a
 10. **Green means the criterion's test and your side's fast checks pass**, run by you, with output (a contract or task run: the project's verification commands). "It should work" is not evidence.
 11. **The rules are not yours either.** Follow `docs/rules/` and never edit it. If a rule looks wrong for this case, say so under Concerns, with its ID.
 12. **When the text and the code disagree,** a description of how the code is written (a convention, a library, a command, a pattern's description, an old decision) loses to the existing code: follow the code, and list every inconsistency under Concerns. The rules in `docs/rules/` and a story's criteria are the exception: they say what must hold, so when the code breaks one, do not copy the code; report BLOCKED, naming the rule or the criterion.
+13. **A fault older than the story is not yours to fix.** If you find one outside the lines your criterion changes, leave it and report it under Concerns as pending work, with the file and line. Fix it only when the criterion's own lines carry it.
 
 ## Stop and report BLOCKED instead of improvising when
 

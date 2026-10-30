@@ -19,7 +19,7 @@ Who does the kickoff depends on the story. **With a screen,** the card's Fronten
    | Front only | showing a field that already arrives, an empty state, the Hyliable editor | none | `[front]` |
    | Back only | a rule on the data, a periodic task, emails, an importer | none | `[back]` |
 
-3. **Kickoff.** Propose the case to your human and confirm it. Create `story/<ID>` from the integration branch on the remote and write in the story's frontmatter `sides` and `operations` (the `operationId`s it uses, existing or new). If it touches a risk area its `tags` do not name (`riskTags` in `.orchestrator.json`), add that tag. These are the only frontmatter edits a developer makes. Commit `<ID>: kickoff` and push.
+3. **Kickoff.** Propose the case to your human and confirm it. Create `story/<ID>` from the integration branch on the remote and write in the story's frontmatter `sides`, `operations` (the `operationId`s it uses, existing or new) and, when the API changes, `changes` (the existing operations whose shape it changes: a new parameter, field or error). Until the spec on `story/<ID>` differs from the integration branch's for each of them, the validator counts the contract as missing, and the card stays in Contract. If it touches a risk area its `tags` do not name (`riskTags` in `.orchestrator.json`), add that tag. These are the only frontmatter edits a developer makes. Commit `<ID>: kickoff` and push.
 4. **Contract, only when the API changes.** When the frontend did the kickoff, it tells the card's Backend person in a card comment what the screen needs from the API that the spec lacks (a fact, no ok needed). It is a written proposal, not a meeting. The backend session drafts the shape (operations, fields, types, status codes, errors) and, with its human's ok, posts it as a card comment that mentions the Frontend person. Their session asks them: yes, no (and what to change), or let's talk. On a yes, brief the backend builder with `Change: contract`, show your human the generated operations, commit `<ID>: contract` on `story/<ID>` and push.
 
 A later change to the contract follows the same path. A story that turns out to need the other side gets it added to `sides`.
@@ -58,7 +58,7 @@ The frontend integrates; the backend, when the story has no screen. When every s
 
 ## Risk review
 
-If the story carries a risk tag, brief a fresh `reviewer` with `git diff <integration branch>...story/<ID>` and the story before the final pull request. Critical and Important findings go to the side that owns the file, which reopens its side to fix them; the re-review checks only the fix. After 3 rounds the developers decide on what is left. Minor findings go to the ledger.
+If the story carries a risk tag, brief a fresh `reviewer` with `git diff <integration branch>...story/<ID>` and the story before the final pull request. Critical and Important findings go to the side that owns the file, which reopens its side to fix them once; the re-review checks only that fix. There is no second round: whatever is still open after it, the developers decide with their humans. Minor findings go to the ledger, never to a round.
 
 ## Merge
 
@@ -68,7 +68,7 @@ Open the pull request only when `node <scripts>/stories.mjs --pr <ID>` shows eve
 
 When the behaviour of a done story must change, or a bug breaks one of its criteria, reopen the same story; never write a new one on top. An urgent bug in production is a hotfix first (`references/outside-stories.md`). Design reopens it for a change of behaviour; for a bug, the developer of the side that owns what fails.
 
-1. Create `story/<ID>` again from the integration branch on the remote. A change sets each changed criterion back to `[unbuilt]`; a bug marks the criterion it breaks `[failing: <what fails>]`, or adds a criterion when none covers it. Commit `<ID>: reopen <criterion IDs>` and push. The card goes from Done to Integration.
+1. Create `story/<ID>` again from the integration branch on the remote. A change sets each changed criterion back to `[unbuilt]`; a bug marks the criterion it breaks `[failing: <what fails>]`, or adds a criterion when none covers it. Empty `changes` unless the reopened story changes the API again: the old contract is already on the integration branch. Commit `<ID>: reopen <criterion IDs>` and push. The card goes from Done to Integration.
 2. Tell the other side on the card which criteria reopened, when they are theirs.
 3. Each side that owns what changes reopens its side. For a bug, find the root cause first; the builder writes a test under the criterion's ID that reproduces the bug and fails (`stories` skill, "Fixing a bug").
 4. Then integration, markers, visual review when needed, risk review and merge, as always.

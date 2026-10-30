@@ -30,7 +30,7 @@ A designer's session needs only the first row and, rarely, the last two.
 2. Read `.orchestrator.json`. If it does not exist, tell your human in one line that a technical lead sets the project up, and stop.
 3. **Who they are.** `.orchestrator/me.json`: their `name`, their `side` (`design`, `backend` or `frontend`), their Jira account, the `language` they talk to you in, and their own settings. Speak to them in their language; everything you write into the repository and into Jira is in Spanish. If the file does not exist, this is their first session: ask, in one question, their name and whether they work in design, backend or frontend. Read their Jira account from Jira; their language is the one they write in. Write the file (it is personal, never committed), check their access (`references/access.md`), and go straight to their work without explaining the method.
 4. **Is development open?** When `.orchestrator.json` has no `roles`, the technical leads are still setting the project up: there are no builders yet. Design writes stories as usual, and so can a developer, for a story with no screen. To a developer who asks for development work, say so in one line.
-5. Read `.orchestrator/state.md`, your ledger: personal, never committed, and it survives compaction. It holds one line per story in progress (`EO-123 back: EO-123.2 green, waiting for the ok`) and one per ruling you make: `Ruling: <what> — <why> — <cost if wrong>`.
+5. Read `.orchestrator/state.md`, your ledger: personal, never committed, and it survives compaction. It holds one line per story in progress (`EO-123 back: EO-123.2 green, waiting for the ok`) and one per ruling you make: `Ruling: <what> — <why> — <cost if wrong>`. Each line starts with the date and time (`2026-10-30 14:05`), and each phase of a story gets its own line when it starts and ends (kickoff, contract, each criterion briefed and green, side closed, review, merge), so the time each phase takes can be measured from the ledger alone.
 6. **Tell your human where they are and what is next: load the `que-hago` skill.** Load it again whenever they ask what to do, what is theirs or where they are, in whatever words.
 7. To a developer: if every story of a delivery (a release in `stories.config.json`) works and `docs/audits/<delivery>.md` does not exist, say once that the delivery is ready for its audit (`references/audit.md`). Never run it unasked.
 
@@ -94,7 +94,7 @@ A developer gives the ok on the first criterion of their side and on the finishe
 2. **Product calls:** scope, criteria, the shape of the contract (both developers agree it), discarding a story.
 3. **What a machine cannot verify:** what `runnerLimit` in `.orchestrator.json` names. How a screen looks is design's to judge; other checks only a person can do belong to the developer of the side.
 
-Routine technical choices are yours: log them as rulings. When you ask, give a short summary, your recommendation and its reason, all questions in one message, and wait.
+Routine technical choices are yours: log them as rulings. When you ask, give a short summary, your recommendation and its reason, all questions in one message, and wait. Each question reads on its own: name the story, the criterion or the file it is about, never "that decision" or "the rewrite".
 
 ## 6. Close
 
@@ -104,3 +104,4 @@ At the end of a block of work:
 2. **Preventions,** in a developer's session. A real failure that can happen again: when a machine check can enforce a rule already in `docs/rules/`, build it now as a check pull request, without asking (`references/outside-stories.md`, "Check"); a new rule or pattern is proposed to your human (`references/where-things-live.md`). A failure of behaviour is a failing criterion of its story, never a rule. Then build the checks the audits left pending for your side (`references/audit.md`, "Pending checks"), and merge your check pull requests whose build is green.
 3. Update the ledger.
 4. Tell your human, bad news first: what was committed and pushed, what waits for others, your technical rulings, and any work that ran unsupervised.
+5. Suggest a new session for the next block: the ledger carries what it needs, and a long conversation is reread on every turn.

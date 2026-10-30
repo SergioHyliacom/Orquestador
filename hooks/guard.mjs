@@ -50,8 +50,9 @@ const broadAddBlocked = git.blockBroadAdd !== false;
 // session has none.
 const agentType = String(input.agent_type ?? "");
 const inSubagent = Boolean(agentType);
-const isRole = (r) => new RegExp(`(^|:)${r}$`).test(agentType);
-const readOnlyRole = ["reviewer", "researcher", "designer", "auditor"].some(isRole);
+// Every role that only judges or reads ends in reviewer, researcher, auditor or designer, the project's
+// own too (security-reviewer).
+const readOnlyRole = /(^|[:-])(reviewer|researcher|auditor|designer)$/.test(agentType);
 // Every role that writes code ends in -builder: backend-builder, frontend-builder.
 const builderRole = /(^|:)([a-z0-9]+-)*builder$/.test(agentType);
 // Per-role settings live in .orchestrator.json → roles, keyed by the role name without the plugin prefix.
@@ -93,12 +94,15 @@ function pushesOnlyChecks(rest, dir) {
 }
 // Only Bitbucket knows a pull request's branches, so ask it. Any doubt (no token, a URL built from
 // variables, no answer in time) leaves the confirmation in place.
+// The API base is api.bitbucket.org, or BITBUCKET_API when the command reads it (a self-hosted or simulated one).
+const MERGE = /\/pullrequests\/[^/\s"']+\/merge\b/i;
 async function mergesCheck(command) {
-  const m = command.match(/api\.bitbucket\.org\/2\.0\/repositories\/([\w.-]+)\/([\w.-]+)\/pullrequests\/(\d+)\/merge/i);
-  const { BITBUCKET_USER: user, BITBUCKET_TOKEN: token } = process.env;
-  if (!m || !user || !token) return false;
+  const m = command.match(/(https?:\/\/[^\s"']+?|\$\{?BITBUCKET_API\}?)\/repositories\/([\w.-]+)\/([\w.-]+)\/pullrequests\/(\d+)\/merge/i);
+  const { BITBUCKET_USER: user, BITBUCKET_TOKEN: token, BITBUCKET_API: envApi } = process.env;
+  const api = m && (m[1].startsWith("$") ? envApi : m[1]);
+  if (!m || !api || !user || !token) return false;
   try {
-    const res = await fetch(`https://api.bitbucket.org/2.0/repositories/${m[1]}/${m[2]}/pullrequests/${m[3]}`, {
+    const res = await fetch(`${api.replace(/\/$/, "")}/repositories/${m[2]}/${m[3]}/pullrequests/${m[4]}`, {
       headers: { Authorization: `Basic ${Buffer.from(`${user}:${token}`).toString("base64")}`, Accept: "application/json" },
       signal: AbortSignal.timeout(5000) });
     if (!res.ok) return false;
@@ -328,9 +332,9 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       checkGit(tokens.slice(1), here);
       continue;
     }
-    // Bitbucket has no official CLI: a merge is a POST to the pull request's /merge endpoint. The id may
-    // come from a variable; then the merge is still a merge.
-    if (tokens.some((t) => /api\.bitbucket\.org\/.*\/pullrequests\/[^/\s]+\/merge/i.test(t))) {
+    // Bitbucket has no official CLI: a merge is a POST to the pull request's /merge endpoint, on whatever
+    // host or variable the URL is built from. The id may come from a variable; then the merge is still a merge.
+    if (tokens.some((t) => MERGE.test(t))) {
       if (inSubagent) block("role agents never merge. The product owner merges, or asks the orchestrator to.");
       if (git.allowPush === false) merges.push(tokens.join(" "));
     }
@@ -363,18 +367,21 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
 if (input.hook_event_name === "SubagentStop") {
   if (!builderRole) process.exit(0);
   // Content, not command shape: whatever tool changed a locked file, the story files or the lock
-  // list, the difference from HEAD shows it. This check ignores stop_hook_active: the builder
-  // restores the files (git restore <file>) or stops for good only by reporting BLOCKED.
+  // list, the difference from HEAD shows it. The builder shares the orchestrator's checkout, so a change
+  // there may be the orchestrator's own: the builder restores only what it changed, and says the rest.
   const spec = (list) => list.map((p) => (WIN ? `:(icase)${p}` : p));
   const lockSet = spec([...lockedPaths, `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
   const run = (a) => { try { return execFileSync("git", a, { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { return ""; } };
   const names = (a) => run(a).split(/\r?\n/).filter(Boolean);
   const changed = names(["diff", "--name-only", "HEAD", "--", ...lockSet, ...spec(storiesRel ? [storiesRel, mapRel] : [])]);
-  if (changed.length) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore them with \`git restore <file>\`, then report what you needed to change them for.`);
+  if (changed.length && !input.stop_hook_active) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore the ones you changed with \`git restore <file>\` and report what you needed to change them for. Do not restore the ones you did not change: name them in your report.`);
   // A commit made through an interpreter leaves the tree equal to HEAD. The orchestrator commits each
   // lock, so the last commit that touched the lock list is the base the locked files must still match.
+  // Only this branch's own commits count: a change that came from the integration branch is not the builder's.
   const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
-  const committed = base ? names(["diff", "--name-only", base, "HEAD", "--", ...lockSet]) : [];
+  const integration = `refs/remotes/origin/${git.integrationBranch ?? "develop"}`;
+  const own = run(["rev-parse", "--verify", "--quiet", integration]) ? ["--not", integration] : [];
+  const committed = base ? [...new Set(names(["log", "--no-merges", "--format=", "--name-only", `${base}..HEAD`, ...own, "--", ...lockSet]))] : [];
   if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
   // Files someone else changed would trap the builder, so this check gives one retry, then lets it report.
   if (!input.stop_hook_active && Array.isArray(roleConfig.paths) && roleConfig.paths.length) {

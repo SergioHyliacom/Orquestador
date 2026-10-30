@@ -1,6 +1,6 @@
 {
   "name": "easyone-cimientos",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "For Hyliacom's technical leads only: sets an EASY One project up for easyone-orchestrator (install, Parts 1 and 2), shows where the foundations stand before development opens, and runs the foundations' audit. The rest of the team does not install it.",
   "author": {
     "name": "Hyliacom",

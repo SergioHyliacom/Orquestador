@@ -82,7 +82,7 @@ Everything Part 2 writes reaches the integration branch in one pull request the 
 
 - No `{{` and no `pending:` left; every command in `.orchestrator.json` runs; every path in `roles.*.paths`, `CLAUDE.md` and *Patterns* exists, and no role's paths include `docs/rules/` or `<storiesDir>/`.
 - `node <scripts>/stories.mjs --tests --check` passes, as the pipeline will run it.
-- One Agent-tool subagent runs and returns a report file.
+- One Agent-tool subagent runs as `easyone-orchestrator:backend-builder` and returns a report file, and the guard acts on it: its edit of a file outside `roles.backend-builder.paths` is blocked. A subagent the guard does not stop works with no rules.
 - The big architecture choices are closed `DEC` files with their why (`estado` skill).
 
 Report each check as ✅, ⚠️ or ❌. Tell the human that when this pull request merges, development is open for the whole team, with nothing to install; the next step is the foundations' audit (`estado` skill). After it, the leads can uninstall this plugin (`claude plugin uninstall easyone-cimientos@hyliacom --scope local`).

@@ -186,6 +186,38 @@ const SPEC = config.contractSpec ? path.resolve(ROOT, config.contractSpec) : nul
 const specText = SPEC && existsSync(SPEC) ? readFileSync(SPEC, "utf8") : null;
 const inSpec = (op) => new RegExp(`["']?operationId["']?\\s*:\\s*["']?${escape(op)}["']?\\s*(,|$)`, "m").test(specText ?? "");
 
+// ---------- Git: what this branch adds to the integration branch
+const gitRun = (a) => { try { return execFileSync("git", a, { cwd: ROOT, stdio: ["ignore", "pipe", "ignore"] }).toString(); } catch { return null; } };
+const orchestrator = existsSync(path.join(ROOT, ".orchestrator.json")) ? readJson(path.join(ROOT, ".orchestrator.json")) : {};
+const INTEGRATION_BRANCH = orchestrator.git?.integrationBranch ?? "develop";
+const INTEGRATION = `refs/remotes/origin/${INTEGRATION_BRANCH}`;
+// A pipeline clones one branch: bring the integration branch's ref, as jira-sync does.
+if (process.env.CI && gitRun(["rev-parse", "--verify", "--quiet", INTEGRATION]) === null) {
+  gitRun(["fetch", "--quiet", "origin", `+refs/heads/${INTEGRATION_BRANCH}:${INTEGRATION}`]);
+}
+const HEAD_SHA = gitRun(["rev-parse", "HEAD"])?.trim() ?? null;
+const MERGE_BASE = gitRun(["merge-base", "HEAD", INTEGRATION])?.trim() ?? null;
+// On a branch with work of its own; never on the integration branch itself, nor outside a repository.
+const AHEAD = Boolean(HEAD_SHA && MERGE_BASE && MERGE_BASE !== HEAD_SHA);
+// The spec as the integration branch had it when this branch left it.
+const baseSpec = AHEAD && SPEC ? gitRun(["show", `${MERGE_BASE}:${path.relative(ROOT, SPEC).split(path.sep).join("/")}`]) : null;
+// One operation's text in a spec (YAML or pretty-printed JSON): from its method's line to the next line indented no deeper.
+function opBlock(text, op) {
+  if (!text) return null;
+  const lines = lf(text).split("\n");
+  const re = new RegExp(`["']?operationId["']?\\s*:\\s*["']?${escape(op)}["']?\\s*(,|$)`);
+  const i = lines.findIndex((l) => re.test(l));
+  if (i < 0) return null;
+  const indent = (l) => l.match(/^\s*/)[0].length;
+  let start = i;
+  while (start > 0 && (!lines[start].trim() || indent(lines[start]) >= indent(lines[i]))) start--;
+  let end = i + 1;
+  while (end < lines.length && (!lines[end].trim() || indent(lines[end]) > indent(lines[start]))) end++;
+  return lines.slice(start, end).join("\n");
+}
+// An operation the story changes still waits for its contract while its text equals the integration branch's.
+const unchangedOp = (op) => baseSpec !== null && opBlock(baseSpec, op) !== null && opBlock(baseSpec, op) === opBlock(specText, op);
+
 const decisions = new Map();
 for (const file of readDir(path.join(DIR, "decisions"))) {
   const { data } = parseFrontmatter(readFileSync(file, "utf8"), rel(file));
@@ -215,12 +247,16 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   const secs = sections(body);
   const operations = asList(data.operations);
   if (operations.length && config.contractSpec && !specText) warnings.push(`${config.contractSpec} not found: contract not checked.`);
+  // The existing operations whose shape the story changes. The kickoff fills it when the API changes.
+  const changes = asList(data.changes);
+  for (const op of changes) if (!operations.includes(op)) errors.push(`${f}: changes lists ${op}, which is not in operations.`);
   // The sides that build the story. A story that only uses the existing API is front only; one with no screen, back only.
   const sides = asList(data.sides).length ? asList(data.sides) : ["back", "front"];
   if (sides.some((h) => !["back", "front"].includes(h))) errors.push(`${f}: sides is [${sides.join(", ")}]. Use back, front or both.`);
   stories.push({
     id, title: data.title, code, release: data.release, persona: data.persona,
-    operations, contractMissing: specText ? operations.filter((op) => !inSpec(op)) : operations, sides,
+    operations, changes, sides,
+    contractMissing: specText ? operations.filter((op) => !inSpec(op) || (changes.includes(op) && unchangedOp(op))) : operations,
     tags: asList(data.tags), blockedBy, dependsOn: asList(data.depends_on), discarded: data.discarded === true,
     screens: asList(data.screens), secs, criteria: parseCriteria(section(secs, "criteria"), f, id), file: f,
   });
@@ -451,6 +487,21 @@ if (flag("--check")) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);
     else if (c.result === "fail") errors.push(`${s.file}: the test for ${c.id} fails.`);
     else if (c.result === "skipped") errors.push(`${s.file}: the test for ${c.id} is skipped.`);
+  }
+  // A locked test changes only after the commit that unlocks it. This branch's own commits since a test's last
+  // (re)lock must leave it alone: work done without the plugin, on another machine, fails here.
+  const lockDir = path.join(ROOT, ".orchestrator", "locked");
+  const lists = [path.join(ROOT, ".orchestrator", "locked-tests.txt"),
+    ...(existsSync(lockDir) ? readdirSync(lockDir).filter((f) => f.endsWith(".txt")).map((f) => path.join(lockDir, f)) : [])].filter((f) => existsSync(f));
+  const own = gitRun(["rev-parse", "--verify", "--quiet", INTEGRATION]) !== null ? ["--not", INTEGRATION] : [];
+  if (HEAD_SHA && (AHEAD || !own.length)) for (const list of lists) {
+    const listRel = path.relative(ROOT, list).split(path.sep).join("/");
+    for (const p of lf(readFileSync(list, "utf8")).split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))) {
+      const lock = gitRun(["log", "-1", "--format=%H", "-S", p, "--", listRel])?.trim();
+      if (!lock) continue;
+      const after = gitRun(["log", "--no-merges", "--format=%h %s", `${lock}..HEAD`, ...own, "--", p])?.trim();
+      if (after) errors.push(`${p} is locked in ${listRel} and changed after its lock (${lock.slice(0, 7)}) with no unlock commit: ${after.split("\n").join("; ")}.`);
+    }
   }
 }
 

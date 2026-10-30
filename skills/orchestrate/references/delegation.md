@@ -11,7 +11,7 @@ Ask in this order and stop at the first match:
 
 Code outside a story goes to the builder whose side owns the paths, as a task (`references/outside-stories.md`). Every path belongs to one side's `roles.<role>.paths`. The stories and the rules belong to no builder: you edit them.
 
-**The mechanism.** A builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context.
+**The mechanism.** A builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. It shares your working tree: commit your own edits to stories and lock lists before you brief it, and touch nothing in the tree while it runs. When it stops, the guard compares those files with HEAD.
 
 A builder that reports BLOCKED, or fails the same check 3 times, goes to your human. Never relaunch the same brief.
 
