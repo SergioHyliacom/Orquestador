@@ -147,10 +147,10 @@ claude plugin install easyone-orchestrator@hyliacom --scope project</div>
   <ol class="flow">
     <li><span class="n">1</span><div><b>Diseño escribe la historia</b><span class="who w-design">Diseño</span>
       <span class="ask">Claude lee el Figma, propone las historias y escribe cada una. Te pregunta: <b>«¿Esta lista está bien?»</b> y <b>«¿Creo la tarjeta con este texto?»</b> La revisa otra persona de diseño; si la ves bien, puedes fusionarla tú sin esperar.</span></div></li>
-    <li><span class="n">2</span><div><b>Arranque</b><span class="who w-back">Backend</span>
-      <span class="ask">Lo hace la persona de backend de la tarjeta; si no tiene, la de frontend. Claude lee la historia y te propone qué lados toca y si cambia la API. Te pregunta: <b>«¿Es así?»</b> Si un criterio no se puede construir tal como está, Claude escribe lo que falta en «Preguntas abiertas» y la historia vuelve a diseño.</span></div></li>
+    <li><span class="n">2</span><div><b>Arranque</b><span class="who w-front">Frontend</span><span class="who w-back">Backend</span>
+      <span class="ask">Si la historia tiene pantalla, lo hace la persona de frontend de la tarjeta: Claude mira si la API ya da lo que hace falta. Si no tiene pantalla, lo hace la de backend. Claude lee la historia y te propone qué lados toca y si cambia la API. Te pregunta: <b>«¿Es así?»</b> Si un criterio no se puede construir tal como está, Claude escribe lo que falta en «Preguntas abiertas» y la historia vuelve a diseño.</span></div></li>
     <li><span class="n">3</span><div><b>Contrato, solo si cambia la API</b><span class="who w-back">Backend</span><span class="who w-front">Frontend</span>
-      <span class="ask">Claude de backend escribe la propuesta de endpoints y te pregunta si la manda. A frontend le llega como petición: <b>sí, no o «hablamos»</b>. Sin reunión obligatoria.</span></div></li>
+      <span class="ask">Si el arranque lo hizo frontend, Claude le dice a backend qué falta. Claude de backend escribe la propuesta de endpoints y te pregunta si la manda. A frontend le llega como petición: <b>sí, no o «hablamos»</b>. Sin reunión obligatoria.</span></div></li>
     <li><span class="n">4</span><div><b>Desarrollo</b><span class="who w-back">Backend</span><span class="who w-front">Frontend</span>
       <span class="ask">El agente hace los criterios uno a uno: test, lo ve fallar, lo arregla. Tú das el ok al <b>primero</b>, que es donde se ve si ha entendido lo que hay que hacer; el resto lo hace solo y se para si algo se tuerce. Al terminar te enseña el resultado, criterio a criterio, y te pregunta: <b>«¿Cierro tu parte?»</b></span></div></li>
     <li><span class="n">5</span><div><b>Integración</b><span class="who w-front">Frontend</span>

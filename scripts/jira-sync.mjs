@@ -162,7 +162,9 @@ function turnOf(stage, p, f) {
   const sides = p.sides?.length ? p.sides : ["back", "front"];
   const integrator = sides.includes("front") ? of("front") : of("back");
   if (stage === "design") return designer;
-  if (stage === "contract") return of("back") ?? of("front");
+  // The kickoff: a story with a screen starts with the frontend, which reads in the spec whether the API
+  // already gives what it needs; a story with no screen starts with the backend.
+  if (stage === "contract") return story(p.id)?.screens?.length ? of("front") ?? of("back") : of("back") ?? of("front");
   if (stage === "build") return (p.open?.length === 1 ? of(p.open[0]) : sides.length === 1 ? of(sides[0]) : null);
   if (stage === "integration") return integrator;
   if (stage === "visual") return p.holdVisual ? integrator : designer;

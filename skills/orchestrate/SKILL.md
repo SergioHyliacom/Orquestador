@@ -40,7 +40,7 @@ A designer's session needs only the first row and, rarely, the last three.
 | Stage in Jira | Whose turn | It leaves the stage when |
 |---|---|---|
 | Design | design, or a developer for a story with no screen | the story's `design/<ID>` pull request merges into the integration branch. It comes back here when the kickoff returns the story with open questions |
-| Contract | the card's Backend person, or its Frontend person when it has none | `story/<ID>` exists with the kickoff, and with the contract when the story changes the API |
+| Contract | the card's Frontend person when the story has a screen, its Backend person when it has none (the other one when the card lacks that person) | `story/<ID>` exists with the kickoff, and with the contract when the story changes the API |
 | Build | each side in `sides`, at the same time | every side in `sides` has its lock list on `story/<ID>` |
 | Integration | frontend, or backend when the story has no screen | every criterion on `story/<ID>` is a passing `[test]`, or `[unverified]` waiting for design. With nothing for design to check, it stays here until the merge |
 | Visual review | design; then the integrating side for the merge | `story/<ID>` merges into the integration branch |
@@ -67,7 +67,7 @@ Before you do what your human asks about a story, read its stage (the card, and 
 | Request | It fits when |
 |---|---|
 | Write or change the story | the card is in Design, or the done story is being reopened; a discard fits any stage |
-| The kickoff | the card is in Contract, and your human is its Backend person, or its Frontend person when it has none |
+| The kickoff | the card is in Contract and assigned to your human |
 | Change the contract | the kickoff is done and the other side said yes |
 | Build a criterion | the kickoff is done, the contract is on `story/<ID>` when the API changes, and the criterion is on your human's side |
 | Close the side | every criterion of your side is green |

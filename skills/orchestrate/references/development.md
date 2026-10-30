@@ -8,7 +8,7 @@ Builders do the code; you brief them and check their evidence (`references/deleg
 
 ## Kickoff and contract
 
-The card's Backend person does the kickoff (its Frontend person when it has none).
+Who does the kickoff depends on the story. **With a screen,** the card's Frontend person: they read in the spec (`contract.spec`, generated from the code) whether the API already gives what the screen needs. **With no screen,** the card's Backend person. When the card lacks that person, the other one. The pipeline assigns the card to them.
 
 1. **Read the story with your human first.** When a criterion is ambiguous, contradicts another, lacks a state or an error, or cannot be built with what exists, return the story instead: create `design/<ID>` from the integration branch on the remote, write under **Open questions** what is missing, one line per criterion ID, open its pull request with the designer as reviewer, and merge it (your human may merge it alone). With their ok on the text, mention the designer in a card comment. The pipeline moves the card back to Design.
 2. **Decide the case.** What matters is whether the **shape** of the API changes: its endpoints, the fields they take or return, their errors. A new rule or new stored data does not change it.
@@ -20,7 +20,7 @@ The card's Backend person does the kickoff (its Frontend person when it has none
    | Back only | a rule on the data, a periodic task, emails, an importer | none | `[back]` |
 
 3. **Kickoff.** Propose the case to your human and confirm it. Create `story/<ID>` from the integration branch on the remote and write in the story's frontmatter `sides` and `operations` (the `operationId`s it uses, existing or new). If it touches a risk area its `tags` do not name (`riskTags` in `.orchestrator.json`), add that tag. These are the only frontmatter edits a developer makes. Commit `<ID>: kickoff` and push.
-4. **Contract, only when the API changes.** It is a written proposal, not a meeting. The backend session drafts the shape (operations, fields, types, status codes, errors) and, with its human's ok, posts it as a card comment that mentions the Frontend person. Their session asks them: yes, no (and what to change), or let's talk. On a yes, brief the backend builder with `Change: contract`, show your human the generated operations, commit `<ID>: contract` on `story/<ID>` and push.
+4. **Contract, only when the API changes.** When the frontend did the kickoff, it tells the card's Backend person in a card comment what the screen needs from the API that the spec lacks (a fact, no ok needed). It is a written proposal, not a meeting. The backend session drafts the shape (operations, fields, types, status codes, errors) and, with its human's ok, posts it as a card comment that mentions the Frontend person. Their session asks them: yes, no (and what to change), or let's talk. On a yes, brief the backend builder with `Change: contract`, show your human the generated operations, commit `<ID>: contract` on `story/<ID>` and push.
 
 A later change to the contract follows the same path. A story that turns out to need the other side gets it added to `sides`.
 
