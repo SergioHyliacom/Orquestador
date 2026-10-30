@@ -25,7 +25,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `agents/auditor.md` | Auditoría por muestreo al cerrar cada entrega: lo que los tests no ven, convertido en reglas |
 | `agents/researcher.md` | Investigación de solo lectura |
 | `agents/copywriter.md`, `agents/designer.md` | Del original. Inactivos salvo que `.orchestrator.json` los configure |
-| `skills/orchestrate/` | El día a día de cada sesión. Un núcleo corto que carga cada sesión (`SKILL.md`: el inicio, las etapas, cómo se habla con el otro lado, qué no se hace nunca, cuándo se pregunta a la persona y el cierre) y referencias que se leen solo cuando el trabajo las necesita (`references/`): diseño, desarrollo, encargos a los agentes, trabajo fuera de las historias, auditoría, dónde vive cada cosa, git y Bitbucket, accesos y Orca. A la sesión de diseño le basta la de diseño |
+| `skills/orchestrate/` | El día a día de cada sesión. Un núcleo corto que carga cada sesión (`SKILL.md`: el inicio, las etapas, cómo se habla con el otro lado, qué no se hace nunca, cuándo se pregunta a la persona y el cierre) y referencias que se leen solo cuando el trabajo las necesita (`references/`): diseño, desarrollo, encargos a los agentes, trabajo fuera de las historias, auditoría, dónde vive cada cosa, git y Bitbucket, y accesos. A la sesión de diseño le basta la de diseño |
 | `skills/que-hago/` | En qué punto está la persona y qué le toca: tarjetas, peticiones, rama, historias y PR. Claude la carga al empezar y cuando alguien pregunta qué le toca |
 | `skills/stories/` | Cómo se escriben y mantienen las historias |
 | `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto no guarda copia: las sesiones ejecutan los del plugin y el pipeline los descarga de este repositorio |
@@ -90,7 +90,6 @@ Lo hacen los responsables técnicos con otro plugin, `easyone-cimientos`, que el
 - Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`; si no hay ninguno, la primera sesión ofrece instalar `acli` y guía el login. Sin ninguno de los dos, la sesión pide la lista a la persona.
 - Para diseño: el conector de Figma en Claude, con acceso a los ficheros del proyecto, y Mobbin si el equipo lo usa. Su cuenta de Jira tiene que poder crear y editar tarjetas.
 - En el proyecto: `gotestsum` para el informe de los tests de Go, Vitest y un runner E2E con informe JUnit.
-- Opcional: [Orca](https://orca.dev), que solo usan dos personas del equipo. La guardia lo detecta al empezar la sesión, y solo entonces la sesión lee lo de Orca (`references/harness.md`). En VS Code o en una terminal, los agentes funcionan como subagentes de Claude Code y la sesión no ve nada de Orca.
 
 ## Diferencias con el original
 

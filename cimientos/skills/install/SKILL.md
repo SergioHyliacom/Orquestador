@@ -34,7 +34,7 @@ Then one message: what you will use, what is missing in Jira and what you offer 
    - `README.md` from `assets/stories-readme.md`;
    - `activities.json` with one activity; design adds the rest with its stories;
    - empty `stories/` and `decisions/`.
-3. **`.gitignore`:** `<storiesDir>/.test-results*`, `<storiesDir>/map.md`, `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/`, `.orchestrator/roles/`, `.orchestrator/role.json`, `.claude/settings.local.json` and `/*-builder-*/`. They are generated or personal.
+3. **`.gitignore`:** `<storiesDir>/.test-results*`, `<storiesDir>/map.md`, `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/` and `.claude/settings.local.json`. They are generated or personal.
 4. **`.orchestrator/locked/README.md`**, one line: each side of a story lists its locked tests here as `<ID>-<side>.txt`.
 5. **`.claude/settings.json`:** `"enabledPlugins": { "easyone-orchestrator@hyliacom": true }`, so the team plugin is on in this repository for everyone. `easyone-cimientos` is never enabled there: the leads install it with `--scope local`.
 6. **`docs/rules/`:** copy `assets/rules/comunes.md`, `backend.md` and `frontend.md` as they are.
@@ -61,15 +61,15 @@ Run things; do not read them off `package.json`, `go.mod` or a README.
 2. **The contract.** The OpenAPI spec generated from Go, the command that regenerates it and the one that regenerates the TypeScript client and its mocks. Run both, and check that a change in a Go type reaches the spec and the client: `contract.spec`, `contract.generateSpec`, `contract.generateClient`.
 3. **Each side's paths and fast checks.** Backend: the Go code, the migrations and the spec. Frontend: the React apps, the shared UI packages and the generated client. No path belongs to both, and every root file (`bitbucket-pipelines.yml`, the task file, the lockfiles, `go.mod`, the linters' configuration, `.mcp.json`) belongs to one: propose and let the human confirm. For each side, the fast commands that prove a builder's work when it stops (`go vet` and the touched modules' tests; typecheck and Vitest for the touched app), as `roles.<role>.onStop`. Run them.
 4. **Test reports.** A machine-readable report per runner: Go through JUnit (`gotestsum --junitfile <file>`), Vitest with `--reporter=json --outputFile=<file>`, the end-to-end runner through JUnit. Name one test `[EO-0.1] ...` in each and make the end-to-end one fail: `node <scripts>/stories.mjs --tests --check` must find all three and fail. A runner that names tests another way needs a match in the team plugin's `scripts/stories.mjs`, in the plugin's repository with a version bump.
-5. **Setup.** The command that installs the dependencies in a fresh checkout, the same as the pipeline's. Run it once in a fresh worktree, then one lint command, which must pass.
+5. **Setup.** The command that installs the dependencies in a fresh checkout, the same as the pipeline's. Run it once in a fresh clone, then one lint command, which must pass.
 6. **What the tests cannot prove**, in one sentence (`runnerLimit`): what a person must still check.
 7. **The code graph,** if the foundations set up code-review-graph: one of its tools answers from this session. Otherwise its `CLAUDE.md` line says "not set up".
 
-Ask the human only what you cannot measure, in one message: whether agents may check the UI in a browser and which test data they may touch (the `ui` key; remove it when the answer is no); and, if anyone on the team uses Orca, the permission mode Orca workers launch in (`orca.workerPermissionMode`; remove the `orca` key otherwise).
+Ask the human only what you cannot measure, in one message: whether agents may check the UI in a browser and which test data they may touch (the `ui` key; remove it when the answer is no).
 
 ### 2.2 Complete
 
-1. Add the rest of `assets/orchestrator.json` to `.orchestrator.json`, filled: `setup`, `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams` (the contract: the spec and the generated client, watched by the frontend's typecheck), `orca`, `audit`. Remove `verify.mutation` unless the project already has a mutation tool.
+1. Add the rest of `assets/orchestrator.json` to `.orchestrator.json`, filled: `setup`, `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams` (the contract: the spec and the generated client, watched by the frontend's typecheck), `audit`. Remove `verify.mutation` unless the project already has a mutation tool.
 2. Add `tests` and `contractSpec` to `<storiesDir>/stories.config.json`.
 3. Replace the pipeline with the whole of `assets/bitbucket-pipelines.yml`: the project's image, the `setup` line and the verification lines (the commands of `verify.all` that the test sources do not already run).
 4. Fill the `pending:` lines of `CLAUDE.md` and the local-run section of `README.md`.
@@ -82,7 +82,7 @@ Everything Part 2 writes reaches the integration branch in one pull request the 
 
 - No `{{` and no `pending:` left; every command in `.orchestrator.json` runs; every path in `roles.*.paths`, `CLAUDE.md` and *Patterns* exists, and no role's paths include `docs/rules/` or `<storiesDir>/`.
 - `node <scripts>/stories.mjs --tests --check` passes, as the pipeline will run it.
-- One Agent-tool subagent runs and returns a report file. (Orca users prove their own chain the first time: `orchestrate` → `references/harness.md`, "Prove it once per project".)
+- One Agent-tool subagent runs and returns a report file.
 - The big architecture choices are closed `DEC` files with their why (`estado` skill).
 
 Report each check as ✅, ⚠️ or ❌. Tell the human that when this pull request merges, development is open for the whole team, with nothing to install; the next step is the foundations' audit (`estado` skill). After it, the leads can uninstall this plugin (`claude plugin uninstall easyone-cimientos@hyliacom --scope local`).

@@ -19,9 +19,8 @@ This file is what every session needs. Read a reference only when the work in fr
 | Where to write something down; the rules | `references/where-things-live.md` |
 | Branches, commits, pull requests, Bitbucket | `references/git.md` |
 | A person's access to Jira and Bitbucket | `references/access.md` |
-| Orca, only when the guard says the harness is Orca | `references/harness.md` |
 
-A designer's session needs only the first row and, rarely, the last three.
+A designer's session needs only the first row and, rarely, the last two.
 
 `<scripts>` is this plugin's `scripts/` folder; the guard names it at session start. Run `node <scripts>/stories.mjs` from anywhere inside the repository: it finds the story folder through `.orchestrator.json` → `storiesDir`. The project keeps no copy of the scripts.
 
@@ -102,7 +101,6 @@ Routine technical choices are yours: log them as rulings. When you ask, give a s
 At the end of a block of work:
 
 1. Run `node <scripts>/stories.mjs` to refresh the map. It runs no tests.
-2. In Orca, settle the workers (`references/harness.md`) before you end the turn.
-3. **Preventions,** in a developer's session. A real failure that can happen again: when a machine check can enforce a rule already in `docs/rules/`, build it now as a check pull request, without asking (`references/outside-stories.md`, "Check"); a new rule or pattern is proposed to your human (`references/where-things-live.md`). A failure of behaviour is a failing criterion of its story, never a rule. Then build the checks the audits left pending for your side (`references/audit.md`, "Pending checks"), and merge your check pull requests whose build is green.
-4. Update the ledger.
-5. Tell your human, bad news first: what was committed and pushed, what waits for others, your technical rulings, and any work that ran unsupervised.
+2. **Preventions,** in a developer's session. A real failure that can happen again: when a machine check can enforce a rule already in `docs/rules/`, build it now as a check pull request, without asking (`references/outside-stories.md`, "Check"); a new rule or pattern is proposed to your human (`references/where-things-live.md`). A failure of behaviour is a failing criterion of its story, never a rule. Then build the checks the audits left pending for your side (`references/audit.md`, "Pending checks"), and merge your check pull requests whose build is green.
+3. Update the ledger.
+4. Tell your human, bad news first: what was committed and pushed, what waits for others, your technical rulings, and any work that ran unsupervised.

@@ -62,7 +62,7 @@ Además de lo que ya hacía el original (push forzado, `reset --hard`, commits e
 - **Cada agente pasa las comprobaciones de su lado** al terminar: Go en backend, TypeScript en frontend.
 - **Cada lado bloquea sus tests en su propia lista** (`.orchestrator/locked/<ID>-<lado>.txt`), para que los dos lados no choquen en la rama de la historia. Los agentes no pueden tocar esas listas; tu sesión sí, para bloquear y desbloquear.
 - **Pide confirmación para cada push y cada merge en Bitbucket**, salvo los de las ramas de comprobación (`chore/check-`, sección 5).
-- **Al empezar cada sesión** le dice a Claude dónde están los scripts del plugin y si la sesión corre en Orca.
+- **Al empezar cada sesión** le dice a Claude dónde están los scripts del plugin.
 - **`main` y `develop` solo cambian por PR.** En local solo se actualizan con `git pull --ff-only`; cualquier otro merge, pull o rebase sobre ellas está bloqueado.
 - **Los agentes de solo lectura solo leen**, también en git: no pueden borrar ramas ni tocar los remotos.
 
@@ -72,7 +72,7 @@ Ramas, PR y pipeline en Bitbucket (sección 5).
 
 ### G. Cada sesión carga solo lo que necesita
 
-La skill `orchestrate` tiene un núcleo corto que carga cada sesión: el inicio, las etapas, cómo se habla con el otro lado, la comprobación de la etapa y lo que no se hace nunca, cuándo se pregunta a la persona y el cierre. El resto está en referencias que se leen solo cuando el trabajo las necesita: diseño, desarrollo, encargos a los agentes, trabajo fuera de las historias, auditoría, dónde vive cada cosa, git, accesos y Orca. A la sesión de una diseñadora le basta la de diseño. Orca solo lo usan dos personas: la guardia lo detecta al empezar la sesión y solo entonces se lee su referencia; quien trabaja en VS Code o en una terminal no ve nada de Orca.
+La skill `orchestrate` tiene un núcleo corto que carga cada sesión: el inicio, las etapas, cómo se habla con el otro lado, la comprobación de la etapa y lo que no se hace nunca, cuándo se pregunta a la persona y el cierre. El resto está en referencias que se leen solo cuando el trabajo las necesita: diseño, desarrollo, encargos a los agentes, trabajo fuera de las historias, auditoría, dónde vive cada cosa, git y accesos. A la sesión de una diseñadora le basta la de diseño.
 
 ## 4. Flujo de una historia
 
@@ -460,7 +460,7 @@ De momento Hyliable sigue en su propio repositorio, con su configuración actual
 | Hyliable | Lado de frontend; sigue en su repositorio hasta la migración |
 | Instalación | En dos partes, mínimas: historias el día uno; desarrollo al acabar los cimientos. Las dos, y el estado de los cimientos, en `easyone-cimientos`, que solo instalan los responsables técnicos (`--scope local`) |
 | Scripts de las historias | El proyecto no guarda copia: las sesiones ejecutan los del plugin y el pipeline los descarga del repositorio público del plugin en GitHub |
-| Skill del orquestador | Un núcleo corto que carga cada sesión y referencias que se leen solo cuando el trabajo las necesita. Lo de Orca solo lo leen las dos personas que lo usan, cuando la guardia lo detecta |
+| Skill del orquestador | Un núcleo corto que carga cada sesión y referencias que se leen solo cuando el trabajo las necesita |
 | Primera sesión | Pregunta quién eres: nombre y departamento (diseño, backend o frontend). La cuenta de Jira la lee de Jira y el idioma lo toma de cómo le escribes. Después, directa a tu trabajo |
 | Documentación | Cada cosa tiene un solo sitio (sección 8). Sin `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/` ni web de documentación |
 | Reglas | En `docs/rules/` (comunes, backend y frontend), con ID, porqué y origen; lo que la máquina puede comprobar pasa a ella. Semilla de 13 reglas acordadas al arrancar. Sin sección de lecciones en `CLAUDE.md` |

@@ -45,7 +45,6 @@
       "discarded": "{{Jira status name for Descartada}}"
     }
   },
-  "orca": { "workerPermissionMode": "{{OPTIONAL: the mode Orca workers launch in, e.g. bypassPermissions; remove to use the orchestrator's own mode}}" },
   "git": {
     "protectedBranches": ["main", "develop"],
     "integrationBranch": "develop",

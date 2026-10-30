@@ -65,12 +65,3 @@ Proof: <fails on <file:line> now; passes once it is fixed>
 ```
 
 Reply in at most 12 lines: the first line is `<name>: <CLEAN | FINDINGS>`, then the Critical and Important findings in one line each, then the report path.
-
-## If Orca dispatched you
-
-Your injected preamble is authoritative: copy its exact executable, worker handle, Task ID and Dispatch ID, and every other flag it carries. Then:
-
-- A question only the orchestrator can answer: `orchestration ask`. Never open a local question TUI it cannot reach; after a timeout, resume the same message ID.
-- Read its follow-ups at each natural checkpoint and once more immediately before you finish: `orchestration check --terminal <your handle> --json`. If it returns `consumer_fenced`, stop and send nothing.
-- Finish with exactly one `worker_done`: three sentences (what changed, what you found, what remains), both lifecycle IDs, `--outcome succeeded` or `--outcome failed`, and `--report-path <your report>`. BLOCKED before completion is an `escalation`. Never hide a failure in prose.
-- Then end the turn and idle. Do not poll, do not close your terminal, do not start new work.

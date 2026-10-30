@@ -11,7 +11,7 @@ Ask in this order and stop at the first match:
 
 Code outside a story goes to the builder whose side owns the paths, as a task (`references/outside-stories.md`). Every path belongs to one side's `roles.<role>.paths`. The stories and the rules belong to no builder: you edit them.
 
-**The mechanism.** In VS Code or a terminal, a builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. In Orca, read `references/harness.md`.
+**The mechanism.** A builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context.
 
 A builder that reports BLOCKED, or fails the same check 3 times, goes to your human. Never relaunch the same brief.
 

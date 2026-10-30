@@ -19,14 +19,14 @@ Create every branch from the remote, so it starts from what is really there: `gi
 ## Local rules
 
 - Never commit on a protected branch (`git.protectedBranches`, default `main` and `develop`). The guard blocks it.
-- In Orca a builder works in its own worktree, inside the repo's configured worktree location. In plain Claude Code it works in your checkout: only one writer runs at a time.
+- A builder works in your checkout: only one writer runs at a time.
 - Stage files by name. The guard blocks `git add .`, `-A` and `--all` unless `git.blockBroadAdd` is `false`.
 - One commit per criterion; your human's ok comes on the first one of their side and on the finished side. Message: `<criterion ID>: <the rule, short>`. The kickoff: `<ID>: kickoff`. The contract: `<ID>: contract`. A lock: `<ID>: lock <side> tests`. An unlock, when a side reopens: `<ID>: unlock <side> <criterion IDs>`, committed alone; when other work must change a locked file: `<ID>: unlock <side> <file>`. A reopened story: `<ID>: reopen <criterion IDs>`. A task: what changes, short.
 - Check `git status` before staging. Unrelated changes stay out of the commit.
 - Never `--no-verify`, `reset --hard`, `clean -f` or force push. The guard blocks them.
 - Each side's locked tests live in `.orchestrator/locked/<ID>-<side>.txt`, so the two sides never touch the same list.
 - Both sides commit on `story/<ID>`. Before each push, `git pull --rebase`; a conflict means both touched the same file: stop and tell your human.
-- Personal files never travel: `.orchestrator/me.json`, `.orchestrator/state.md`, `.orchestrator/work/`, `.orchestrator/roles/` and `.orchestrator/role.json` are in `.gitignore`, and so are the builders' worktrees when Orca puts them inside the repository (`/*-builder-*/`).
+- Personal files never travel: `.orchestrator/me.json`, `.orchestrator/state.md` and `.orchestrator/work/` are in `.gitignore`.
 
 ## Push and remote
 
