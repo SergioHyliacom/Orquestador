@@ -1,17 +1,14 @@
 {
   "name": "hyliacom",
-  "description": "Hyliacom's plugins: the EASY One orchestrator, and the set-up for the technical leads",
-  "owner": { "name": "Hyliacom" },
+  "description": "Hyliacom's plugin: the EASY One orchestrator",
+  "owner": {
+    "name": "Hyliacom"
+  },
   "plugins": [
     {
       "name": "easyone-orchestrator",
       "source": "./",
       "description": "EASY One orchestrator, for the whole team: stories, OpenAPI contract, paired builders, Jira and Bitbucket"
-    },
-    {
-      "name": "easyone-cimientos",
-      "source": "./cimientos",
-      "description": "For the technical leads only: sets a project up (install) and follows the foundations until development opens"
     }
   ]
 }

@@ -536,7 +536,7 @@
 <section id="arranque">
   <h2><span class="num">6</span>Cómo arrancamos</h2>
   <p class="lead">El stack no sale de las historias: el esqueleto se monta antes, porque el propio flujo lo necesita. Las funcionalidades solo llegan a través de historias.</p>
-  <p style="margin:0 0 12px">Lo llevan los <b>responsables técnicos</b> con otro plugin, <code>easyone-cimientos</code>, instalado solo en sus equipos (<code>--scope local</code>). El resto del equipo no lo instala ni ve nada de esto.</p>
+  <p style="margin:0 0 12px">Lo llevan los <b>responsables técnicos</b>. El resto del equipo no ve nada de esto.</p>
   <div class="timeline">
     <div class="step"><h3>Día uno</h3>Repositorio, proyecto de Jira con sus 7 estados (las 6 etapas y «Descartada») y los campos Backend y Frontend, ajustes de Bitbucket e <b>instalación, parte 1</b>, mínima:<ul>
       <li>configuración y carpeta de historias, que ya viene en español, y un primer pipeline</li>
@@ -552,7 +552,7 @@
   </div>
   <div class="parallel"><b>En paralelo, desde el día uno:</b> diseño escribe las historias de la entrega 1 (plataforma mínima). Nadie espera a nadie.</div>
   <p style="margin:12px 0 0;font-size:14px;color:var(--muted)">En los cimientos <b>no</b> se hacen tablas de negocio, el módulo de identidad ni un CRUD genérico «por si acaso»: eso sería construir por capas a ciegas.</p>
-  <p style="margin:8px 0 0;font-size:14px;color:var(--muted)">Mientras duran los cimientos, a los responsables técnicos «¿qué me toca?» o «¿cómo van los cimientos?» les enseña su estado (skill <code>estado</code> de <code>easyone-cimientos</code>): cada pieza con ✅, ❌ o ⚠️, las decisiones abiertas y qué cerrar primero. Es la misma lista que comprueba la parte 2; cuando todo está en ✅, la sesión propone lanzarla. Al resto de desarrolladores su sesión solo les dice que el desarrollo aún no está abierto y les ofrece escribir historias sin pantalla.</p>
+  <p style="margin:8px 0 0;font-size:14px;color:var(--muted)">Mientras duran los cimientos, a los desarrolladores su sesión solo les dice que el desarrollo aún no está abierto y les ofrece escribir historias sin pantalla.</p>
 </section>
 
 <!-- 7 -->
@@ -755,7 +755,7 @@
   </div>
 </section>
 
-<footer>Plugin <code>easyone-orchestrator</code>, adaptado del Orchestrator de Sydney y Claude. El detalle está en las skills <code>orchestrate</code> (un núcleo corto que lee cada sesión y referencias que se leen solo cuando hacen falta; dónde vive cada cosa, en <code>references/where-things-live.md</code>) y <code>stories</code> del plugin; la preparación del proyecto, en <code>install</code> y <code>estado</code> de <code>easyone-cimientos</code>.</footer>
+<footer>Plugin <code>easyone-orchestrator</code>, adaptado del Orchestrator de Sydney y Claude. El detalle está en las skills <code>orchestrate</code> (un núcleo corto que lee cada sesión y referencias que se leen solo cuando hacen falta; dónde vive cada cosa, en <code>references/where-things-live.md</code>) y <code>stories</code> del plugin.</footer>
 </div>
 </body>
 </html>

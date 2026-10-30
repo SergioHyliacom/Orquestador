@@ -28,7 +28,6 @@ Read all of this before you say anything. Run the independent reads in parallel.
 
    Without a token, or when Bitbucket rejects it, skip this, say so once and offer to set it up (the same place).
 6. **The ledger.** `.orchestrator/state.md`: what this session left half done last time.
-7. **Set-up work.** If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it as well. It says what to add about the foundations and their audit.
 
 ## 2. Decide what is next
 

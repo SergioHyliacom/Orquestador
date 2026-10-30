@@ -31,7 +31,6 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto no guarda copia: las sesiones ejecutan los del plugin y el pipeline los descarga de este repositorio |
 | `hooks/guard.mjs` | La guardia |
 | `docs/` | El diagrama y la propuesta |
-| `cimientos/` | Otro plugin, `easyone-cimientos`, solo para los responsables técnicos: prepara el proyecto y sigue los cimientos hasta que se abre el desarrollo. Ver [`cimientos/README.md`](cimientos/README.md) |
 
 ## Instalar el plugin
 
@@ -80,7 +79,7 @@ Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va si
 
 ## Preparar un proyecto
 
-Lo hacen los responsables técnicos con otro plugin, `easyone-cimientos`, que el resto del equipo no instala: [`cimientos/README.md`](cimientos/README.md). Mientras ponen los cimientos, diseño ya escribe historias. El desarrollo se abre para todos cuando terminan, sin que nadie tenga que instalar nada más.
+Lo hacen los responsables técnicos: `.orchestrator.json`, la carpeta de historias, `CLAUDE.md`, las reglas de `docs/rules/` y el pipeline. Mientras ponen los cimientos, diseño ya escribe historias. El desarrollo se abre para todos cuando `.orchestrator.json` tiene `roles`, sin que nadie tenga que instalar nada más.
 
 ## Requisitos
 
@@ -117,9 +116,12 @@ Cada vez que un cambio tiene que llegar al equipo, en el mismo commit:
 
 Cada persona lo actualiza con `claude plugin update easyone-orchestrator@hyliacom` y reinicia Claude Code.
 
-`easyone-cimientos` tiene su propia versión, en `cimientos/.claude-plugin/plugin.json`, con la misma regla. Sube la del plugin que cambia: un cambio en `scripts/` es del plugin del equipo; uno en lo que copia la instalación al proyecto (`cimientos/skills/install/assets/`: plantillas, configuración de las historias, pipeline), de `easyone-cimientos`.
+El proyecto no guarda copia de `stories.mjs` ni de `jira-sync.mjs`. Las sesiones ejecutan los del plugin que tiene instalado cada persona (la guardia le dice a la sesión dónde están), y el pipeline de Bitbucket los descarga en cada build de `raw.githubusercontent.com/SergioHyliacom/Orquestador/main/scripts`. Por eso un cambio en `scripts/` llega al pipeline de todos los proyectos en cuanto se sube a `main` en GitHub, sin esperar al número de versión; para fijar una versión, se cambia `main` por un commit en el pipeline del proyecto. Un proyecto instalado antes de la 0.10.0 todavía guarda las copias: un PR `chore/` las borra, quita `plugin` de `.orchestrator.json` si está y cambia en cada paso del pipeline las órdenes `node <carpeta de historias>/stories.mjs` y `jira-sync.mjs` por estas líneas y `node /tmp/orq/…`:
 
-El proyecto no guarda copia de `stories.mjs` ni de `jira-sync.mjs`. Las sesiones ejecutan los del plugin que tiene instalado cada persona (la guardia le dice a la sesión dónde están), y el pipeline de Bitbucket los descarga en cada build de `raw.githubusercontent.com/SergioHyliacom/Orquestador/main/scripts`. Por eso un cambio en `scripts/` llega al pipeline de todos los proyectos en cuanto se sube a `main` en GitHub, sin esperar al número de versión; para fijar una versión, se cambia `main` por un commit en el pipeline del proyecto. Un proyecto instalado antes de la 0.10.0 todavía guarda las copias: un PR `chore/` las borra y cambia el pipeline a las líneas que las descargan (skill `install` de `easyone-cimientos`).
+```
+- export ORQ=https://raw.githubusercontent.com/SergioHyliacom/Orquestador/main/scripts
+- mkdir -p /tmp/orq && curl -fsSL "$ORQ/stories.mjs" -o /tmp/orq/stories.mjs && curl -fsSL "$ORQ/jira-sync.mjs" -o /tmp/orq/jira-sync.mjs
+```
 
 ## Traer mejoras del original
 
