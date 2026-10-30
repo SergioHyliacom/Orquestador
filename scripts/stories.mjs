@@ -9,14 +9,26 @@
 //   node stories.mjs --json          print the computed state as JSON (for agents)
 //   node stories.mjs --summary       print only what needs attention (for the start of a session)
 //
-// Configuration: stories.config.json next to this file.
+// Run it from anywhere in the repository: the story folder is .orchestrator.json → storiesDir, and its
+// configuration is stories.config.json there.
 
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync, writeSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const DIR = path.dirname(fileURLToPath(import.meta.url));
+// The story folder. A copy of this script inside it (an older install) finds stories.config.json next to itself;
+// the plugin's own copy, run from anywhere in the repository, finds it through .orchestrator.json → storiesDir.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+function storyFolder() {
+  if (existsSync(path.join(HERE, "stories.config.json"))) return HERE;
+  let top = process.cwd();
+  try { top = execFileSync("git", ["rev-parse", "--show-toplevel"], { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a repository */ }
+  const orch = path.join(top, ".orchestrator.json");
+  if (!existsSync(orch)) { console.error(`${path.basename(fileURLToPath(import.meta.url))}: run it from inside a repository that has .orchestrator.json.`); process.exit(2); }
+  return path.join(top, JSON.parse(readFileSync(orch, "utf8").replace(/^﻿/, "")).storiesDir ?? "product");
+}
+const DIR = storyFolder();
 const lf = (s) => s.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n");
 const readJson = (p) => JSON.parse(lf(readFileSync(p, "utf8")));
 
@@ -63,7 +75,7 @@ const resultsFile = (i) => path.join(DIR, `.test-results${i ? `-${i}` : ""}`);
 const ID_PREFIX = config.idPrefix ? escape(config.idPrefix) : "[A-Z][A-Z0-9]+";
 const STORY_ID = new RegExp(`^${ID_PREFIX}-\\d+$`);
 const MAP = path.join(DIR, "map.md");
-const SCRIPT = path.relative(ROOT, path.join(DIR, "stories.mjs")).split(path.sep).join("/");
+const SCRIPT = HERE === DIR ? path.relative(ROOT, path.join(DIR, "stories.mjs")).split(path.sep).join("/") : "stories.mjs";
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? `{${k}}`);
 const STATUS_ORDER = ["works", "unverified", "partial", "failing", "blocked", "pending", "discarded"];
 const DECISION_CLOSED = new RegExp(L.decisionClosed, "i");
@@ -203,7 +215,7 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   const secs = sections(body);
   const operations = asList(data.operations);
   if (operations.length && config.contractSpec && !specText) warnings.push(`${config.contractSpec} not found: contract not checked.`);
-  // The halves the story has. A story that only uses the existing API is front only; one with no screen, back only.
+  // The sides that build the story. A story that only uses the existing API is front only; one with no screen, back only.
   const sides = asList(data.sides).length ? asList(data.sides) : ["back", "front"];
   if (sides.some((h) => !["back", "front"].includes(h))) errors.push(`${f}: sides is [${sides.join(", ")}]. Use back, front or both.`);
   stories.push({

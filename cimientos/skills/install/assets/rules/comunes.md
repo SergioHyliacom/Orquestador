@@ -1,6 +1,6 @@
 # Reglas comunes
 
-Las lee cada sesión, porque las importa `CLAUDE.md`, y cada agente. Cada regla dice qué, por qué y de dónde sale. Lo que ya comprueba la máquina no se lee aquí: está en *Comprobadas por la máquina*. Cambian por PR (skill `orchestrate`, §11).
+Las lee cada sesión, porque las importa `CLAUDE.md`, y cada agente. Cada regla dice qué, por qué y de dónde sale. Lo que ya comprueba la máquina no se lee aquí: está en *Comprobadas por la máquina*. Cambian por PR (skill `orchestrate`, `references/where-things-live.md`).
 
 - **R-01** Ningún dato personal ni credencial en logs, mensajes de error ni respuestas de la API. — Lo exige el RGPD, y un secreto en un log ya es público. — Acordada al arrancar.
 - **R-02** Toda llamada a un modelo de IA pasa por el AI Gateway; ningún módulo ni servicio llama directamente a un proveedor, tampoco el servicio del agente de Hyliable. — Sin el gateway no hay medición, cuotas ni redacción de datos personales. — Acordada al arrancar.

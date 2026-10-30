@@ -1,48 +1,50 @@
-# Product: user stories
+# Producto: historias de usuario
 
-This folder describes what the product does, what it lacks and how far it is from the first release.
+Esta carpeta describe qué hace el producto, qué le falta y cuánto queda para la primera entrega.
 
-- **Start with the map**, `map.md`. Generate it with `node {{STORIES_DIR}}/stories.mjs`: it shows every story, its status and the progress to the first release. It is never committed. The stage each story is in (design, contract, build…) is its Jira card.
-- **Stories** are in `stories/`, one per file.
-- **Decisions**, of product and of architecture, are in `decisions/`, from DEC-001. An open decision blocks the stories that name it.
+- **Empieza por el mapa**, `map.md`. Lo genera tu sesión de Claude con `stories.mjs`, que viene en el plugin: muestra cada historia, su estado y el avance hacia la primera entrega. Nunca se sube a git. La etapa en la que está cada historia (diseño, contrato, desarrollo…) es su tarjeta de Jira.
+- **Las historias** están en `stories/`, una por fichero.
+- **Las decisiones**, de producto y de arquitectura, están en `decisions/`, desde DEC-001. Una decisión abierta bloquea las historias que la nombran.
 
-## Levels
+## Niveles
 
-| Level | What it is |
+| Nivel | Qué es |
 |---|---|
-| Activity | One step of the user's journey (`activities.json`) |
-| Story | One capability a person notices |
-| Criterion | One observable behaviour, checked one way |
+| Actividad | Un paso del recorrido de la persona (`activities.json`) |
+| Historia | Una capacidad que una persona nota |
+| Criterio | Un comportamiento observable, comprobado de una sola forma |
 
-## Statuses
+## Estados
 
-Nobody writes a status by hand. `stories.mjs` computes it from the criteria and the decisions.
+Nadie escribe un estado a mano. `stories.mjs` lo calcula a partir de los criterios y las decisiones.
 
-The first matching row wins, top to bottom.
+Gana la primera fila que se cumple, de arriba abajo.
 
-| Status | Rule |
+| Estado | Regla |
 |---|---|
-| ⛔ Discarded | The story was dropped. It keeps the reason. |
-| 🔒 Blocked | The story depends on an open decision. |
-| ❌ Failing | At least one criterion fails. |
-| ⬜ Pending | No criterion is built. |
-| 🟡 Partial | At least one criterion is unbuilt. |
-| ⚠️ Unverified | At least one criterion is unverified. |
-| ✅ Works | Every criterion is verified. |
+| ⛔ Descartada | La historia se abandonó. Conserva el motivo. |
+| 🔒 Bloqueada | La historia depende de una decisión abierta. |
+| ❌ Falla | Al menos un criterio falla. |
+| ⬜ Pendiente | No hay ningún criterio construido. |
+| 🟡 Parcial | Al menos un criterio está sin construir. |
+| ⚠️ Sin verificar | Al menos un criterio está sin verificar. |
+| ✅ Funciona | Todos los criterios están verificados. |
 
-## Commands
+## Comandos
+
+Los ejecuta tu sesión de Claude. El script es del plugin `easyone-orchestrator`: el proyecto no guarda copia, y el pipeline lo descarga del repositorio del plugin.
 
 ```
-node {{STORIES_DIR}}/stories.mjs              generate the map with the last test results
-node {{STORIES_DIR}}/stories.mjs --tests      run the tests, then generate the map
-node {{STORIES_DIR}}/stories.mjs --check      also fail on a failing criterion of the first release
-node {{STORIES_DIR}}/stories.mjs --ready ID   check that a story is ready to build
-node {{STORIES_DIR}}/stories.mjs --pr ID      print the PR checklist for a story
+node <scripts>/stories.mjs              genera el mapa con los últimos resultados de los tests
+node <scripts>/stories.mjs --tests      ejecuta los tests y después genera el mapa
+node <scripts>/stories.mjs --check      además, falla si un criterio de la primera entrega falla
+node <scripts>/stories.mjs --ready ID   comprueba que una historia está lista para construirse
+node <scripts>/stories.mjs --pr ID      imprime la lista de comprobación del PR de una historia
 ```
 
-## Rules for anyone who changes the product
+## Reglas para quien cambie el producto
 
-- A change to what a person can do updates its story in the same commit.
-- A bug is not a new story. It reopens the story it breaks and marks that criterion as failing.
-- A new capability needs its story before work starts.
-- Templates are in `templates/`.
+- Un cambio en lo que una persona puede hacer actualiza su historia en el mismo commit.
+- Un fallo no es una historia nueva. Reabre la historia que rompe y marca ese criterio como `[falla: motivo]`.
+- Una capacidad nueva necesita su historia antes de empezar el trabajo.
+- Las plantillas están en `templates/`.

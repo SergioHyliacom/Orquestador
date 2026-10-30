@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: "Independent read-only review of one story, every half of it, against its acceptance criteria. Checks that the tests really observe each criterion, then story compliance, then correctness and security. It edits nothing except its report. Use once at story close, only when the story carries a risk tag (account isolation, identity, payments, fiscal, personal data, production). Name each instance reviewer-<story ID>."
+description: "Independent read-only review of one story, both sides of it, against its acceptance criteria. Checks that the tests really observe each criterion, then story compliance, then correctness and security. It edits nothing except its report. Use once at story close, only when the story carries a risk tag (account isolation, identity, payments, fiscal, personal data, production). Name each instance reviewer-<story ID>."
 tools: Read, Write, Grep, Glob, Bash, PowerShell, mcp__code-review-graph__*
 model: inherit
 maxTurns: 60

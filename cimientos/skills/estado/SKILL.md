@@ -16,7 +16,7 @@ The skills named here without a prefix (`orchestrate`, `stories`, `que-hago`) ar
 - The rules that are not negotiated (for EASY One: the account is resolved on the server, one database per account, limits between modules) and the linters.
 - The security checks the CI runs (for EASY One: no concatenated SQL, gitleaks, govulncheck).
 - The module generator and a reference module: they become the patterns every story copies.
-- The code graph (code-review-graph), configured in the repository.
+- The code graph (code-review-graph), configured in the repository, if the team uses it.
 - The pipeline in Bitbucket.
 - The big decisions that shape the code, written down: the 5 to 10 architecture choices the code cannot explain by itself (for EASY One: one database per account, the modular monolith, the OpenAPI generated from Go, the AI gateway…), each a `DEC` file of half a page with its why. The code shows what was chosen, never why. Sessions read each one only when the work touches it.
 
@@ -32,7 +32,7 @@ Read only: run no generator, edit nothing, commit nothing.
    - the toy endpoint goes from Go through the OpenAPI spec and the generated client to the panel and an end-to-end test, on a real PostgreSQL;
    - the security checks run in the CI;
    - the module generator and the reference module exist;
-   - the code graph is configured in the repository;
+   - the code graph is configured in the repository, if the team uses it;
    - the pipeline runs in Bitbucket;
    - the big decisions are closed `DEC` files, each with its why.
 3. **Each item gets one mark:**
@@ -50,4 +50,4 @@ Read only: run no generator, edit nothing, commit nothing.
 
 ## 3. The foundations' audit
 
-The first audit, right after Part 2 merges: the foundations' patterns are the ones every story will copy. Run the `orchestrate` skill's §10 with one change: the sample is not stories but the main pieces of the foundations and their commits (the reference module, the module generator, the toy endpoint and its screen), named by you; the auditor never chooses what to look at. Say in the brief that this is the foundations' audit, with no stories: the auditor then names each finding's module and commit instead. The record is `docs/audits/entrega-0.md`. The checks are built without asking and the other side's go into the record as pending for it, as in any audit (`orchestrate` §10, steps 4 and 6).
+The first audit, right after Part 2 merges: the foundations' patterns are the ones every story will copy. Run the audit of the `orchestrate` skill (`references/audit.md`) with one change: the sample is not stories but the main pieces of the foundations and their commits (the reference module, the module generator, the toy endpoint and its screen), named by you; the auditor never chooses what to look at. Say in the brief that this is the foundations' audit, with no stories: the auditor then names each finding's module and commit instead. The record is `docs/audits/entrega-0.md`. The checks are built without asking and the other side's go into the record as pending for it, as in any audit.

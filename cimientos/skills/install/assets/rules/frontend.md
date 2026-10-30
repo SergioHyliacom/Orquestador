@@ -1,6 +1,6 @@
 # Reglas del frontend
 
-Las lee el `frontend-builder` en cada encargo, junto con las comunes; también el `reviewer` cuando el diff toca el frontend, y el `auditor`. Cada regla dice qué, por qué y de dónde sale. Cambian por PR (skill `orchestrate`, §11).
+Las lee el `frontend-builder` en cada encargo, junto con las comunes; también el `reviewer` cuando el diff toca el frontend, y el `auditor`. Cada regla dice qué, por qué y de dónde sale. Cambian por PR (skill `orchestrate`, `references/where-things-live.md`).
 
 - **R-13** A la API de Go solo se llega por el cliente generado; nunca con una petición escrita a mano. — Si el contrato cambia, el error de tipos lo avisa. — Acordada al arrancar.
 

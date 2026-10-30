@@ -25,9 +25,9 @@ Stories have no priority field. The release sets the order. The first release in
 - ID: the story's **Jira key**, e.g. `EO-123`. Create the Jira card first and use its key; the same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
 - Author: design writes every story with a screen. A story with no screen can be written by the developer who understands it, backend or frontend.
-- Approval: the story's pull request. By default another person of design reviews it; its author may also merge it alone, and the kickoff returns it when a criterion cannot be built (`orchestrate` skill, §6.1 and §6.2).
+- Approval: the story's pull request. By default another person of design reviews it; its author may also merge it alone, and the kickoff returns it when a criterion cannot be built (`orchestrate` skill, `references/design.md` and `references/development.md`).
 - Tags: `tags` holds the risk tags (`.orchestrator.json` → `riskTags`) of the areas the story touches. Whoever writes the story sets them; a developer adds one at the kickoff when the story touches an area it does not name. A risk tag adds the reviewer at story close.
-- Sides: the `sides` field lists the halves the story has: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
+- Sides: the `sides` field lists the sides that build the story: `[back, front]` (the default), `[front]` when it only uses the API as it is, `[back]` when it has no screen. The developers set it at the kickoff.
 - Operations: the `operations` field lists the API operations (OpenAPI `operationId`s) the story uses, existing or new. Design leaves it empty. The developers fill it at the kickoff, and the validator checks that each one is in the spec.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
 - Status is never written by hand. The script computes it from the criteria and the decisions.
@@ -77,16 +77,16 @@ In this project a test is tagged by starting its name with the criterion ID, and
 - Go: a subtest, `t.Run("[EO-123.1] rejects an invalid NIF", ...)`.
 - Vitest and the end-to-end runner: the title, `it("[EO-123.1] shows 'NIF no válido' under the field")`.
 
-A criterion that both halves implement has a test on each side with the same ID. It works only when every test with its ID passes.
+A criterion that both sides implement has a test on each side with the same ID. It works only when every test with its ID passes.
 
 A bug is not a new story. Mark the criterion it breaks as failing.
 
 ## Fixing a bug
 
-A bug reopens the story it breaks (`orchestrate` skill, §6.9); an urgent one in production is a hotfix first (§6.11).
+A bug reopens the story it breaks (`orchestrate` skill, `references/development.md`); an urgent one in production is a hotfix first (`references/outside-stories.md`).
 
 1. Find the criterion the bug breaks. On the reopened `story/<ID>`, mark it failing, with the reason. If no criterion covers the behaviour, add one to the story it belongs to.
-2. Find the root cause before changing code. Check the project's seams first: a bug where nothing errors and the old behaviour keeps showing is usually one half of a seam that did not change.
+2. Find the root cause before changing code. Check the project's seams first: a bug where nothing errors and the old behaviour keeps showing is usually one end of a seam that did not change.
 3. The builder of the side that owns it writes a test, under the criterion's ID, that reproduces the bug, and watches it fail. Unlock that test file first if it is locked.
 4. The same builder fixes the code until the test passes, in the pair loop. The marker is set again at integration.
 
@@ -99,7 +99,7 @@ A story names a decision in `blocked_by`. A story blocked by an open decision ca
 
 ## Discarding
 
-Never delete a story. Set `discarded: true` and add a **Discard reason** section with the date and the reason. It reaches the integration branch through `design/<ID>`, never through the story's own branches, and the card moves to Discarded when it merges (`orchestrate` skill, §6.10).
+Never delete a story. Set `discarded: true` and add a **Discard reason** section with the date and the reason. It reaches the integration branch through `design/<ID>`, never through the story's own branches, and the card moves to Discarded when it merges (`orchestrate` skill, `references/design.md`0).
 
 ## Splitting a story
 
@@ -117,7 +117,7 @@ Then try these patterns in order. Prefer the split that lets you drop or defer a
 8. Defer performance: make it work, then make it fast, as two stories.
 9. Spike: when the unknown is too big, a time-boxed investigation first.
 
-Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices. The backend and frontend halves of a story are two sides of the same story, not two stories.
+Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices. The backend and frontend parts of a story are two sides of the same story, not two stories.
 
 ## Turning a request into stories
 
@@ -126,12 +126,12 @@ Never split by layer ("API for…", "database for…", "front end of…"). A lay
 3. Write the story and its rules. Ask the human only what you cannot infer, all at once.
 4. Add key examples where a rule is ambiguous.
 5. Fill out-of-scope and verification. Link the Figma frames in `screens`.
-6. Run `node <storiesDir>/stories.mjs --ready <ID>`.
+6. Run `node <scripts>/stories.mjs --ready <ID>`.
 7. The story enters the integration branch through a pull request: another person approves it, or its author merges it alone. Merging it is the approval: from then on it is the developers' turn.
 
 ## From a Figma design
 
-Design's stories start from the design project in Figma (`orchestrate` skill, §6.1). Figma is the only home of the design: the story links its frames and never copies images, measurements or colours.
+Design's stories start from the design project in Figma (`orchestrate` skill, `references/design.md`). Figma is the only home of the design: the story links its frames and never copies images, measurements or colours.
 
 - **A story is a capability, not a screen.** One screen can hold several stories (a list, its filter, its export); one story can cross several screens (a sign-up in three steps). Split by what a person achieves, with the patterns in *Splitting a story*.
 - **Each drawn state is a criterion:** loading, empty, error, success, permission denied, a limit reached. A state the story needs and Figma does not draw goes under Open questions until design draws it: the story is not ready.

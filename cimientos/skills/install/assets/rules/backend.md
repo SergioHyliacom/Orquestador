@@ -1,6 +1,6 @@
 # Reglas del backend
 
-Las lee el `backend-builder` en cada encargo, junto con las comunes; también el `reviewer` cuando el diff toca el backend, y el `auditor`. Cada regla dice qué, por qué y de dónde sale. Cambian por PR (skill `orchestrate`, §11).
+Las lee el `backend-builder` en cada encargo, junto con las comunes; también el `reviewer` cuando el diff toca el backend, y el `auditor`. Cada regla dice qué, por qué y de dónde sale. Cambian por PR (skill `orchestrate`, `references/where-things-live.md`).
 
 - **R-07** La cuenta sale de la sesión, el token o el `Host` validado, en un solo sitio; ningún handler la toma de la petición. — Se leerían datos de otra cuenta. — Acordada al arrancar.
 - **R-08** Los datos de una cuenta se leen y escriben solo por la conexión a su BD; sin consultas cruzadas entre BDs. — Es el aislamiento físico entre cuentas. — Acordada al arrancar.

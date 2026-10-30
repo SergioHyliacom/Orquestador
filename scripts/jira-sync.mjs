@@ -7,7 +7,7 @@
 //   node jira-sync.mjs --branch <name>    the branch to evaluate; it must be the one checked out (default: BITBUCKET_BRANCH, else the current one)
 //   node jira-sync.mjs --no-fetch         do not fetch the story branches first
 //
-// It reads <root>/.orchestrator.json (jira, including jira.fields, and git.integrationBranch) and `stories.mjs --json`, so run
+// Run it from anywhere in the repository. It reads <root>/.orchestrator.json (jira, including jira.fields, and git.integrationBranch) and `stories.mjs --json`, so run
 // `stories.mjs --tests` first on a story branch. Credentials come from the environment: JIRA_EMAIL and
 // JIRA_API_TOKEN (Bitbucket secured variables). JIRA_BASE_URL overrides https://<jira.site>.
 
@@ -16,7 +16,18 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const DIR = path.dirname(fileURLToPath(import.meta.url));
+// The story folder. A copy of this script inside it (an older install) finds stories.config.json next to itself;
+// the plugin's own copy, run from anywhere in the repository, finds it through .orchestrator.json → storiesDir.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+function storyFolder() {
+  if (existsSync(path.join(HERE, "stories.config.json"))) return HERE;
+  let top = process.cwd();
+  try { top = execFileSync("git", ["rev-parse", "--show-toplevel"], { stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { /* not a repository */ }
+  const orch = path.join(top, ".orchestrator.json");
+  if (!existsSync(orch)) { console.error(`${path.basename(fileURLToPath(import.meta.url))}: run it from inside a repository that has .orchestrator.json.`); process.exit(2); }
+  return path.join(top, JSON.parse(readFileSync(orch, "utf8").replace(/^﻿/, "")).storiesDir ?? "product");
+}
+const DIR = storyFolder();
 const lf = (s) => s.replace(/^﻿/, "").replace(/\r\n?/g, "\n");
 const readJson = (p) => JSON.parse(lf(readFileSync(p, "utf8")));
 const args = process.argv.slice(2);
@@ -58,7 +69,7 @@ if (!flag("--no-fetch")) {
 
 // ---------- Stories, as the validator computes them on this checkout
 
-const run = spawnSync(process.execPath, [path.join(DIR, "stories.mjs"), "--json"], { cwd: ROOT, encoding: "utf8" });
+const run = spawnSync(process.execPath, [path.join(HERE, "stories.mjs"), "--json"], { cwd: ROOT, encoding: "utf8" });
 let state;
 try { state = JSON.parse(run.stdout); } catch { fail(`stories.mjs --json gave no JSON:\n${run.stderr}`); }
 const story = (id) => state.stories.find((s) => s.id === id);
@@ -68,9 +79,8 @@ const story = (id) => state.stories.find((s) => s.id === id);
 const waitsForDesign = (c) => c.kind === "unverified" && !c.invalid;
 const settled = (c) => (c.kind === "test" && c.result === "pass") || c.kind === "manual" || waitsForDesign(c);
 
-// A side is closed when its lock list is on this branch: a half commits it before it merges into the story
-// branch, and a story with one side commits it on the story branch itself. The lists stay on the integration
-// branch, so a reopened story finds its sides closed, and deleting a half branch changes nothing.
+// A side is closed when its lock list is on this branch: each side commits it on the story branch. The lists
+// stay on the integration branch, so a reopened story finds its sides closed.
 const lockList = (id, side) => existsSync(path.join(ROOT, ".orchestrator", "locked", `${id}-${side}.txt`));
 // Work here that the integration branch does not have yet: a story in progress, or one reopened after it
 // was done. Only that takes a card out of Done, so a card dragged to Done by hand comes back on the next push.

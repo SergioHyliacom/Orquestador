@@ -6,11 +6,11 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 
 - **Cada persona tiene su propia sesión de Claude (Opus)**, que orquesta su parte del trabajo. Al empezar, y cada vez que le preguntas «¿qué me toca?» como te salga, te dice en qué punto estás y qué sigue, y te pregunta sí o no. Nadie tiene que saberse el flujo ni recordar comandos.
 - **Diseño escribe las historias con Claude**, a partir del diseño en Figma y con Mobbin como referencia: sus criterios, incluidos los estados de cada pantalla. Claude crea la tarjeta en Jira, con el título, la frase y los enlaces; los criterios viven solo en el fichero. Al final, diseño hace la revisión visual.
-- **Backend y frontend acuerdan el contrato** (el OpenAPI generado desde Go) y desarrollan sus dos mitades en paralelo.
-- **Cada desarrollador trabaja en pareja con su agente (Sonnet)**, un criterio cada vez. El agente escribe el test, lo ve fallar, lo hace pasar y se para; la sesión comprueba las pruebas y hace el commit. La persona da el ok en el primer criterio de cada mitad y en la mitad terminada.
+- **Backend y frontend acuerdan el contrato** (el OpenAPI generado desde Go) y desarrollan cada uno su lado en paralelo, en la misma rama de la historia y cada uno solo en sus rutas.
+- **Cada desarrollador trabaja en pareja con su agente (Sonnet)**, un criterio cada vez. El agente escribe el test, lo ve fallar, lo hace pasar y se para; la sesión comprueba las pruebas y hace el commit. La persona da el ok en el primer criterio de su lado y en el lado terminado.
 - **Git guarda el qué; Jira muestra el quién y el cuándo.** Las tarjetas las mueve Bitbucket Pipelines a partir de lo que hay en el repositorio, y las asigna a quien le toca en cada etapa con los campos Backend y Frontend de la tarjeta.
 - **Una guardia** (un hook) impide lo peligroso y mantiene a cada agente en su lado.
-- **Cada cosa tiene un solo sitio.** El comportamiento, en las historias; las elecciones, en decisiones; el contrato, en el OpenAPI; cómo se escribe el código, en comprobaciones de la máquina y, cuando no es posible, en las reglas del proyecto (`docs/rules/`: comunes, backend y frontend). Si algo no encaja en ninguno, no se escribe. El método está en la skill `orchestrate`, §11.
+- **Cada cosa tiene un solo sitio.** El comportamiento, en las historias; las elecciones, en decisiones; el contrato, en el OpenAPI; cómo se escribe el código, en comprobaciones de la máquina y, cuando no es posible, en las reglas del proyecto (`docs/rules/`: comunes, backend y frontend). Si algo no encaja en ninguno, no se escribe. Está en la skill `orchestrate`, `references/where-things-live.md`.
 - **Al cerrar cada entrega, una auditoría por muestreo** comprueba el código contra las reglas de `docs/rules/` y convierte cada error que puede repetirse en una comprobación de la máquina o, si no es posible, en una regla. Lo aprendido vive en el repositorio. Las comprobaciones se construyen y se fusionan solas, sin que nadie decida; las reglas nuevas, lo crítico y las zonas de riesgo los decide quien pidió la auditoría.
 
 **Para todo el equipo, la versión corta:** [`docs/resumido.html`](docs/resumido.html). **El detalle, para quienes llevan el proyecto:** [`docs/detallado.html`](docs/detallado.html). **El porqué de cada decisión:** [`docs/propuesta.md`](docs/propuesta.md).
@@ -25,10 +25,10 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `agents/auditor.md` | Auditoría por muestreo al cerrar cada entrega: lo que los tests no ven, convertido en reglas |
 | `agents/researcher.md` | Investigación de solo lectura |
 | `agents/copywriter.md`, `agents/designer.md` | Del original. Inactivos salvo que `.orchestrator.json` los configure |
-| `skills/orchestrate/` | El día a día de cada sesión: etapas, contrato, bucle en pareja, integración, merge, auditoría y dónde vive cada cosa (§11). Git y Bitbucket en `references/git.md` |
+| `skills/orchestrate/` | El día a día de cada sesión. Un núcleo corto que carga cada sesión (`SKILL.md`: el inicio, las etapas, cómo se habla con el otro lado, qué no se hace nunca, cuándo se pregunta a la persona y el cierre) y referencias que se leen solo cuando el trabajo las necesita (`references/`): diseño, desarrollo, encargos a los agentes, trabajo fuera de las historias, auditoría, dónde vive cada cosa, git y Bitbucket, accesos y Orca. A la sesión de diseño le basta la de diseño |
 | `skills/que-hago/` | En qué punto está la persona y qué le toca: tarjetas, peticiones, rama, historias y PR. Claude la carga al empezar y cuando alguien pregunta qué le toca |
 | `skills/stories/` | Cómo se escriben y mantienen las historias |
-| `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto lleva una copia de cada uno, que es la que ejecuta el pipeline |
+| `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto no guarda copia: las sesiones ejecutan los del plugin y el pipeline los descarga de este repositorio |
 | `hooks/guard.mjs` | La guardia |
 | `docs/` | El diagrama y la propuesta |
 | `cimientos/` | Otro plugin, `easyone-cimientos`, solo para los responsables técnicos: prepara el proyecto y sigue los cimientos hasta que se abre el desarrollo. Ver [`cimientos/README.md`](cimientos/README.md) |
@@ -50,7 +50,7 @@ Claude Code tiene tres alcances para un plugin:
 | `--scope local` | Solo en este repositorio y solo para ti, por ejemplo para probarlo | `.claude/settings.local.json`, que no se sube |
 | `--scope user` (el que se usa si no dices nada) | En todos tus proyectos | Tu configuración de usuario. **No lo uses** |
 
-La primera persona que lo instala con `--scope project` deja el plugin activado en `.claude/settings.json`, y eso se sube con el resto del proyecto. Las demás, al hacer pull, lo tienen activado pero sin descargar: cada una ejecuta los dos comandos de arriba una sola vez. Si el repositorio del fork es privado, cada persona necesita acceso de lectura a él.
+La primera persona que lo instala con `--scope project` deja el plugin activado en `.claude/settings.json`, y eso se sube con el resto del proyecto. Las demás, al hacer pull, lo tienen activado pero sin descargar: cada una ejecuta los dos comandos de arriba una sola vez. El repositorio del plugin en GitHub tiene que ser público: el pipeline de Bitbucket descarga de él los scripts.
 
 **Cada carpeta lo instala por su cuenta.** Otro clon del proyecto, aunque esté dentro de la misma carpeta, no hereda la instalación: ejecuta allí también los dos comandos. Si se te olvida, Claude te lo dice al abrir la sesión (lo pide `CLAUDE.md`) y no hace commits ni push hasta que esté instalado.
 
@@ -58,9 +58,7 @@ Para probar el plugin desde una copia en tu equipo, sin instalarlo: `claude --pl
 
 Claude Code carga los plugins al arrancar. Después de instalar, abre una sesión nueva: hay que reiniciar el CLI, no basta con `/clear`.
 
-**Si tienes instalado el orquestador original** (`orchestrator`), sus hooks también actuarían en el repositorio de EASY One. La instalación lo desactiva para ese proyecto en `.claude/settings.json`, que es un fichero compartido. Cada miembro del equipo necesita tener el plugin instalado.
-
-**Los hooks de tus otros plugins también se ejecutan en el proyecto**, aunque no uses sus skills: un plugin con un hook después de cada edición que necesita una herramienta que no tienes (por ejemplo, Python) falla en cada edición. En tu primera sesión, Claude te dice qué plugins tienen hooks y te ofrece desactivarlos solo en este proyecto (`claude plugin disable <nombre> --scope local`).
+**Los hooks de tus otros plugins también se ejecutan en el proyecto**, aunque no uses sus skills; también los del orquestador original (`orchestrator`), si lo tienes instalado. Si uno estorba aquí (por ejemplo, un hook después de cada edición que necesita una herramienta que no tienes), desactívalo solo en este proyecto: `claude plugin disable <nombre> --scope local`.
 
 ## Tu primera sesión
 
@@ -92,18 +90,18 @@ Lo hacen los responsables técnicos con otro plugin, `easyone-cimientos`, que el
 - Jira Cloud. Para que las sesiones lean la cola: el servidor MCP de Atlassian o `acli`; si no hay ninguno, la primera sesión ofrece instalar `acli` y guía el login. Sin ninguno de los dos, la sesión pide la lista a la persona.
 - Para diseño: el conector de Figma en Claude, con acceso a los ficheros del proyecto, y Mobbin si el equipo lo usa. Su cuenta de Jira tiene que poder crear y editar tarjetas.
 - En el proyecto: `gotestsum` para el informe de los tests de Go, Vitest y un runner E2E con informe JUnit.
-- Opcional: [Orca](https://orca.dev). Sin él, los agentes funcionan como subagentes de Claude Code.
+- Opcional: [Orca](https://orca.dev), que solo usan dos personas del equipo. La guardia lo detecta al empezar la sesión, y solo entonces la sesión lee lo de Orca (`references/harness.md`). En VS Code o en una terminal, los agentes funcionan como subagentes de Claude Code y la sesión no ve nada de Orca.
 
 ## Diferencias con el original
 
 | Original | easyone-orchestrator |
 |---|---|
-| Un humano y una sesión que orquesta casi sin intervención | Una sesión por persona; el humano valida el primer criterio de cada mitad y la mitad terminada |
+| Un humano y una sesión que orquesta casi sin intervención | Una sesión por persona; el humano valida el primer criterio de su lado y el lado terminado |
 | Un `builder` que hace la historia entera | `backend-builder` y `frontend-builder`, un criterio por encargo, cada uno en su lado |
 | `reviewer` después de cada builder | `reviewer` una vez al cerrar, solo si la historia tiene riesgo |
 | Identificador por actividad (`ACC-002`) | Clave de Jira (`EO-123`) |
 | Un comando de tests | Varias fuentes de tests (Go, Vitest, E2E); un criterio pasa si pasan todos sus tests |
-| Una lista de tests bloqueados | Una lista por mitad de historia, para evitar conflictos |
+| Una lista de tests bloqueados | Una lista por lado de cada historia, para que los dos lados no choquen en la rama de la historia |
 | — | Auditoría por muestreo al cerrar cada entrega (`auditor`) |
 | Lecciones en `CLAUDE.md` | Reglas en `docs/rules/`, con ID y origen; cada cosa en un solo sitio |
 | GitHub y `gh` | Bitbucket y Bitbucket Pipelines |
@@ -120,9 +118,9 @@ Cada vez que un cambio tiene que llegar al equipo, en el mismo commit:
 
 Cada persona lo actualiza con `claude plugin update easyone-orchestrator@hyliacom` y reinicia Claude Code.
 
-`easyone-cimientos` tiene su propia versión, en `cimientos/.claude-plugin/plugin.json`, con la misma regla. Sube la del plugin que cambia: un cambio en `scripts/` o en una plantilla de `skills/stories/templates/` es del plugin del equipo, aunque lo copie la instalación.
+`easyone-cimientos` tiene su propia versión, en `cimientos/.claude-plugin/plugin.json`, con la misma regla. Sube la del plugin que cambia: un cambio en `scripts/` es del plugin del equipo; uno en lo que copia la instalación al proyecto (`cimientos/skills/install/assets/`: plantillas, configuración de las historias, pipeline), de `easyone-cimientos`.
 
-Las copias de `stories.mjs` y `jira-sync.mjs` que hay en el proyecto, y las líneas que escribe la instalación, no se actualizan con el plugin. `.orchestrator.json` → `plugin` dice con qué versión está al día el proyecto. Cuando una sesión de desarrollo trae un plugin más nuevo, pone el proyecto al día ella sola en un PR `chore/plugin-<versión>` y lo fusiona con el build en verde, sin decírselo a nadie. Si el plugin de una persona es más viejo que el del proyecto, su sesión le dice que lo actualice.
+El proyecto no guarda copia de `stories.mjs` ni de `jira-sync.mjs`. Las sesiones ejecutan los del plugin que tiene instalado cada persona (la guardia le dice a la sesión dónde están), y el pipeline de Bitbucket los descarga en cada build de `raw.githubusercontent.com/SergioHyliacom/Orquestador/main/scripts`. Por eso un cambio en `scripts/` llega al pipeline de todos los proyectos en cuanto se sube a `main` en GitHub, sin esperar al número de versión; para fijar una versión, se cambia `main` por un commit en el pipeline del proyecto. Un proyecto instalado antes de la 0.10.0 todavía guarda las copias: un PR `chore/` las borra y cambia el pipeline a las líneas que las descargan (skill `install` de `easyone-cimientos`).
 
 ## Traer mejoras del original
 

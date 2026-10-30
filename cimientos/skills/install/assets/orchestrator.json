@@ -1,7 +1,6 @@
 {
   "language": "{{LANGUAGE: ISO code, e.g. es}}",
   "storiesDir": "{{STORIES_DIR: e.g. product}}",
-  "plugin": "{{PLUGIN_VERSION: the version of easyone-orchestrator the project's copies of its scripts match}}",
   "setup": "{{COMMAND: installs the dependencies in a fresh checkout, the same as the pipeline's setup line, e.g. pnpm install --frozen-lockfile && go mod download}}",
   "verify": {
     "all": ["{{FULL_VERIFICATION_COMMANDS: Go and TypeScript lint, typecheck, test, build}}"],
@@ -51,7 +50,6 @@
     "protectedBranches": ["main", "develop"],
     "integrationBranch": "develop",
     "allowPush": false,
-    "blockBroadAdd": true,
-    "codeOwner": "{{CODE_OWNER or null}}"
+    "blockBroadAdd": true
   }
 }

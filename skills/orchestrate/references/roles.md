@@ -10,7 +10,7 @@ Create a role when the work meets at least one test:
 2. **Different tools or permissions.** It needs tools others must not have, or must be denied tools others have. Examples: a data role with database access; a read-only auditor.
 3. **Its own deliverable with its own quality bar.** It owns a file or an output, and that output has a standard of its own. Examples: copy master document, translations, SEO metadata, release notes, data migrations.
 
-If none applies, do not create a role. Load the relevant skill into the builder of that side, or, when a rule is what is missing, write it in `docs/rules/` (§11.2 of the skill).
+If none applies, do not create a role. Load the relevant skill into the builder of that side, or, when a rule is what is missing, write it in `docs/rules/` (`references/where-things-live.md`, "Rules").
 
 A finding that recurs across reviews also signals a missing role.
 
@@ -37,7 +37,7 @@ These are examples, not a list to pick from. Read the project and decide.
 4. State in the role's `description` which test it meets.
 5. Record the addition in `.orchestrator/state.md` as a ruling, and list it in the close report.
 
-Proposing to create, change or retire a role is the orchestrator's call. `.claude/agents/` is shared with the whole team, so the change goes in through a pull request, like any shared file (§11 of the skill).
+Proposing to create, change or retire a role is the orchestrator's call. `.claude/agents/` is shared with the whole team, so the change goes in through a pull request, like any shared file (`references/where-things-live.md`).
 
 ## Retiring a role
 

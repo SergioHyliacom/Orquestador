@@ -1,18 +1,142 @@
 {
   "root": "..",
   "idPrefix": "{{JIRA_PROJECT_KEY: e.g. EO}}",
-  "contractSpec": "{{PATH_TO_OPENAPI_SPEC relative to root, e.g. apps/api/openapi.yaml}}",
-  "releases": ["{{FIRST_RELEASE}}", "{{NEXT_RELEASE}}", "{{LATER}}"],
-  "mainRelease": "{{FIRST_RELEASE}}",
-  "personas": ["{{PERSONA}}"],
+  "contractSpec": "{{PART 2 — PATH_TO_OPENAPI_SPEC relative to root, e.g. apps/api/openapi.yaml}}",
+  "releases": [
+    "Entrega 1",
+    "Entrega 2",
+    "Más adelante"
+  ],
+  "mainRelease": "Entrega 1",
   "tests": [
-    { "command": "{{GO_TEST_COMMAND_WITH_{report}, e.g. gotestsum --junitfile {report} -- ./...}}", "cwd": "{{DIR relative to root, e.g. .}}", "format": "junit" },
-    { "command": "{{VITEST_COMMAND_WITH_{report}, e.g. pnpm vitest run --reporter=json --outputFile={report}}}", "cwd": "{{DIR relative to root}}", "format": "jest-json" },
-    { "command": "{{E2E_COMMAND_WITH_{report}, e.g. Playwright with its junit reporter writing to {report}}}", "cwd": "{{DIR relative to root}}", "format": "junit" }
+    {
+      "command": "{{PART 2 — GO_TEST_COMMAND_WITH_{report}, e.g. gotestsum --junitfile {report} -- ./...}}",
+      "cwd": "{{DIR}}",
+      "format": "junit"
+    },
+    {
+      "command": "{{PART 2 — VITEST_COMMAND_WITH_{report}, e.g. pnpm exec vitest run --reporter=json --outputFile={report}}}",
+      "cwd": "{{DIR}}",
+      "format": "jest-json"
+    },
+    {
+      "command": "{{PART 2 — E2E_COMMAND_WITH_{report}, e.g. Playwright with its junit reporter writing to {report}}}",
+      "cwd": "{{DIR}}",
+      "format": "junit"
+    }
   ],
   "lanes": [
-    { "id": "journey", "title": "{{JOURNEY_LANE_TITLE}}" },
-    { "id": "separate", "title": "{{SEPARATE_LANE_TITLE}}" }
+    {
+      "id": "journey",
+      "title": "Recorrido de la persona"
+    },
+    {
+      "id": "separate",
+      "title": "Carriles aparte"
+    }
   ],
-  "labels": {}
+  "labels": {
+    "sections": {
+      "story": "Historia",
+      "criteria": "Criterios de aceptación",
+      "outOfScope": "Fuera de alcance",
+      "verification": "Verificación",
+      "openQuestions": "Preguntas abiertas",
+      "discardReason": "Motivo del descarte"
+    },
+    "markers": {
+      "test": "test",
+      "manual": "manual",
+      "unverified": "sin verificar",
+      "unbuilt": "sin construir",
+      "failing": "falla"
+    },
+    "statuses": {
+      "works": "✅ Funciona",
+      "unverified": "⚠️ Sin verificar",
+      "partial": "🟡 Parcial",
+      "failing": "❌ Falla",
+      "blocked": "🔒 Bloqueada",
+      "pending": "⬜ Pendiente",
+      "discarded": "⛔ Descartada"
+    },
+    "storyKeywords": [
+      "como",
+      "quiero",
+      "para"
+    ],
+    "decisionClosed": "^(decidida|decidido|cerrada|cerrado|hecha)$",
+    "vague": [
+      "rápido",
+      "rápida",
+      "rápidamente",
+      "ágil",
+      "fácil",
+      "fácilmente",
+      "sencillo",
+      "sencilla",
+      "intuitivo",
+      "intuitiva",
+      "simple",
+      "amigable",
+      "adecuado",
+      "adecuada",
+      "adecuadamente",
+      "apropiado",
+      "apropiada",
+      "robusto",
+      "robusta",
+      "flexible",
+      "eficiente",
+      "eficientemente",
+      "moderno",
+      "moderna",
+      "fluido",
+      "fluida",
+      "sin fricción",
+      "sin problemas",
+      "debidamente",
+      "correctamente",
+      "bien",
+      "bonito",
+      "bonita",
+      "agradable"
+    ],
+    "hedges": [
+      "debería",
+      "deberían",
+      "podría",
+      "podrían",
+      "quizá",
+      "quizás",
+      "tal vez",
+      "idealmente",
+      "si es posible",
+      "a ser posible",
+      "en lo posible",
+      "en la medida de lo posible",
+      "intentar",
+      "intentará",
+      "tratar de",
+      "procurar"
+    ],
+    "text": {
+      "title": "Mapa de historias",
+      "generated": "Generado por `node {script}`. No lo edites a mano: cambia las historias y vuelve a generarlo.",
+      "progress": "**{release}:** funcionan {ok} de {total} historias ({pct} %)",
+      "testsIn": "Estado de los tests: incluido (último resultado guardado).",
+      "testsOut": "Estado de los tests: **sin resultados**. Los criterios con test cuentan como sin verificar hasta que ejecutes `node {script} --tests`.",
+      "status": "Estado",
+      "total": "Total",
+      "uncovered": "Actividades sin ninguna historia de {release} que funcione",
+      "none": "ninguna",
+      "blocking": "Decisiones que bloquean",
+      "noStories": "Todavía no hay historias.",
+      "discardedGroup": "Descartadas",
+      "decisions": "Decisiones",
+      "decision": "Decisión",
+      "blocks": "Bloquea",
+      "legend": "Leyenda"
+    }
+  }
 }

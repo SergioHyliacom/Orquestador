@@ -4,7 +4,7 @@
 // Exit 0 = allow. Exit 2 = block; stderr goes back to Claude. Exit 0 with permissionDecision "ask" on
 // stdout = Claude Code asks the human to confirm.
 
-import { execFileSync, execSync, spawnSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
@@ -93,8 +93,8 @@ const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
 const relTo = (base, p) => key(path.relative(base, path.resolve(base, p)));
-// Each half of a story locks its tests in its own list, .orchestrator/locked/<ID>-<side>.txt, so the
-// two halves never conflict when they meet on the story branch. locked-tests.txt is still read.
+// Each side of a story locks its tests in its own list, .orchestrator/locked/<ID>-<side>.txt, so the
+// two sides never conflict on the story branch. locked-tests.txt is still read.
 const LOCK_REL = key(`${STATE}/locked-tests.txt`);
 const LOCK_DIR_REL = key(`${STATE}/locked`);
 const isLockList = (rel) => rel === LOCK_REL || rel === LOCK_DIR_REL || rel.startsWith(LOCK_DIR_REL + "/");
@@ -117,10 +117,9 @@ function currentBranch(dir) {
   catch { return null; }
 }
 
-// Check and plugin pull requests need nobody (orchestrate skill, §6.11): pushing chore/check-* and
-// chore/plugin-* branches, and nothing else, and merging a pull request from one into the integration
-// branch, need no confirmation.
-const CHECK_BRANCH = /^(refs\/heads\/)?chore\/(check|plugin)-[\w.-]+$/;
+// A check pull request needs nobody (orchestrate skill, references/outside-stories.md): pushing chore/check-*
+// branches, and nothing else, and merging a pull request from one into the integration branch, need no confirmation.
+const CHECK_BRANCH = /^(refs\/heads\/)?chore\/check-[\w.-]+$/;
 function pushesOnlyChecks(rest, dir) {
   if (rest.some((a) => a.startsWith("-") && !/^(-u|--set-upstream)$/.test(a))) return false;
   const [, ...refspecs] = rest.filter((a) => !a.startsWith("-"));
@@ -147,36 +146,6 @@ async function mergesCheck(command) {
 
 // ---------- SessionStart: load the procedure
 
-// The CLAUDE.md block's line for a folder where the plugin is not installed. The same text is in
-// easyone-cimientos, skills/install/assets/claude-md.md: change both together.
-const PLUGIN_LINE = "- **This plugin in this folder:** every session here needs the easyone-orchestrator plugin, and each folder (each clone) installs it on its own. If the `easyone-orchestrator:orchestrate` skill is not available, it is not installed here: tell your human in plain words and offer to install it (`claude plugin marketplace add SergioHyliacom/Orquestador`, then `claude plugin install easyone-orchestrator@hyliacom --scope project`, then restart Claude Code). Until then the guard is not protecting this session: help them read and write, but do not commit and do not push.";
-
-// A project installed with an older version lacks what the current install adds. Name what is missing.
-function installGaps() {
-  const gaps = [];
-  const probes = [[`${STATE}/me.json`, `${STATE}/me.json`], [`${STATE}/state.md`, `${STATE}/state.md`], [`${STATE}/work/x`, `${STATE}/work/`],
-    [`${STATE}/roles/x.json`, `${STATE}/roles/`], [`${STATE}/role.json`, `${STATE}/role.json`], [".claude/settings.local.json", ".claude/settings.local.json"],
-    ["backend-builder-x/x", "/*-builder-*/"]];
-  const r = spawnSync("git", ["check-ignore", "-v", "-n", "--no-index", ...probes.map(([p]) => p)], { cwd: root, encoding: "utf8" });
-  if (r.status === 0 || r.status === 1) {
-    // Each line is "<source>:<line>:<pattern>\t<path>". Only the project's .gitignore counts: a line in
-    // .git/info/exclude helps one machine, not the team.
-    const ignored = new Set(r.stdout.split(/\r?\n/).map((l) => l.match(/^(.*?):(\d+):.*\t(.*)$/))
-      .filter((m) => m && /(^|[\\/])\.gitignore$/.test(m[1])).map((m) => m[3].replace(/^"|"$/g, "")));
-    const missing = probes.filter(([p]) => !ignored.has(p)).map(([, line]) => `\`${line}\``);
-    if (missing.length) gaps.push(`in .gitignore: ${missing.join(", ")}`);
-  }
-  if (config.roles && !config.setup) gaps.push("`setup` in .orchestrator.json: the command that installs the dependencies in a fresh checkout, as in the setup line of bitbucket-pipelines.yml. A builder's worktree needs it");
-  const graphIgnore = path.join(root, ".code-review-graphignore");
-  if (existsSync(graphIgnore) && !readFileSync(graphIgnore, "utf8").includes("-builder-")) gaps.push("`*-builder-*/` in .code-review-graphignore, so the code graph does not index the builders' worktrees");
-  const claudeMd = path.join(root, "CLAUDE.md");
-  const block = existsSync(claudeMd) ? readFileSync(claudeMd, "utf8") : "";
-  if (block.includes("ORCHESTRATOR:START") && !block.includes("plugin install easyone-orchestrator@hyliacom")) {
-    gaps.push(`in the orchestrator block of CLAUDE.md, after the **Tools on this machine** line, this line: ${PLUGIN_LINE}`);
-  }
-  return gaps;
-}
-
 if (input.hook_event_name === "SessionStart") {
   // A worker learns its job from its brief and its role's contract, not from the orchestrator's procedure.
   if (agentType) {
@@ -187,41 +156,14 @@ if (input.hook_event_name === "SessionStart") {
   // Detected now, from this session's environment: a harness line in the ledger can be stale.
   const orca = process.env.TERM_PROGRAM === "Orca" || Object.keys(process.env).some((k) => k.startsWith("ORCA_"));
   const harness = orca
-    ? "Harness, detected now: Orca. Delegate through supervised workers (references/harness.md), whatever the ledger says."
-    : "Harness, detected now: plain Claude Code.";
-  // The project records in .orchestrator.json → plugin the version of this plugin it is up to date with:
-  // its copies of two scripts (the pipeline runs them) and the lines the install writes.
-  const pluginDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-  let version = "";
-  try { version = String(JSON.parse(stripBom(readFileSync(path.join(pluginDir, ".claude-plugin", "plugin.json"), "utf8"))).version ?? ""); }
-  catch { /* no manifest: nothing to compare */ }
-  const older = (a, b) => { const x = String(a).split(".").map(Number), y = String(b).split(".").map(Number);
-    for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
-    return false; };
-  let localSettings = {};
-  try { localSettings = JSON.parse(stripBom(readFileSync(path.join(root, ".claude", "settings.local.json"), "utf8"))); } catch { /* none */ }
-  const lead = localSettings.enabledPlugins?.["easyone-cimientos@hyliacom"] === true;
-  let upkeep = "";
-  if (version && config.plugin && older(version, config.plugin)) {
-    // An older plugin must never bring the project "up to date" backwards. Updating it is this person's own job.
-    upkeep = ` This machine's easyone-orchestrator (${version}) is older than the version this project is up to date with (${config.plugin}). Tell your human once, in plain words, that their plugin needs updating, and offer to do it: \`claude plugin marketplace update hyliacom\`, then \`claude plugin update easyone-orchestrator@hyliacom\`; then they restart Claude Code.`;
-  } else if (me.side !== "design") {
-    const text = (p) => stripBom(readFileSync(p, "utf8")).replace(/\r\n?/g, "\n");
-    const stale = config.storiesDir ? ["stories.mjs", "jira-sync.mjs"].filter((f) => {
-      const mine = path.join(root, config.storiesDir, f), plugin = path.join(pluginDir, "scripts", f);
-      return existsSync(mine) && existsSync(plugin) && text(mine) !== text(plugin);
-    }) : [];
-    const behind = [...stale.map((f) => `${config.storiesDir}/${f} differs from this plugin's scripts/${f}`), ...installGaps()];
-    if (behind.length && config.plugin !== version) {
-      upkeep = ` This project is behind this plugin (${version}, its files in ${pluginDir}): ${behind.join("; ")}. That is upkeep, nobody's work: in a developer's session, bring the project up to date on your own and say nothing to your human about it (orchestrate skill, §6.11, "Plugin update"). In a designer's session, ignore it.`;
-    } else if (behind.length && lead) {
-      // Up to date with this plugin, so what is left needs a value only the technical leads know.
-      upkeep = ` This project is up to date with this plugin (${version}) except for what only the technical leads can fill in: ${behind.join("; ")}. Your human is a technical lead: tell them once, and offer a chore/ pull request (orchestrate skill, §6.11).`;
-    }
-  }
+    ? "Harness, detected now: Orca. Read references/harness.md before you delegate, whatever the ledger says."
+    : "Harness, detected now: plain Claude Code (VS Code or a terminal). Ignore everything about Orca.";
+  // The project keeps no copy of the scripts: sessions run the plugin's, and the pipeline downloads them.
+  const scripts = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts");
+  const where = ` The story scripts are this plugin's: \`<scripts>\` in the skills is ${scripts}; run them from inside the repository.`;
   // A worker's role file is written right after its terminal starts, so it may not be there yet.
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
-    additionalContext: `This project uses easyone-orchestrator. If this session was started as an Orca worker to carry out a brief, none of what follows applies: follow your brief. Otherwise load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${upkeep}` } }));
+    additionalContext: `This project uses easyone-orchestrator. If this session was started as an Orca worker to carry out a brief, none of what follows applies: follow your brief. Otherwise load the easyone-orchestrator:orchestrate skill before any work and follow it. ${harness}${where}` } }));
   process.exit(0);
 }
 

@@ -3,6 +3,8 @@
 # jira-sync runs in after-script, so a red build still moves the card (to Integration, for example).
 # The tests run first, through stories.mjs, so their results exist even when a later check fails. A build
 # that fails before them (installing the dependencies) has no results, and then the card stays where it is.
+# The project keeps no copy of the story scripts: each step downloads them from the plugin's repository.
+# To pin a version, replace main in ORQ with a commit of that repository.
 # Secured repository variables: JIRA_EMAIL, JIRA_API_TOKEN.
 
 image: {{IMAGE: an image with Go, Node 22 and pnpm}}
@@ -24,17 +26,21 @@ definitions:
         caches:
           - node
         script:
+          - export ORQ=https://raw.githubusercontent.com/SergioHyliacom/Orquestador/main/scripts
+          - mkdir -p /tmp/orq && curl -fsSL "$ORQ/stories.mjs" -o /tmp/orq/stories.mjs && curl -fsSL "$ORQ/jira-sync.mjs" -o /tmp/orq/jira-sync.mjs
           - {{SETUP: install the dependencies, e.g. pnpm install --frozen-lockfile && go mod download}}
-          - node {{STORIES_DIR}}/stories.mjs --tests --check
+          - node /tmp/orq/stories.mjs --tests --check
           - {{VERIFY: one line per command in .orchestrator.json → verify.all that stories.config.json → tests does not already run}}
         after-script:
-          - node {{STORIES_DIR}}/jira-sync.mjs
+          - node /tmp/orq/jira-sync.mjs
     - step: &stories
         name: Stories and Jira
         script:
-          - node {{STORIES_DIR}}/stories.mjs --check
+          - export ORQ=https://raw.githubusercontent.com/SergioHyliacom/Orquestador/main/scripts
+          - mkdir -p /tmp/orq && curl -fsSL "$ORQ/stories.mjs" -o /tmp/orq/stories.mjs && curl -fsSL "$ORQ/jira-sync.mjs" -o /tmp/orq/jira-sync.mjs
+          - node /tmp/orq/stories.mjs --check
         after-script:
-          - node {{STORIES_DIR}}/jira-sync.mjs
+          - node /tmp/orq/jira-sync.mjs
 
 pipelines:
   default: # fix/*, chore/*, hotfix/*: verified like the rest; jira-sync has no card to move

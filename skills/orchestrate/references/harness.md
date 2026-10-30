@@ -1,4 +1,6 @@
-# Harness
+# Harness: Orca
+
+Only two people on the team use Orca; the rest run Claude Code in VS Code or a terminal, and never need this file. The guard detects the harness at session start.
 
 Detect once per session. The harness decides **how** you delegate, not whether. Every judgement in the `orchestrate` skill stays the same; only the mechanism changes.
 
@@ -26,7 +28,7 @@ Write the verdict on the first line of `.orchestrator/state.md`, with the Run id
 
 **In Orca the worker is the default.** Use the Agent tool only for a short read-only lookup whose answer only you need and that you would otherwise do yourself. Everything that writes, runs long, or produces a verdict the human will read is a supervised worker. Never substitute the Agent tool when the human asked to supervise, monitor or track the work: that request is for Orca provenance, and an in-process subagent leaves none.
 
-**In plain Claude Code** the Agent tool is the only mechanism. Only one writer runs at a time, in your checkout (§2 of the skill); read-only agents may run in parallel with it. Separate sessions only if the human runs them; coordinate through files in `.orchestrator/work/` and cross-session messages (ListAgents/SendMessage). A message lasts only as long as the session; the branch and the files are the durable record.
+**In plain Claude Code** the Agent tool is the only mechanism. Only one writer runs at a time, in your checkout (`references/delegation.md`); read-only agents may run in parallel with it. Separate sessions only if the human runs them; coordinate through files in `.orchestrator/work/` and cross-session messages (ListAgents/SendMessage). A message lasts only as long as the session; the branch and the files are the durable record.
 
 ## Orca: the guide is the authority
 
@@ -52,25 +54,25 @@ orca orchestration check --wait --types "worker_done,escalation,question" --time
 ```
 
 1. **Start the whole independent wave before the first wait.** Launch each terminal first (**Placement → Launch**). `worker-start --spec` creates the Task and its attempt in one call. Use `task-create --deps` plus `worker-start --task <id>` only for real ordering, and prefer parallel waves to chains deeper than three or four steps.
-2. **Process every message in a Delivery before `--ack`.** The batch replays until acknowledged and carries the whole FIFO queue whatever the type filter says. Reply to each question, validate each `worker_done` against the Task you expected and against the evidence rule of §5 of the skill, and decide each settled terminal's next owner.
-3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close` a worker that is not released. `worker-release` leaves the tab open, so after it close the terminal you launched with `orca terminal close --terminal <handle>`. Keep a builder's terminal for its whole half: each next criterion, each refactor and the fix loop reuse it. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
-4. **Remove each writer's worktree when its half is closed.** That is after the lock commit, after the half is merged into `story/<ID>`, and after its builder's release. Run `orca worktree rm --worktree <selector> --json` without `--force`. Orca also deletes the branch only when it can prove the branch is merged; the story's branch stays until the human merges it. If the removal refuses (uncommitted changes, a failed hook), leave the worktree and name it in the close report. Never remove `current` or a worktree you did not create. The guard blocks `worktree rm --force`: it discards uncommitted work.
+2. **Process every message in a Delivery before `--ack`.** The batch replays until acknowledged and carries the whole FIFO queue whatever the type filter says. Reply to each question, validate each `worker_done` against the Task you expected and against the evidence rule (`references/delegation.md`, "Read the report"), and decide each settled terminal's next owner.
+3. **Account for every settled worker, immediately, exactly once:** reuse its proven terminal for the next Dispatch (`worker-start --task <next> --terminal <handle>`), `worker-retain` only when the human asked for it, or `worker-release`. Never `terminal close` a worker that is not released. `worker-release` leaves the tab open, so after it close the terminal you launched with `orca terminal close --terminal <handle>`. Keep a builder's terminal for its whole side of the story: each next criterion, each refactor and the fix loop reuse it. Do not end your turn while `worker-list --run <id> --terminal-state reclaimable --json` returns rows.
+4. **Remove each writer's worktree when its side is closed.** That is after the lock commit is pushed and its builder is released. Run `orca worktree rm --worktree <selector> --json` without `--force`. Orca also deletes the branch only when it can prove the branch is merged; the story's branch stays until the human merges it. If the removal refuses (uncommitted changes, a failed hook), leave the worktree and name it in the close report. Never remove `current` or a worktree you did not create. The guard blocks `worktree rm --force`: it discards uncommitted work.
 5. **An empty wait or a timeout is a checkpoint, not a failure.** Keep rolling waits until every expected Dispatch settles. After three consecutive empty waits, enumerate with `worker-list --run <id> --include-remote --json` and run each row's literal `projection.nextAction`; a `none` action means read `liveness.reason` and keep waiting.
 6. **Absence proves nothing.** `unverifiable`, a null `agentWait`, an unchanged output tail and a lost connection are all absence, and absence authorizes no stop, abandon, retry or release. Leave a wait only on positive proof: `exited` liveness, the worker's own observation of exit, or a transcript whose last agent turn sent no `worker_done` and did not end on an API error (rule 7). Then load `recovery-and-cleanup` and choose `worker-stop` or `worker-abandon` explicitly.
 7. **A turn that ended on an API error has not finished.** When `worker-read` shows that the worker's last turn ended on an error from the model's service (`529 Overloaded`, a rate limit, a dropped connection) with no `worker_done`, its terminal is alive and idle, and `worker-list` reports `live` with `nextAction: none`. Do not stop, abandon or relaunch it. Resume it in the same terminal, with the same Task and Dispatch: `orca terminal send --terminal <handle> --text "Carry on with your brief, same Task and Dispatch IDs, from where the API error stopped you." --enter --wait-submit 30`, then keep waiting. After three API errors in a row on the same worker, tell your human and wait: the service is failing, not the worker.
 8. **Read each new worker once, and any worker that seems stuck.** Right after `worker-start`, and whenever a worker goes quiet, run `worker-read` on its terminal. If the agent waits at a prompt (a folder-trust question, the Bypass Permissions warning, a tool permission request), never answer it: that is the human's consent. `worker-stop` the worker, tell the human the exact prompt, and run that role through the Agent tool meanwhile. Record it as unsupervised.
 9. **A non-zero `worker-start` is not a reason to relaunch.** Read the receipt's `failedStage` and `residualResources` and follow `recovery-and-cleanup`. After three failed attempts a Task circuit-breaks: report it to the human instead of routing around it with a new Run or Task.
 
-### The statuses of §5, in Orca terms
+### The report statuses, in Orca terms
 
-| §5 status | Orca |
+| Status | Orca |
 |---|---|
 | `DONE` | `worker_done --outcome succeeded` |
 | `DONE_WITH_CONCERNS` | `worker_done --outcome succeeded`, concerns in the body and the report |
 | `BLOCKED` | an `escalation` before completion, or `worker_done --outcome failed` |
 | `NEEDS_CONTEXT` | the worker's `ask`; you answer with `reply --id <message_id>` |
 
-A gate is for a decision **you** own that blocks one Task while the rest of the wave runs: `gate-create --task <id> --question … --options …`, then `gate-resolve`. It is where you record an answer, not a licence to give one: §7 of the skill still decides whether the answer is yours or the human's. Never create a gate merely to answer a worker's `ask`.
+A gate is for a decision **you** own that blocks one Task while the rest of the wave runs: `gate-create --task <id> --question … --options …`, then `gate-resolve`. It is where you record an answer, not a licence to give one: §5 of the skill still decides whether the answer is yours or the human's. Never create a gate merely to answer a worker's `ask`.
 
 ## Placement
 
@@ -78,7 +80,7 @@ A fresh worker means a fresh terminal, not a new Git worktree.
 
 - **Writers** never share your workspace: create one with `orca worktree create --name <role>-<scope> --base-branch <the base references/git.md names for its branch> --setup run --json` (no `--agent`). Without `--base-branch`, Orca starts it from the repository's default base. One worktree per writer, and the branch rules of `references/git.md` apply inside it. Before its first dispatch, settle three things Orca does not:
   1. **Where it is.** Orca puts it in the repository's configured worktree location, which can be inside your checkout (`<repo>/<role>-<scope>/`). There `git status` lists it as untracked, and the code graph could index it. The install ignores `/*-builder-*/` in `.gitignore`; if `git status` still shows the folder, add it to `.git/info/exclude` and tell your human the `.gitignore` line is missing (a `chore/` pull request).
-  2. **Its branch.** Orca names the branch `<git user>/<name>`, not as `references/git.md` does. Rename it: `git -C <worktree> branch -m <Orca's branch> <the branch>` (`story/<ID>-back`, `chore/<slug>`…). When that branch already exists (a reopened half; `story/<ID>` itself for a one-side story), switch the worktree to it instead, `git -C <worktree> switch <the branch>`, and delete Orca's with `git -C <worktree> branch -d <Orca's branch>`. Git refuses the switch while your own checkout is on that branch: move yours off it first.
+  2. **Its branch.** Orca names the branch `<git user>/<name>`, not as `references/git.md` does. Rename it: `git -C <worktree> branch -m <Orca's branch> <the branch>` (`story/<ID>`, `chore/<slug>`…). When that branch already exists (`story/<ID>` always does after the kickoff), switch the worktree to it instead, `git -C <worktree> switch <the branch>`, and delete Orca's with `git -C <worktree> branch -d <Orca's branch>`. Git refuses the switch while your own checkout is on that branch: move yours off it first.
   3. **Its dependencies.** `--setup run` runs only the setup hooks the repository defines in Orca; it installs no dependencies. Run `.orchestrator.json` → `setup` in the worktree (`cd <worktree> && <setup>`) and wait for it to pass: without it the builder's lint, typecheck and tests fail on what is not installed. If the key is missing, use the setup line of `bitbucket-pipelines.yml`, and tell your human that `setup` belongs in `.orchestrator.json`.
 - **Read-only roles** (`reviewer`, `researcher`, `auditor`, `designer`, a reviewing `copywriter`) run on `--worktree current`: they judge what is already there and write only their report. They need no commit and no worktree, so they stay supervised workers even when a ruling keeps the writers in the main checkout. Their terminal's role file keeps them read-only in your checkout (**The guard**).
 - **Folder workspaces are first-class.** When the workspace is a folder, there is no worktree lineage and no branch: `git.md` does not apply, and the story's evidence is the verification commands alone. Say so in the close report.
@@ -105,14 +107,14 @@ orca terminal close --terminal <the empty shell's handle> --json
 
 Do this only in a worktree you created. On `--worktree current` the other terminals are yours and the human's.
 
-If the wait reports a `blockedReason`, read the terminal and take the prompt to the human (rule 8 of **The loop**). Two prompts can stop a worker. `agent-trust-workspace` is Claude asking to trust the folder; no permission mode skips it. Do not count on a trusted parent folder: on one machine a folder inside a trusted parent still asked. The human trusts each folder workers run in, and the install checks it. The Bypass Permissions warning stops a `bypassPermissions` worker unless the Claude profile it launches with has `skipDangerousModePermissionPrompt: true`; on a machine without it, every bypass worker stopped there. Verified on 2026-10-22: `bypassPermissions` started without a prompt in a trusted folder and stopped at the trust question in an untrusted one; a worker in `auto` mode ran its turn and sent `worker_done`.
+If the wait reports a `blockedReason`, read the terminal and take the prompt to the human (rule 8 of **The loop**). Two prompts can stop a worker. `agent-trust-workspace` is Claude asking to trust the folder; no permission mode skips it. Do not count on a trusted parent folder: on one machine a folder inside a trusted parent still asked. The human trusts each folder workers run in. The Bypass Permissions warning stops a `bypassPermissions` worker unless the Claude profile it launches with has `skipDangerousModePermissionPrompt: true`; on a machine without it, every bypass worker stopped there. Verified on 2026-10-22: `bypassPermissions` started without a prompt in a trusted folder and stopped at the trust question in an untrusted one; a worker in `auto` mode ran its turn and sent `worker_done`.
 - Role agents do not dispatch workers; their contracts say so. Nested workers obey `nested_worker_depth_exceeded`, and a new Run does not reset depth.
 
 ## The brief is the spec
 
-Orca requires a **self-contained** spec: the injected preamble is all the worker starts with, and a worker in another workspace cannot read your ignored files by relative path. So pass the §4 brief **inline** as `--spec`, and keep writing it to `.orchestrator/work/<ID>/brief-<side>-<step>.md` as the durable record.
+Orca requires a **self-contained** spec: the injected preamble is all the worker starts with, and a worker in another workspace cannot read your ignored files by relative path. So pass the brief (`references/delegation.md`) **inline** as `--spec`, and keep writing it to `.orchestrator/work/<ID>/brief-<side>-<step>.md` as the durable record.
 
-| Orca spec field | §4 brief line |
+| Orca spec field | Brief line |
 |---|---|
 | Target | `Story:` (a task: the branch) |
 | Change | `Change:` (reviewers: `Judge:`) |
