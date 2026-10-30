@@ -28,10 +28,11 @@ Read all of this before you say anything. Run the independent reads in parallel.
 
    Without a token, or when Bitbucket rejects it, skip this, say so once and offer to set it up (the same place).
 6. **The ledger.** `.orchestrator/state.md`: what this session left half done last time.
-7. **Audit work,** for a developer. In the audits on the integration branch (`git ls-tree --name-only origin/<integration branch> docs/audits/`, then `git show origin/<integration branch>:<file>`): the accepted findings whose `Lado` is their side and whose `Estado` is `pendiente` (`orchestrate` skill, §10, step 6).
-8. **Set-up work.** If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it as well. It says what to add about the foundations and their audit.
+7. **Set-up work.** If this session has the `easyone-cimientos:estado` skill, your human is a technical lead setting the project up: load it as well. It says what to add about the foundations and their audit.
 
 ## 2. Decide what is next
+
+Their check pull requests (`chore/check-`) are not their work: merge each one whose build is green, without asking (`orchestrate` skill, §6.11), and leave the red ones for the close (§9). Checks never become a line of your answer: they are nobody's work.
 
 Take the first rule that applies. The rest become the other lines of your answer.
 
@@ -51,10 +52,9 @@ Take the first rule that applies. The rest become the other lines of your answer
 | Integration, assigned to them | Integrate, set the markers, the risk review, or the final pull request (§6.5–§6.8) |
 | Visual review, assigned to them as designer | Look at the screenshots: approved, or what to change (§6.6) |
 
-5. **Audit preventions of their side,** pending since an audit: offer to build the first one, on `chore/audit-<delivery>-<back | front>` (`orchestrate` skill, §10, step 4).
-6. **Nothing of theirs.** The first available card of their side; offer to take it, which puts them in their side's field. Before development opens (`.orchestrator.json` has no `roles`), a developer has nothing to build yet: say in one line that development opens when the technical leads finish setting the project up, and offer to write a story with no screen (§6.1). A technical lead with `estado` (§1, item 8) gets its lines instead of this one.
-7. **Their requests to others older than a day.** Offer to remind the person with a comment, with their ok on the text.
-8. **A delivery ready for its audit**, once (`orchestrate` skill, §1). The foundations' audit comes from `estado`.
+5. **Nothing of theirs.** The first available card of their side; offer to take it, which puts them in their side's field. Before development opens (`.orchestrator.json` has no `roles`), a developer has nothing to build yet: say in one line that development opens when the technical leads finish setting the project up, and offer to write a story with no screen (§6.1). A technical lead with `estado` (§1, item 7) gets its lines instead of this one.
+6. **Their requests to others older than a day.** Offer to remind the person with a comment, with their ok on the text.
+7. **A delivery ready for its audit**, once (`orchestrate` skill, §1). The foundations' audit comes from `estado`.
 
 ## 3. Tell them
 
@@ -68,6 +68,7 @@ Te recomiendo: <the next step>, porque <one line>. ¿Seguimos?
 ```
 
 - Each line names its card (`EO-123`) and says what happened.
+- Speak in their department's terms. To design: the story, its criteria and its screens; never tests, the API, the contract or code. Design's stories that are with the developers take one line at most, all together ("3 historias tuyas en desarrollo").
 - A request ends with its answer options: sí, no, or hablamos.
 - If a local branch's remote is gone, add one line offering to delete it.
 

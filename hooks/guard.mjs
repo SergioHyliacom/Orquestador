@@ -117,6 +117,33 @@ function currentBranch(dir) {
   catch { return null; }
 }
 
+// A check pull request needs nobody (orchestrate skill, §6.11): pushing chore/check-* branches, and
+// nothing else, and merging a pull request from one into the integration branch, need no confirmation.
+const CHECK_BRANCH = /^(refs\/heads\/)?chore\/check-[\w.-]+$/;
+function pushesOnlyChecks(rest, dir) {
+  if (rest.some((a) => a.startsWith("-") && !/^(-u|--set-upstream)$/.test(a))) return false;
+  const [, ...refspecs] = rest.filter((a) => !a.startsWith("-"));
+  const current = currentBranch(dir) ?? "";
+  const branch = (b) => (b === "HEAD" ? current : b);
+  if (!refspecs.length) return CHECK_BRANCH.test(current);
+  return refspecs.every((r) => { const [src, dst = src] = r.split(":"); return CHECK_BRANCH.test(branch(src)) && CHECK_BRANCH.test(branch(dst)); });
+}
+// Only Bitbucket knows a pull request's branches, so ask it. Any doubt (no token, a URL built from
+// variables, no answer in time) leaves the confirmation in place.
+async function mergesCheck(command) {
+  const m = command.match(/api\.bitbucket\.org\/2\.0\/repositories\/([\w.-]+)\/([\w.-]+)\/pullrequests\/(\d+)\/merge/i);
+  const { BITBUCKET_USER: user, BITBUCKET_TOKEN: token } = process.env;
+  if (!m || !user || !token) return false;
+  try {
+    const res = await fetch(`https://api.bitbucket.org/2.0/repositories/${m[1]}/${m[2]}/pullrequests/${m[3]}`, {
+      headers: { Authorization: `Basic ${Buffer.from(`${user}:${token}`).toString("base64")}`, Accept: "application/json" },
+      signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return false;
+    const pr = await res.json();
+    return CHECK_BRANCH.test(pr.source?.branch?.name ?? "") && pr.destination?.branch?.name === (git.integrationBranch ?? "develop");
+  } catch { return false; }
+}
+
 // ---------- SessionStart: load the procedure
 
 // The CLAUDE.md block's line for a folder where the plugin is not installed. The same text is in
@@ -287,7 +314,7 @@ function checkGit(args, cwd) {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
     if (has(/^--no-verify$/)) block("--no-verify is blocked. Fix the failing hook instead.");
     if (inSubagent) block("role agents never push. Report DONE; the orchestrator pushes when the product owner asks.");
-    if (git.allowPush === false) confirm("git.allowPush is false in this project, so every push needs the product owner's confirmation.");
+    if (git.allowPush === false && !pushesOnlyChecks(rest, dirArg)) confirm("git.allowPush is false in this project, so every push needs the product owner's confirmation.");
   }
   if (sub === "commit") {
     if (has(/^--no-verify$/) || has(/^-[a-z]*n/i)) block("skipping commit hooks is blocked. Fix the failing hook instead.");
@@ -372,6 +399,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
   }
   // A cd earlier in the line moves where the later relative paths point: `cd apps/panel/src && echo x > a.ts`.
   let here = cwd;
+  const merges = [];
   for (const raw of cmds) {
     // Strip wrappers and VAR=value prefixes: `HUSKY=0 git commit` is still a git commit.
     let s = 0;
@@ -404,10 +432,11 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       const cmd = tokens[tokens.indexOf("--command") + 1] ?? "";
       if (tokens[1] === "terminal" && tokens[2] === "create" && /(^|[;&|]\s*)claude\b/i.test(cmd) && !cmd.includes(want)) block(`start the worker in ${from}: --command "claude ${want}".`);
     }
-    // Bitbucket has no official CLI: a merge is a POST to the pull request's /merge endpoint.
-    if (tokens.some((t) => /api\.bitbucket\.org\/.*\/pullrequests\/\d+\/merge/i.test(t))) {
+    // Bitbucket has no official CLI: a merge is a POST to the pull request's /merge endpoint. The id may
+    // come from a variable; then the merge is still a merge.
+    if (tokens.some((t) => /api\.bitbucket\.org\/.*\/pullrequests\/[^/\s]+\/merge/i.test(t))) {
       if (inSubagent) block("role agents never merge. The product owner merges, or asks the orchestrator to.");
-      if (git.allowPush === false) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
+      if (git.allowPush === false) merges.push(tokens.join(" "));
     }
     // Redirections write too: split "x>file" and "> file" into their own tokens. Only the unquoted text is
     // read, so `node -e "a => a"` and `grep "a > b"` are not redirections; a quoted target comes back whole.
@@ -427,6 +456,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       if (outside) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/ (not ${outside}).`);
     }
   }
+  for (const m of merges) if (!(await mergesCheck(m))) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
   if (confirmReason) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse",
     permissionDecision: "ask", permissionDecisionReason: confirmReason } }));
   process.exit(0);

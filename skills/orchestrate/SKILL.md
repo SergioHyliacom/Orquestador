@@ -114,7 +114,11 @@ The Bitbucket pipeline computes the stage from the repository and moves the card
 
 **Who has the card.** Whoever hands out the work fills the card's **Backend** and **Frontend** people fields from the backlog; the designer is the card's reporter. The pipeline assigns the card to whoever's turn it is in each stage: the designer in Design and while a criterion waits for design, the Backend person in Contract (the Frontend person when there is none), each side's person while only their side is open in Build, the integrating side's person in Integration and after design approves. When your human takes a card nobody gave them, put them in their side's field, with their ok.
 
-**Talking to the other side.** A request (a field the contract lacks, an end-to-end test that fails because of the API, which criteria changed) is a card comment that mentions the person (`@`), with your human's ok on the text. Their `que-hago` shows it first. A status comment when a half or the story closes (the criteria done, the pull request link) states only facts and needs no ok.
+**Talking to the other side.** Each person sees only what is theirs to do or to judge. A card comment exists only when someone else has to act, and it mentions them (`@`), so their `que-hago` shows it first. There are two kinds:
+- **A decision of your human** that the other person answers: the contract proposal or a change to it (§6.2), a story returned to design with its open questions (§6.2), a reminder. Your human gives the ok on the text.
+- **A fact the other person needs** to do their part: an end-to-end test that fails because of the API, the criteria that changed, screenshots waiting for design. Post it without asking: it carries no decision. Tell your human in one line that you posted it.
+
+There are no status comments: the pipeline moves and assigns the card, and Jira shows the branch and the pull request when Bitbucket is connected. Nothing about checks, audits or tooling goes to a card. Write each comment for the department that reads it, in three lines at most: to design, in terms of the story, its criteria and its screens, never tests, the API, branches or code; to a developer, the exact technical fact (the operation, the field, the test's name).
 
 **Check the stage before you act.** Before you do what your human asks about a story, read its stage (the card, and `stories.mjs --json` for the story) and check that the request fits:
 
@@ -137,7 +141,7 @@ Whatever your human says:
 - no criterion built before the kickoff, and none against a contract the other side has not agreed;
 - no change to the contract without the other side's yes;
 - no final pull request while a criterion is not a passing `[test]` or a `[manual]`;
-- no merge without an approval from someone other than the author, except a `design/<ID>` pull request, which its author may merge alone (§6.1).
+- no merge without an approval from someone other than the author, except a `design/<ID>` pull request, which its author may merge alone (§6.1), and a check pull request, which your session merges alone (§6.11).
 
 The guard blocks the rest of what is dangerous on its own (§8).
 
@@ -147,7 +151,7 @@ Load the `stories` skill to write or change a story.
 
 Design writes every story with a screen. A story with no screen (a rule on the data, a periodic task, an importer) can be written by the developer who understands it, backend or frontend; the steps are the same.
 
-**Who approves.** The story's pull request is the approval. Its reviewer is, by default, another person of design; when there is none, or a developer wrote the story, the card's Backend person. The author may also merge it alone, without waiting for the approval, when they see it right: the kickoff reads it again before anything is built, and returns it when a criterion cannot be built (§6.2). That holds only for `design/<ID>` pull requests. Every other pull request to the integration branch or `main` needs an approval from someone other than its author, and only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
+**Who approves.** The story's pull request is the approval. Its reviewer is, by default, another person of design; when there is none, or a developer wrote the story, the card's Backend person. The author may also merge it alone, without waiting for the approval, when they see it right: the kickoff reads it again before anything is built, and returns it when a criterion cannot be built (§6.2). That holds only for `design/<ID>` pull requests and check pull requests (§6.11). Every other pull request to the integration branch or `main` needs an approval from someone other than its author, and only the people the team authorizes in Bitbucket merge into `main` (`references/git.md`).
 
 Design's stories start from the design project in Figma, the only home of the design: a story links its frames and never copies them. A developer's story with no screen skips steps 1 to 3.
 
@@ -203,7 +207,7 @@ When every criterion of your side is green on your half:
 1. **Verify the whole half.** Run the project's full verification (`verify.all`) yourself, once, where the half lives (in Orca, the builder's worktree): the builders ran only their side's fast checks on each criterion. A failure goes back to the builder, in the pair loop, as a refactor of the criterion it breaks, or as a task when it breaks none.
 2. **Lock.** List the half's acceptance-test files, with the helpers they import and the runner's config, in `.orchestrator/locked/<ID>-<side>.txt`. Commit that list alone (`<ID>: lock <side> tests`). From here no builder can change those tests; the guard checks them against this commit.
 3. Run `node <storiesDir>/stories.mjs --tests`. Every criterion your side tests passes.
-4. With your human's ok on the result (§6.3, step 6), merge your half into `story/<ID>` (`git checkout story/<ID>`, then `git merge story/<ID>-<side>`) and push. A story with one side has no half: the lock commit on `story/<ID>` closes it; push. Post the status comment on the card (§6).
+4. With your human's ok on the result (§6.3, step 6), merge your half into `story/<ID>` (`git checkout story/<ID>`, then `git merge story/<ID>-<side>`) and push. A story with one side has no half: the lock commit on `story/<ID>` closes it; push.
 
 The lock list on `story/<ID>` is what tells the pipeline a side is closed, so a half branch is only a place to work: it is deleted after the story merges (§6.8).
 
@@ -220,16 +224,16 @@ The lock list on `story/<ID>` is what tells the pipeline a side is closed, so a 
 
 When every side in `sides` is closed on `story/<ID>`:
 
-1. **With a front half:** brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`. If the end-to-end test fails because of the API (a bug, a missing field, a wrong error), the frontend builder reports BLOCKED and never touches backend code: tell the backend developer the exact problem through a comment on the card, with your human's ok on the text. The backend reopens its half (§6.4), and integration resumes when it is merged. **Back only:** there is no screen to integrate; go on to the markers.
+1. **With a front half:** brief the frontend builder with `Change: integration`: the real API instead of the mocks, the story's end-to-end test green, and, when `.orchestrator.json` has `ui`, one screenshot per state of each criterion. Same pair loop; commit on `story/<ID>`. If the end-to-end test fails because of the API (a bug, a missing field, a wrong error), the frontend builder reports BLOCKED and never touches backend code: tell the backend developer the exact problem in a comment on the card (a fact, §6: no ok needed). The backend reopens its half (§6.4), and integration resumes when it is merged. **Back only:** there is no screen to integrate; go on to the markers.
 2. Set the markers. Run `node <storiesDir>/stories.mjs --tests`. A criterion whose tests all pass there becomes `[test]`. A criterion only a person can check: when it is how a screen looks against its design, it becomes `[unverified]` and waits for design; when it is something else (an email that arrives, a call to a live service, what Hyliable's agent does with a prompt: the builders' ⚠️ manual steps), your human, or the developer of the side that owns it, does the check now, and it becomes `[manual YYYY-MM-DD, <name>]`. No criterion stays `[unbuilt]`. Commit the story (`<ID>: markers`). Builders never edit stories; this is your edit.
-3. Push. If a criterion waits for design, attach the screenshots to the card and mention the designer in a comment, with your human's ok: the pipeline assigns them the card. If none does, the card stays in Integration until the merge: go on to §6.7.
+3. Push. If a criterion waits for design, attach the screenshots to the card and mention the designer in a comment that names the screens and states to look at (a fact, §6: no ok needed): the pipeline assigns them the card. If none does, the card stays in Integration until the merge: go on to §6.7.
 
 ### 6.6 Visual review (design side, only when a criterion waits for design)
 
 Design compares the screenshots, and the running app when needed, with the designs, and answers in their session: approved, or what to change. **The designer never handles git: their session does.** It brings `story/<ID>` up to date (`git fetch`, `git switch story/<ID>`, `git pull`), writes the verdict, commits and pushes. If the push is rejected because someone pushed meanwhile, it pulls and pushes again. A conflict only happens when a developer edited the same criterion at the same moment: then stop, and ask the integrating developer through a card comment. Tell your human what happened in plain words, never in git terms.
 
 - **Approved:** the `[unverified]` criteria become `[manual YYYY-MM-DD, <designer>]`. The pipeline gives the card back to the integrating side.
-- **Adjustments:** change the criteria of this same story, never a new story, and set each changed criterion back to `[unbuilt]`: the card returns to Integration, and an old test cannot pass the new criterion. Tell the developers on the card which criteria changed.
+- **Adjustments:** change the criteria of this same story, never a new story, and set each changed criterion back to `[unbuilt]`: the card returns to Integration, and an old test cannot pass the new criterion. Tell the developers on the card which criteria changed (a fact, §6).
 
 An adjustment goes to the side that owns what changes, by the rule of §6.3: what the API decides (the data it returns, its order, a rule, an error message, a limit) goes to backend; what the screen shows goes to frontend; when both, to both. That side reopens its half (§6.4). When there is a screen, the frontend then integrates again (§6.5): the end-to-end test and new screenshots. The markers are set again, and the story comes back to design.
 
@@ -241,7 +245,7 @@ If the story carries a risk tag, a fresh `reviewer` judges `git diff <integratio
 
 ### 6.8 Merge
 
-Open the pull request only when `node <storiesDir>/stories.mjs --pr <ID>` shows every criterion as a passing `[test]` or a `[manual]`: that is what moves the card to Done once it merges, and a story merged with anything else stays in its stage with no branch left to finish it. Open it `story/<ID>` → integration branch on Bitbucket. Body: that output, the review summary if there was one, and any ⚠️ manual steps. Add as reviewer someone other than your human (ask who; by default the other side's person on the card). When it is approved, merge it through the API on your human's ok, with a merge commit that deletes `story/<ID>` (`references/git.md`); `que-hago` tells your human when it is approved. Then delete the halves (`git push origin --delete story/<ID>-back story/<ID>-front`), post the status comment on the card, and the pipeline moves it to Done.
+Open the pull request only when `node <storiesDir>/stories.mjs --pr <ID>` shows every criterion as a passing `[test]` or a `[manual]`: that is what moves the card to Done once it merges, and a story merged with anything else stays in its stage with no branch left to finish it. Open it `story/<ID>` → integration branch on Bitbucket. Body: that output, the review summary if there was one, and any ⚠️ manual steps. Add as reviewer someone other than your human (ask who; by default the other side's person on the card). When it is approved, merge it through the API on your human's ok, with a merge commit that deletes `story/<ID>` (`references/git.md`); `que-hago` tells your human when it is approved. Then delete the halves (`git push origin --delete story/<ID>-back story/<ID>-front`), and the pipeline moves the card to Done.
 
 ### 6.9 Reopen a story that is done
 
@@ -253,7 +257,7 @@ When the behaviour of a done story must change, or a bug breaks one of its crite
    - a bug marks the criterion it breaks `[failing: <what fails>]`, or adds a criterion when none covers the behaviour.
 
    Commit (`<ID>: reopen <criterion IDs>`) and push. The pipeline moves the card from Done to Integration, and keeps it out of Done until `story/<ID>` merges again. In the first release (`mainRelease`), a `[failing]` marker also keeps the story branch's build red until it is fixed, on purpose.
-3. **Tell the other side** on the card, with your human's ok on the text, when the change is theirs.
+3. **Tell the other side** on the card which criteria reopened, when the change is theirs (a fact, §6: no ok needed).
 4. **Fix it.** Each side that owns what changes reopens its half (§6.4), creating it again from `story/<ID>`. For a bug:
    - find the root cause before changing code;
    - the builder first writes a test, under the criterion's ID, that reproduces the bug and fails (`stories` skill, "Fixing a bug").
@@ -278,6 +282,15 @@ A story that was already done keeps its code, its tests and its lock lists on th
 1. **Branch.** Create `fix/<slug>` or `chore/<slug>`, in English kebab-case, from the integration branch on the remote.
 2. **Build it.** Brief the builder whose side owns the paths with `Change: task <slug>: <what changes>`, and under "Done when" the commands that prove it. Same pair loop: show your human the evidence, and commit on the ok. The message says what changes, short. Text only you write (a README line, a rule) needs no builder.
 3. **Merge it.** Open a pull request to the integration branch, with someone other than your human as reviewer. When it is approved, merge it through the API with squash, on your human's ok. No card moves.
+
+**Check.** A check pull request only adds or tightens a machine check (a lint rule, an architecture test, a CI step) that enforces a rule already in `docs/rules/`, together with the fix of the code that check catches, the move of that rule to *Checked by the machine* and, from an audit, the audit's record (§10, step 6). It comes from an audit (§10) or from a failure (§9). It is not your human's work and nobody decides it: your session builds it, pushes it and merges it without asking, and only developers' sessions do this, once development is open.
+
+1. **Branch.** `chore/check-<slug>` from the integration branch on the remote. Your side's builder builds it as a task (`Change: task check-<slug>: <the check and the rule it enforces>`); a one-line lint setting you do yourself.
+2. **It proves itself.** Before the commit, show that the check fails on the code that motivated it and passes once that code is fixed, and that `verify.all` is green. A check that stays green on the bad code catches nothing: drop it.
+3. **Push and open the pull request** to the integration branch, with the failing and passing lines in its body and no reviewer. The guard lets the push and the merge of a `chore/check-` branch through without asking your human to confirm.
+4. **Merge it** through the API with squash once its build is green (`que-hago` does it when it gathers; §9 at the close). A red build is fixed at the next close, in the same pull request.
+
+It is not a check pull request, and it goes to your human like any task, when it creates or changes a rule, touches a risk area (`riskTags`), comes from a Critical finding, or cannot pass without changing a locked test.
 
 **Hotfix.** An urgent bug in production.
 
@@ -304,7 +317,7 @@ A story that was already done keeps its code, its tests and its lock lists on th
 
 Your human gives the ok on the first criterion of each half and on the finished half (§6.3), and you stop for them whenever §6.3 says. Beyond that, always ask before:
 
-1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira cards and comments, attachments, pull requests.
+1. **Irreversible or outward-facing actions:** push, merge, deploy, delete data, call a live service, spend money, and anything others will read: Jira cards, comments that carry your human's decision, pull requests. A comment that only states a fact (§6) and a check pull request (§6.11) need no ok.
 2. **Product calls:** scope, criteria, the shape of the contract (both developers agree it), discarding a story.
 3. **What a machine cannot verify:** the runner limit in `.orchestrator.json`. The visual review is design's; other checks only a person can do belong to the developer of the side (§6.5).
 
@@ -314,7 +327,7 @@ When you ask: give a short summary, name the decision, give your recommendation 
 
 ## 8. Git
 
-Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves, `fix/`, `chore/` and `hotfix/` for the rest; each pull request merges with its own strategy, through you; one commit per criterion, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it. The guard blocks the dangerous commands.
+Read `references/git.md`. In short: `design/<ID>` for a new story, `story/<ID>` for the contract and the integration, `story/<ID>-back` and `story/<ID>-front` for the halves, `fix/`, `chore/` and `hotfix/` for the rest; each pull request merges with its own strategy, through you; one commit per criterion, files named; push and merge only on your human's ok, and a pull request only once someone other than its author has approved it, except a check pull request (§6.11). The guard blocks the dangerous commands.
 
 ## 9. Close
 
@@ -322,7 +335,8 @@ At the end of a block of work:
 
 1. Run `node <storiesDir>/stories.mjs` to refresh the map. It runs no tests: the full suites run when a half closes (§6.4), at the integration (§6.5) and in the pipeline.
 2. Settle the helpers. In Orca: every expected Dispatch has an outcome, every settled terminal was reused, retained or released, every released terminal you launched is closed, `worker-list --run <id> --terminal-state reclaimable --json` returns none, and the role file of each released worker (`.orchestrator/roles/<handle>.json`) is gone. Do not end the turn before that.
-3. A real failure in this project that can happen again gets a prevention, in the order of §11.2: a machine check; else a rule in `docs/rules/` (the file of the side that owns it, `comunes.md` when it applies to every side), with the failure as its origin; else a pattern. A failure of behaviour is a failing criterion of its story, never a rule. The rules are shared: propose the prevention to your human, and it goes in through a pull request.
+3. **Preventions.** A real failure in this project that can happen again gets one, in the order of §11.2. A machine check that enforces a rule already in `docs/rules/`: build it now as a check pull request (§6.11), without asking. Otherwise, a rule in `docs/rules/` (the file of the side that owns it, `comunes.md` when it applies to every side), with the failure as its origin, or a pattern: the rules are shared, so propose it to your human, and it goes in through a pull request. A failure of behaviour is a failing criterion of its story, never a rule.
+   Then, in a developer's session once development is open, the checks the audits left for your side: in `docs/audits/` on the integration branch (`git ls-tree --name-only origin/<integration branch> docs/audits/`, then `git show origin/<integration branch>:<file>`), the findings whose `Lado` is your side and whose `Estado` is `pendiente`. Build them the same way, one check pull request per audit, which also sets their `Estado` to `hecha (<commit>)`. Merge your check pull requests whose build is green, and fix the red ones. Your human does not need to do anything: say so in one line, and let them leave.
 4. Update `.orchestrator/state.md`.
 5. Tell your human, bad news first: what was committed, what was pushed, what waits for the other side, your technical rulings, and any work that ran unsupervised.
 
@@ -335,16 +349,13 @@ The tests prove that each story does what it says; they do not see how the code 
 1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` of them (default 5): at least one of each side, every one with a risk tag, then the largest diffs. The auditor never chooses what to look at.
 2. **Audit.** Brief a fresh `auditor` with the sample, the rules in `docs/rules/`, the previous audits in `docs/audits/` and the path of its report. It is read-only.
 3. **Verify before anyone reads it.** Run the `Check` of every Critical and Important finding. A finding that does not reproduce is dropped and recorded as a false positive. A bug against a story becomes a failing criterion of that story, which reopens it (§6.9). A `Check (manual)` needs the app running: run it only on your human's ok, and until then record the finding as unverified.
-4. **Close it** according to `audit.confirm` in `.orchestrator.json`:
-   - `pending` (the default): the team has not yet decided whether a person confirms the audit at the end. Until it does, close it as `human`, and remind your human that the decision is open.
-   - `human`: show your human the verified findings, the proposals and the prevention proposed for each; build only what they confirm, in the pair loop.
-   - `auto`: build the prevention of every verified RECURRING finding without asking first, committing each one when its check passes; your human sees them all in the pull request. Proposals always wait for a person.
-
-   Either way, your session builds only the preventions of your human's side, with your side's builder, on `chore/audit-<delivery>-<back | front>` (a one-line lint setting is trivial: do it yourself). Never brief the other side's builder (§2). The other side's preventions go into the record as pending for that side (step 6); its sessions offer them to that side's people (`que-hago` skill, §2), who confirm them like any other work. A prevention for both sides is split into each side's part. Each side's part reaches the integration branch through its own pull request, which the humans merge. Critical findings and findings in risk areas always go to your human, whatever the setting.
-5. **A new check proves itself.** Before its commit, show that it fails on the code that motivated it and passes once that code is fixed. A check that stays green on the bad code catches nothing: drop it.
-6. **Record**, in the same pull request:
-   - `docs/audits/<delivery>.md`: the sample, and each finding with its outcome — accepted, rejected (with the reason) or false positive — and the share of reported findings the team accepted. Each accepted finding also carries its prevention and two lines: `Lado: backend` or `Lado: frontend`, and `Estado: pendiente`, or `Estado: hecha (<commit>)` once it is built. The other side's session changes its own lines to `hecha` in the pull request of its preventions. The next audit reads it: a rejected finding is not raised again.
-   - `docs/rules/`: an accepted finding no check can express becomes a rule in the file of the side that owns it, with the audit as its origin; a rule a new check enforces moves to *Checked by the machine*; a rule that produced only rejected findings in two audits in a row is reworded or removed (§11.2).
+4. **Close it.** Nobody on the team confirms the checks:
+   - **Checks, without asking.** A verified finding whose prevention is a machine check enforcing a rule already in `docs/rules/` is accepted. Build your human's side as one check pull request (`chore/check-audit-<delivery>-<back | front>`, §6.11). Never brief the other side's builder (§2): the other side's checks go into the record as pending for that side (step 6), and its sessions build them on their own at their next close (§9), without asking anyone. A check for both sides is split into each side's part.
+   - **The rest goes to your human, who asked for the audit, and to nobody else:** the proposals, a prevention that has to be a rule or a pattern because no check can express it, a check that is not a check pull request (§6.11: Critical, risk area, a locked test), and a rule to reword or remove. Build only what they confirm, in the pair loop; the rules go in through a pull request.
+5. **A new check proves itself** (§6.11, step 2). A check that cannot is not accepted: it goes to your human with the rest.
+6. **Record**, in your side's check pull request, or in a pull request of its own when the audit built no check:
+   - `docs/audits/<delivery>.md`: the sample, and each finding with its outcome — accepted, rejected (with the reason) or false positive — and the share of reported findings that were accepted. Each accepted finding also carries its prevention and two lines: `Lado: backend` or `Lado: frontend`, and `Estado: pendiente`, or `Estado: hecha (<commit>)` once it is built. The other side's session changes its own lines to `hecha` in its check pull request. The next audit reads it: a rejected finding is not raised again.
+   - `docs/rules/`: a rule a new check enforces moves to *Checked by the machine*, in that check's pull request. A new rule (an accepted finding no check can express, in the file of the side that owns it, with the audit as its origin) and a rule reworded or removed (one that produced only rejected findings in two audits in a row, §11.2) go in through a pull request that another person approves.
 
    If fewer than half of the findings were accepted in two audits in a row, review the rules and the brief with your human before the next audit.
 

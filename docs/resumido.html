@@ -177,7 +177,7 @@ claude plugin install easyone-orchestrator@hyliacom --scope project</div>
       <ul><li><b>sí</b>: tu agente lo hace;</li><li><b>no</b>: dices por qué, y Claude se lo contesta;</li><li><b>hablamos</b>: Claude le avisa de que queréis hablarlo.</li></ul>
     </div>
   </div>
-  <p class="muted" style="margin-top:12px">Nadie tiene que acordarse de mirar comentarios en Jira. Si tu petición lleva más de un día sin respuesta, tu sesión te lo recuerda y te ofrece insistir.</p>
+  <p class="muted" style="margin-top:12px">Nadie tiene que acordarse de mirar comentarios en Jira. Si tu petición lleva más de un día sin respuesta, tu sesión te lo recuerda y te ofrece insistir. Los avisos que solo cuentan un hecho (una prueba que falla por la API, las capturas para diseño) Claude los envía sin preguntarte y te lo dice en una línea. No hay comentarios de estado: la tarjeta ya dice dónde está cada historia.</p>
 </section>
 
 <section>
@@ -204,7 +204,7 @@ claude plugin install easyone-orchestrator@hyliacom --scope project</div>
       <h3>Para que no se rompa nada</h3>
       <ul>
         <li>La guardia impide lo peligroso: push forzado, borrar trabajo, tocar tests bloqueados, que un agente toque el otro lado.</li>
-        <li>Cada push y cada merge te pide confirmación.</li>
+        <li>Cada push y cada merge te pide confirmación, salvo los de las comprobaciones automáticas.</li>
         <li>Los tests de cada criterio se bloquean al terminar: nadie puede debilitarlos.</li>
       </ul>
     </div>
@@ -213,7 +213,7 @@ claude plugin install easyone-orchestrator@hyliacom --scope project</div>
       <ul>
         <li>El pipeline mueve cada tarjeta según lo que hay en el repositorio y se la asigna a quien le toca.</li>
         <li>Cada vez que abres Claude, ves lo tuyo que está parado: peticiones sin responder, PR por revisar, una parte a medias.</li>
-        <li>Al cerrar cada entrega, una auditoría convierte los errores en comprobaciones.</li>
+        <li>Al cerrar cada entrega, una auditoría convierte los errores en comprobaciones, que se construyen y entran solas: nadie tiene que decidir nada.</li>
       </ul>
     </div>
   </div>

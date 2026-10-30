@@ -26,7 +26,7 @@ The skills named here without a prefix (`orchestrate`, `stories`, `que-hago`) ar
 
 Read only: run no generator, edit nothing, commit nothing.
 
-1. **Gather.** `que-hago` loads this skill for a technical lead (its §1, item 8), after gathering who they are, their git, their pull requests and the ledger. When the lead asks you directly, gather those first (`que-hago` §1, items 1, 2, 5 and 6).
+1. **Gather.** `que-hago` loads this skill for a technical lead (its §1, item 7), after gathering who they are, their git, their pull requests and the ledger. When the lead asks you directly, gather those first (`que-hago` §1, items 1, 2, 5 and 6).
 2. **The list.** The pieces of §1 that Part 2 of the install checks (`install` skill, 2.1 and 2.3):
    - the verification commands run;
    - the toy endpoint goes from Go through the OpenAPI spec and the generated client to the panel and an end-to-end test, on a real PostgreSQL;
@@ -50,4 +50,4 @@ Read only: run no generator, edit nothing, commit nothing.
 
 ## 3. The foundations' audit
 
-The first audit, right after Part 2 merges: the foundations' patterns are the ones every story will copy. Run the `orchestrate` skill's §10 with one change: the sample is not stories but the main pieces of the foundations and their commits (the reference module, the module generator, the toy endpoint and its screen), named by you; the auditor never chooses what to look at. Say in the brief that this is the foundations' audit, with no stories: the auditor then names each finding's module and commit instead. The record is `docs/audits/entrega-0.md`, and the pending preventions of the other side reach it as in any audit (`orchestrate` §10, steps 4 and 6).
+The first audit, right after Part 2 merges: the foundations' patterns are the ones every story will copy. Run the `orchestrate` skill's §10 with one change: the sample is not stories but the main pieces of the foundations and their commits (the reference module, the module generator, the toy endpoint and its screen), named by you; the auditor never chooses what to look at. Say in the brief that this is the foundations' audit, with no stories: the auditor then names each finding's module and commit instead. The record is `docs/audits/entrega-0.md`. The checks are built without asking and the other side's go into the record as pending for it, as in any audit (`orchestrate` §10, steps 4 and 6).

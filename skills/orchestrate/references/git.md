@@ -11,7 +11,7 @@
 | `story/<ID>-back` | `story/<ID>` → `story/<ID>`, after the kickoff | backend | the backend half, only when `sides` has both sides. Deleted after the story merges (§6.8) |
 | `story/<ID>-front` | `story/<ID>` → `story/<ID>`, after the kickoff | frontend | the frontend half, only when `sides` has both sides. Deleted after the story merges (§6.8) |
 | `fix/<slug>` | `develop` → `develop` | the side that owns the paths | a non-urgent fix of something that is not a story's behaviour: the build, the configuration, a script. A behaviour bug reopens its story (§6.9) |
-| `chore/<slug>` | `develop` → `develop` | the side that owns the paths | work that is not a story: dependencies, tooling, documentation |
+| `chore/<slug>` | `develop` → `develop` | the side that owns the paths | work that is not a story: dependencies, tooling, documentation. A `chore/check-<slug>` only adds or tightens a machine check, and the session builds and merges it alone (`orchestrate` skill, §6.11) |
 | `hotfix/<slug>` | `main` → `main`, then `main` → `develop` | the side that owns what fails | an urgent fix in production (§6.11) |
 
 `develop` stands for the integration branch, `git.integrationBranch`. Stories' branches carry the Jira key; the slugs of the others are in English and kebab-case, like the other identifiers: `fix/session-timeout`, `chore/upgrade-vite`.
@@ -33,8 +33,8 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 
 ## Push and remote
 
-- Push only when your human asks. When your human says "commit and push", do both: a commit alone is half the request.
-- Role agents never push; the guard blocks it. With `git.allowPush: false` the guard makes Claude Code ask your human to confirm each push; that prompt is their consent, so run the command and let them approve it. Do not hand the command back.
+- Push only when your human asks. When your human says "commit and push", do both: a commit alone is half the request. A `chore/check-` branch is pushed without asking (`orchestrate` skill, §6.11).
+- Role agents never push; the guard blocks it. With `git.allowPush: false` the guard makes Claude Code ask your human to confirm each push, except a push of `chore/check-` branches only; that prompt is their consent, so run the command and let them approve it. Do not hand the command back.
 - Push your half when it closes (§6.4 of the skill) and whenever your human wants the pipeline to see the progress. The pipeline only sees what is pushed.
 - Check `git remote -v` and the auth setup before the first push in a project. Non-interactive sessions cannot answer credential prompts.
 
@@ -44,8 +44,8 @@ The halves end in `-back` and `-front`, never `/back`: git cannot hold both `sto
 - The others: `fix/` and `chore/` → `develop`, `develop` → `main`, `hotfix/` → `main` and then `main` → `develop`. Title: what changes, short.
 - The halves are not pull requests: each merges into `story/<ID>` with `git merge`, on your human's ok. The pipeline knows a side is closed by its lock list on `story/<ID>`, not by the half branch, so the halves are deleted after the story merges, and a reopened story creates them again (§6.9).
 - **You open and merge the pull requests, through the REST API**, so nobody has to pick a strategy by hand. Bitbucket has no official CLI: use `POST /2.0/repositories/<workspace>/<repo>/pullrequests` with `BITBUCKET_USER` and `BITBUCKET_TOKEN` from your human's environment. `BITBUCKET_USER` is their Atlassian account email, not their Bitbucket username; their session sets both up with them at their first session (`orchestrate` skill, §1, step 2). Add as reviewer someone other than your human (`reviewers` in the body). Never write the token into a file the repository tracks. Without a token, your human does it in the web UI and you tell them the strategy of the table below.
-- A pull request merges only after at least one person other than its author approves it (`orchestrate` skill, §6.1). The exception is a `design/<ID>` pull request: its author may merge it alone.
-- Merge only on your human's ok. A merge through the API (`POST …/pullrequests/<id>/merge`) is a merge: the guard asks your human to confirm it and blocks it for role agents. Before it, read the pull request (`GET …/pullrequests/<id>`): some participant other than the `author` must have `approved: true` (not for a `design/<ID>` its author merges alone), and none may have `state: changes_requested`; and its builds (`GET …/pullrequests/<id>/statuses`) must all be `SUCCESSFUL`. Bitbucket only warns about these on this plan, so you check them. If one fails, do not merge; tell your human what it is waiting for. Send the strategy of the table below as `merge_strategy` (`squash`, `merge_commit` or `fast_forward`) and `close_source_branch` as the table says.
+- A pull request merges only after at least one person other than its author approves it (`orchestrate` skill, §6.1). The exceptions: a `design/<ID>` pull request, which its author may merge alone, and a check pull request (`chore/check-`), which the session merges alone once its build is green (§6.11).
+- Merge only on your human's ok, except a check pull request. A merge through the API (`POST …/pullrequests/<id>/merge`) is a merge: the guard asks your human to confirm it, unless the pull request goes from a `chore/check-` branch to the integration branch, and blocks it for role agents. Before it, read the pull request (`GET …/pullrequests/<id>`): some participant other than the `author` must have `approved: true` (not for a `design/<ID>` its author merges alone, nor for a check pull request), and none may have `state: changes_requested`; and its builds (`GET …/pullrequests/<id>/statuses`) must all be `SUCCESSFUL`. Bitbucket only warns about these on this plan, so you check them. If one fails, do not merge; tell your human what it is waiting for. Send the strategy of the table below as `merge_strategy` (`squash`, `merge_commit` or `fast_forward`) and `close_source_branch` as the table says.
 - Never merge on a red pipeline.
 
 ### How each pull request merges

@@ -135,7 +135,7 @@ Ask the human only what you cannot measure, all at once: the code owner if any; 
 
 ### 2.2 Complete the configuration
 
-1. Add the rest of `assets/orchestrator.json` to `.orchestrator.json` and fill every slot: `setup`, `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams`, `orca`, `audit`. Leave `audit.confirm` as `pending` until the team decides whether a person confirms each audit. Do not leave a `{{` anywhere.
+1. Add the rest of `assets/orchestrator.json` to `.orchestrator.json` and fill every slot: `setup`, `verify`, `contract`, `roles`, `runnerLimit`, `ui`, `seams`, `orca`, `audit`. Do not leave a `{{` anywhere.
 2. Add `tests` (the three reports from 2.1) and `contractSpec` (`contract.spec`) to `<storiesDir>/stories.config.json`.
 3. Replace the Part 1 `bitbucket-pipelines.yml` with the whole of `assets/bitbucket-pipelines.yml`, with the project's image, its setup line (the `setup` command) and the verification commands. Keep `stories.mjs --tests --check` right after the setup: the card moves on the test results even when a later check fails. The verification lines are the commands of `verify.all` that the test sources do not already run.
 4. Fill the lines of the `CLAUDE.md` block that Part 1 left pending, and the local run section of `README.md` with the names of the task file's commands.
