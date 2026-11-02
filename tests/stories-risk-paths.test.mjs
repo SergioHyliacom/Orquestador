@@ -50,6 +50,9 @@ function project({ riskPaths, riskTags = ["identity", "personal-data"] } = {}) {
   write("product/stories.config.json", JSON.stringify({ releases: ["Entrega 1"], idPrefix: "PRU" }));
   write("product/stories/notas/PRU-9-guardar-una-nota.md", STORY([]));
   write("apps/api/main.go", "package main\n");
+  // The code the risk paths name exists on the integration branch.
+  write("apps/api/internal/platform/authz/authz.go", "package authz\n");
+  write("apps/api/internal/modules/notes/migrations/0001_create_notes.sql", "-- notas\n");
   git("init", "-q", "-b", "develop");
   git("add", ".");
   git("commit", "-q", "-m", "base");
@@ -60,6 +63,7 @@ function project({ riskPaths, riskTags = ["identity", "personal-data"] } = {}) {
   delete env.CI;
   return {
     change: (rel) => { write(rel, "x\n"); git("add", rel); git("commit", "-q", "-m", `cambia ${rel}`); },
+    move: (from, to) => { git("mv", from, to); git("commit", "-q", "-m", `mueve ${from}`); },
     tag: (...tags) => { write("product/stories/notas/PRU-9-guardar-una-nota.md", STORY(tags)); git("add", "."); git("commit", "-q", "-m", "tags"); },
     switchTo: (branch) => git("switch", "-q", "-c", branch),
     run: (...args) => spawnSync("node", [STORIES, ...args], { cwd: dir, env, encoding: "utf8" }),
@@ -111,6 +115,22 @@ test("riskPaths solo puede nombrar etiquetas de riskTags", () => {
   const check = p.run("--check");
   assert.equal(check.status, 1);
   assert.match(check.stderr, /riskPaths names pagos, which is not in riskTags/);
+});
+
+test("una entrada que no corresponde a ningún fichero falla --check", () => {
+  const p = project({ riskPaths: { identity: ["apps/api/internal/platform/auth/"] } });
+  const check = p.run("--check");
+  assert.equal(check.status, 1);
+  assert.match(check.stderr, /riskPaths identity → apps\/api\/internal\/platform\/auth\/ matches no file in the repository/);
+});
+
+test("mover el código de una ruta de riesgo deja la entrada caducada en esa misma rama", () => {
+  const p = project({ riskPaths: RISK_PATHS });
+  p.tag("identity");
+  p.move("apps/api/internal/platform/authz", "apps/api/internal/platform/permisos");
+  const check = p.run("--check");
+  assert.equal(check.status, 1);
+  assert.match(check.stderr, /riskPaths identity → apps\/api\/internal\/platform\/authz\/ matches no file/);
 });
 
 test("sin riskPaths no cambia nada", () => {

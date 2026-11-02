@@ -4,7 +4,8 @@
 //   node stories.mjs                 generate the map with the last saved test results (map.md is never committed)
 //   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
 //   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release,
-//                                    and on a story branch that touches a risk path (riskPaths) its story lacks the tag for
+//                                    on a story branch that touches a risk path (riskPaths) its story lacks the tag for,
+//                                    and on a riskPaths entry that matches no file
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
 //   node stories.mjs --pr ID         print a PR checklist for one story; exit 1 when its branch lacks a risk tag
 //   node stories.mjs --json          print the computed state as JSON (for agents)
@@ -302,6 +303,17 @@ function riskMisses() {
   }
   return misses;
 }
+// An entry that matches no file protects nothing: the code it named moved or was removed.
+function staleRiskPaths() {
+  const files = (gitRun(["-c", "core.quotepath=off", "ls-files"]) ?? "").split(/\r?\n/).filter(Boolean);
+  if (!files.length) return [];
+  const stale = [];
+  for (const [tag, globs] of Object.entries(RISK_PATHS)) for (const glob of asList(globs)) {
+    const re = globRe(glob);
+    if (!files.some((f) => re.test(f))) stale.push(`.orchestrator.json: riskPaths ${tag} → ${glob} matches no file in the repository. The code it named moved or was removed: fix the entry in the branch that moved it.`);
+  }
+  return stale;
+}
 const riskMiss = (m) => `${m.story.file}: this branch changes ${m.file}, a ${m.tag} path (.orchestrator.json → riskPaths), and the story's tags lack ${m.tag}. Add it: the story then gets its risk review.`;
 
 // ---------- Test results
@@ -525,6 +537,7 @@ const md = out.join("\n");
 
 if (flag("--check")) {
   for (const m of riskMisses()) errors.push(riskMiss(m));
+  errors.push(...staleRiskPaths());
   // The main release must be green: a failing, failing-test or skipped criterion fails the check.
   for (const s of main) for (const c of s.criteria) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);

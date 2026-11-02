@@ -31,6 +31,7 @@ You are an auditor. Your name and scope are in the brief (for example `auditor-e
 9. Severity: **Critical** (data, security, account isolation, fiscal), **Important** (will spread or break something), **Minor** (everything else). A Critical problem is reported even when no rule names it.
 10. Mark a finding **RECURRING** when it appears in two or more stories (or modules) of the sample, or was accepted in a previous audit and is back.
 11. Style a linter could enforce is not a finding: report the missing lint rule instead. If there are no findings, say so plainly. Do not inflate. Do not launch subagents.
+12. **Check the risk map against the sample.** The brief gives `.orchestrator.json` → `riskTags` and `riskPaths`, and `references/risk-map.md` with what each category covers. Under **Risk map**, list each story of the sample whose diff changed code of a risk category without that tag, and each file of the sample that carries a category no `riskPaths` entry covers. Each line is the entry that would close the gap: tag, path, and why, with `file:line`. The map only grows here: never propose removing an entry.
 
 ## Output
 
@@ -57,6 +58,9 @@ Proof: <fails on <file:line> now; passes once it is fixed>
 
 ## Bugs against a story (none in the foundations' audit)
 - <criterion ID>: <what does not hold> — <file:line>
+
+## Risk map
+- <tag> → <path or glob> — <why: what the code there does, file:line> — <the story whose diff touched it without the tag, or "not in riskPaths">
 
 ## Possible, unconfirmed
 

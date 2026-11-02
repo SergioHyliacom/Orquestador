@@ -80,7 +80,7 @@ Lo que se escribe en el repositorio (historias, reglas, commits, tarjetas) va si
 
 ## Preparar un proyecto
 
-Lo hacen los responsables técnicos: `.orchestrator.json`, la carpeta de historias, `CLAUDE.md`, las reglas de `docs/rules/` y el pipeline. Mientras ponen los cimientos, diseño ya escribe historias. El desarrollo se abre para todos cuando `.orchestrator.json` tiene `roles`, sin que nadie tenga que instalar nada más.
+Lo hacen los responsables técnicos: `.orchestrator.json`, la carpeta de historias, `CLAUDE.md`, las reglas de `docs/rules/`, el pipeline y el mapa de riesgo (qué es de riesgo en el proyecto y dónde vive en el código: la sesión lo propone con pruebas y el responsable lo aprueba; skill `orchestrate`, `references/risk-map.md`). Mientras ponen los cimientos, diseño ya escribe historias. El desarrollo se abre para todos cuando `.orchestrator.json` tiene `roles`, sin que nadie tenga que instalar nada más.
 
 ## Requisitos
 

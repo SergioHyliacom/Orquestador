@@ -21,6 +21,7 @@
 | What the product is, the folders, how to run it | `README.md` |
 | The context of every session | `CLAUDE.md`, which imports `README.md` and `docs/rules/comunes.md`; the rest is the code |
 | Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` |
+| What is risky and where it lives in the code | `.orchestrator.json` → `riskTags`, `riskPaths`; the reasons, in the body of the `chore/risk-map` pull request that set them (`references/risk-map.md`) |
 | Personal files | `.orchestrator/me.json`, `state.md`, `work/`, never committed |
 
 The method lives in this plugin and is never copied into the project. Jira cards carry the title, the sentence and the links, never the criteria. There is no `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/`, documentation site or lessons section in `CLAUDE.md`: do not create them.

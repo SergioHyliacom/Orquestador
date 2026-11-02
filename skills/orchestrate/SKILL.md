@@ -16,6 +16,7 @@ This file is what every session needs. Read a reference only when the work in fr
 | Brief an agent and read its report | `references/delegation.md` |
 | A fix, a chore, a check, a hotfix, going to production | `references/outside-stories.md` |
 | A delivery audit | `references/audit.md` |
+| What is risky and where it lives: draw the risk map, keep it current | `references/risk-map.md` |
 | Where to write something down; the rules | `references/where-things-live.md` |
 | Branches, commits, pull requests, Bitbucket | `references/git.md` |
 | A person's access to Jira and Bitbucket | `references/access.md` |
