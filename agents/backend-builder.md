@@ -35,7 +35,7 @@ The brief names one criterion.
    - **The test does not observe the criterion:** rewrite it until it fails for the right reason.
 
    Stop and report only when you cannot make the test observe the criterion.
-2. **Pin what must not change.** Before you change any code, find the existing behaviour that shares the code you are about to change and that the criterion does not change: other operations through the same handler, validation, query or helper. Ask the code graph first: `query_graph_tool` with `callers_of` on each function you will change (`importers_of` for a file), and read every call site it returns; grep only confirms. For each one, name the test that already pins it, or write one under this criterion's ID that says what stays the same: `t.Run("[EO-123.1] unchanged: an empty NIF still returns 422", ...)`. Run it now: it must pass on the code as it is. One pin per behaviour, no other cases. When nothing else shares the code, say so.
+2. **Pin what must not change.** Before you change any code, find the existing behaviour that shares the code you are about to change and that the criterion does not change: other operations through the same handler, validation, query or helper. Ask the code graph first: `query_graph_tool` with `callers_of` on each function you will change (`importers_of` for a file), and read every call site it returns: past 15, those on the path of the criterion's operation, then one per other package, and say on the `GRAPH:` line how many you left unread. Grep only confirms. For each one, name the test that already pins it, or write one under this criterion's ID that says what stays the same: `t.Run("[EO-123.1] unchanged: an empty NIF still returns 422", ...)`. Run it now: it must pass on the code as it is. One pin per behaviour, no other cases. When nothing else shares the code, say so.
 3. **Green.** Write the least code that makes the criterion's test pass. The pins still pass.
 4. **Verify.** Run your side's fast checks, `roles.backend-builder.onStop` in `.orchestrator.json` (the guard runs them again when you stop). The project's full verification runs once per side, when the orchestrator closes it.
 5. **Stop.** Report. Do not start the next criterion, and do not refactor unless the brief asks for it.
@@ -94,7 +94,7 @@ Risk: none | <risk tag>: <the code that carries it>
 ## Evidence
 - RED: <command> → <failing output, trimmed>   (already met: <command> → <passing output before any change>)
 - GREEN: <command> → <passing output, trimmed>
-- GRAPH: callers_of <function> → <its call sites, file:line>; …   (unavailable: <why>, and the grep you ran instead)
+- GRAPH: callers_of <function> → <its call sites, file:line>; …   (+ <n> unread past 15) (unavailable: <why>, and the grep you ran instead)
 - PINS: <test › name> → passed before the change and after   (none: <why nothing else shares the changed code>)
 - Checks: <each fast check of your side; contract and task runs: each project command> → <result>
 
@@ -105,4 +105,4 @@ Risk: none | <risk tag>: <the code that carries it>
 - <anything the developer or the frontend must know>
 ```
 
-Reply to the orchestrator in at most 8 lines: the first line is `<name>: <Status>`, then the criterion or contract result, the RED and GREEN commands with one line of output each, the pins, the `Risk:` line, and the report path. Bad news first.
+Reply to the orchestrator in at most 8 lines: the first line is `<name>: <Status>`, then the criterion or contract result, the RED and GREEN commands with one line of output each, the `GRAPH:` line, the pins, the `Risk:` line, and the report path. Bad news first.

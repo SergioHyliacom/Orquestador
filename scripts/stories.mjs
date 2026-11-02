@@ -5,8 +5,8 @@
 //   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
 //   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release,
 //                                    on a story branch that touches a risk path (riskPaths) its story lacks the tag for,
-//                                    on a riskPaths entry that matches no file, and on a path or pnpm script
-//                                    that a context doc (contextDocs) names and does not exist
+//                                    on a riskPaths or contextDocs entry that matches no file, and on a path or
+//                                    pnpm script that a context doc (contextDocs) names and does not exist
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
 //   node stories.mjs --pr ID         print a PR checklist for one story; exit 1 when its branch lacks a risk tag
 //   node stories.mjs --json          print the computed state as JSON (for agents)
@@ -318,35 +318,125 @@ function staleRiskPaths() {
 // ---------- Context docs: what every session reads points to files and commands that exist
 
 // .orchestrator.json → contextDocs lists the texts sessions and agents read first ("CLAUDE.md", "README.md",
-// "docs/rules/*.md"). A path or a pnpm script one of them names in backticks must exist: a stale one sends every
-// agent the wrong way, and nobody notices until one reads both. Only paths inside the repository are checked (their
-// first folder exists), and never what git ignores (generated or personal files).
+// "docs/rules/*.md"). A path or a pnpm script one of them names must exist: a stale one sends every agent the wrong
+// way, and nobody notices until one reads both. Read: what is in inline backticks, and the lines of a fenced block
+// whose language is a shell. A path is looked up next to the doc and from the repository's root, in what git tracks:
+// a disk on Windows or macOS ignores case and holds files nobody committed, the pipeline's does neither, and both
+// must give the same answer. Only paths inside the repository count (their first folder is tracked), never what git
+// ignores (generated or personal files), and never a placeholder (`<ID>`, `*`, `...`). A pnpm script is checked
+// only where nothing else can be meant: `pnpm run <x>`, or `pnpm <x:y>`. A bare `pnpm <x>` can be pnpm's own
+// command or a dependency's binary (`pnpm vitest`), which the pipeline cannot know before installing.
 const CONTEXT_DOCS = asList(orchestrator.contextDocs);
-const PNPM_BUILTIN = new Set(["install", "i", "add", "remove", "rm", "update", "up", "exec", "dlx", "why", "list", "ls", "outdated", "audit", "store", "init", "create", "publish", "pack", "link", "unlink", "rebuild", "prune", "fetch", "patch", "env", "setup", "config", "import", "deploy", "licenses"]);
-const PATHLIKE = /^\.?[\w@-][\w.@-]*(\/[\w.@-]+)*\/?$/;
+const PATHLIKE = /^\.?[\p{L}\p{N}_@-][\p{L}\p{M}\p{N}_.@-]*(\/[\p{L}\p{M}\p{N}_.@-]+)*\/?$/u;
+const SHELL_FENCE = /^(sh|bash|shell|zsh|console|terminal|powershell|pwsh|ps1|cmd|bat)$/i;
+const STALE_FIX = "Fix the text, or remove it if the code already says it.";
+// Joins relative POSIX paths: "" is the repository's root, and nothing ends in "/".
+const joinRel = (...parts) => { const p = path.posix.normalize(parts.filter(Boolean).join("/") || "."); return p === "." ? "" : p.replace(/\/$/, ""); };
 function staleContextRefs() {
   if (!CONTEXT_DOCS.length) return [];
-  const tracked = (gitRun(["-c", "core.quotepath=off", "ls-files"]) ?? "").split(/\r?\n/).filter(Boolean);
-  const docs = tracked.filter((f) => CONTEXT_DOCS.some((g) => globRe(g).test(f)));
-  const pkgPath = path.join(ROOT, "package.json");
-  const scripts = existsSync(pkgPath) ? new Set(Object.keys(readJson(pkgPath).scripts ?? {})) : null;
-  const ignored = (p) => gitRun(["check-ignore", "-q", p]) !== null;
+  // -z: names as they are, never quoted. NFC: the doc and the index may spell an accent differently.
+  const files = (gitRun(["ls-files", "-z"]) ?? "").split("\0").filter(Boolean).map((f) => f.normalize("NFC"));
+  if (!files.length) return [];
+  const fileSet = new Set(files);
+  const tracked = new Set(files); // the files and every folder that holds one
+  for (const f of files) for (let i = f.indexOf("/"); i > 0; i = f.indexOf("/", i + 1)) tracked.add(f.slice(0, i));
+  const byLower = new Map([...tracked].map((p) => [p.toLowerCase(), p]));
   const stale = [];
-  for (const doc of docs) {
-    lf(readFileSync(path.join(ROOT, doc), "utf8")).split("\n").forEach((line, i) => {
-      for (const m of line.matchAll(/`([^`]+)`/g)) {
-        const tokens = m[1].trim().split(/\s+/);
-        const script = tokens[0] === "pnpm" ? (tokens[1] === "run" ? tokens[2] : tokens[1]) : null;
-        if (scripts && script && !/^[-<]/.test(script) && !PNPM_BUILTIN.has(script) && !scripts.has(script)) {
-          stale.push(`${doc}:${i + 1}: names \`pnpm ${script}\`, and package.json has no script ${script}. Fix the text, or remove it if the code already says it.`);
+  // An entry that matches nothing checks nothing: a typo or a moved text would turn the check off without a word.
+  const globs = CONTEXT_DOCS.map((g) => ({ g, re: globRe(g) }));
+  for (const { g, re } of globs) {
+    if (!files.some((f) => re.test(f))) stale.push(`.orchestrator.json: contextDocs → ${g} matches no file in the repository. Fix the entry: until then those texts are not checked.`);
+  }
+  const docs = files.filter((f) => globs.some(({ re }) => re.test(f)));
+  const ignored = (p) => gitRun(["check-ignore", "-q", "--", p]) !== null;
+
+  // The scripts pnpm sees in a folder: those of the nearest package.json at or above it. null when there is none.
+  const packages = new Map();
+  const scriptsAt = (dir) => {
+    if (dir.startsWith("..")) return null;
+    for (let d = dir; ; d = d.includes("/") ? d.slice(0, d.lastIndexOf("/")) : "") {
+      const pkg = d ? `${d}/package.json` : "package.json";
+      if (fileSet.has(pkg)) {
+        if (!packages.has(pkg)) {
+          let scripts = null;
+          try { scripts = new Set(Object.keys(readJson(path.join(ROOT, pkg)).scripts ?? {})); } catch { /* unreadable here: not checked */ }
+          packages.set(pkg, scripts && { pkg, scripts });
         }
-        for (const token of tokens) {
-          const p = token.replace(/[,;:)]+$/, "");
-          if (!p.includes("/") || !PATHLIKE.test(p) || !existsSync(path.join(ROOT, p.split("/")[0]))) continue;
-          if (existsSync(path.join(ROOT, p)) || ignored(p)) continue;
-          stale.push(`${doc}:${i + 1}: names ${p}, which does not exist. Fix the text, or remove it if the code already says it.`);
-        }
+        return packages.get(pkg);
       }
+      if (!d) return null;
+    }
+  };
+  // What is wrong with `pnpm …` run in one of the folders, or null.
+  const scriptProblem = (t, dirs) => {
+    if (t[0] !== "pnpm") return null;
+    const explicit = t[1] === "run";
+    const name = explicit ? t[2] : t[1];
+    if (!name || /^[-<$]/.test(name) || (!explicit && !name.includes(":"))) return null;
+    const found = dirs.map(scriptsAt).filter(Boolean);
+    if (!found.length || found.some((x) => x.scripts.has(name))) return null;
+    return `names \`pnpm ${explicit ? "run " : ""}${name}\`, and ${found[0].pkg} has no script ${name}`;
+  };
+  // A path is in this repository when its first folder is tracked, or was: a branch that removes or renames a whole
+  // folder leaves the texts that name it stale too. One look at the history per folder name.
+  const history = new Map();
+  const inRepository = (first) => {
+    if (byLower.has(first.toLowerCase())) return true;
+    if (!history.has(first)) history.set(first, Boolean(gitRun(["log", "-1", "--format=%H", "--", `:(literal)${first}`])?.trim()));
+    return history.get(first);
+  };
+  // What is wrong with a path a doc names, looked up from each of the folders, or null.
+  const pathProblem = (p, dirs) => {
+    const candidates = [...new Set(dirs.filter((d) => inRepository(joinRel(d, p.split("/")[0]))).map((d) => joinRel(d, p)))];
+    if (!candidates.length) return null; // not a path in this repository: a branch, a package, another repository
+    if (candidates.some((c) => tracked.has(c) || ignored(p.endsWith("/") ? `${c}/` : c))) return null;
+    const differs = candidates.map((c) => byLower.get(c.toLowerCase())).find(Boolean);
+    if (differs) return `names ${p}, and git has ${differs}: the case differs, and the pipeline will not find it`;
+    if (candidates.some((c) => existsSync(path.join(ROOT, c)))) return `names ${p}, which is not committed: commit it, or add it to .gitignore if it is generated`;
+    return `names ${p}, which does not exist`;
+  };
+  // One span: inline code, or a line of a shell block. `cd apps/web && pnpm gen:client` runs in apps/web.
+  const checkSpan = (span, at, docDirs) => {
+    const s = span.trim().normalize("NFC");
+    if (!s) return;
+    // A path with spaces is one path: when the whole span is tracked, it is fine as it is.
+    if (s.includes("/") && docDirs.some((d) => tracked.has(joinRel(d, s)))) return;
+    let cwd = "";
+    for (const command of s.split(/&&|\|\||[;|]/)) {
+      const t = command.trim().split(/\s+/);
+      // After `cd ~/x` or `cd $DIR`, where the command runs is not known. Of the folders it can run in, those that exist.
+      const all = cwd === null ? [] : [...new Set(docDirs.map((d) => joinRel(d, cwd)))];
+      const real = all.filter((d) => d === "" || tracked.has(d));
+      const dirs = real.length ? real : all;
+      const problem = scriptProblem(t, dirs);
+      if (problem) stale.push(`${at}: ${problem}. ${STALE_FIX}`);
+      for (const token of t) {
+        const p = token.replace(/[,;:)]+$/, "");
+        if (!p.includes("/") || !PATHLIKE.test(p) || p.split("/").some((x) => /^\.{3,}$/.test(x))) continue;
+        const pathIssue = pathProblem(p, [...new Set([...dirs, ...docDirs])]);
+        if (pathIssue) stale.push(`${at}: ${pathIssue}. ${STALE_FIX}`);
+      }
+      if (t[0] === "cd" && t[1]) cwd = cwd === null || /^[~/$\\]|^[A-Za-z]:/.test(t[1]) ? null : joinRel(cwd, t[1]);
+    }
+  };
+  for (const doc of docs) {
+    let text;
+    // Tracked but not readable here (deleted or moved without staging, a sparse checkout, a folder): nothing to read.
+    try { text = readFileSync(path.join(ROOT, doc), "utf8"); } catch { continue; }
+    const dir = path.posix.dirname(doc);
+    const docDirs = dir === "." ? [""] : [dir, ""];
+    let fence = null;
+    lf(text).split("\n").forEach((line, i) => {
+      const at = `${doc}:${i + 1}`;
+      if (fence) {
+        const close = line.match(/^\s*(`{3,}|~{3,})\s*$/);
+        if (close && close[1][0] === fence.char && close[1].length >= fence.length) fence = null;
+        else if (fence.shell && !/^\s*#/.test(line)) checkSpan(line.replace(/^\s*(\$|>|PS[^>]*>)\s+/, "").replace(/\s#.*$/, ""), at, docDirs);
+        return;
+      }
+      const open = line.match(/^\s*(`{3,}|~{3,})\s*([^\s`]*)/);
+      if (open) { fence = { char: open[1][0], length: open[1].length, shell: SHELL_FENCE.test(open[2]) }; return; }
+      for (const m of line.matchAll(/`([^`]+)`/g)) checkSpan(m[1], at, docDirs);
     });
   }
   return stale;
@@ -575,6 +665,8 @@ const md = out.join("\n");
 if (flag("--check")) {
   for (const m of riskMisses()) errors.push(riskMiss(m));
   errors.push(...staleRiskPaths(), ...staleContextRefs());
+  // Opt-in, but never silent: a project without the list should know its texts go unchecked.
+  if (!CONTEXT_DOCS.length) console.log(`Note: .orchestrator.json has no contextDocs, so no text is checked for stale paths or pnpm scripts. Add the texts every session reads: ["CLAUDE.md", "README.md", "docs/rules/*.md"].`);
   // The main release must be green: a failing, failing-test or skipped criterion fails the check.
   for (const s of main) for (const c of s.criteria) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);
