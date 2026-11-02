@@ -13,7 +13,7 @@ Code outside a story goes to the builder whose side owns the paths, as a task (`
 
 **The mechanism.** A builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. It shares your working tree: commit your own edits to stories and lock lists before you brief it, and touch nothing in the tree while it runs. When it stops, the guard compares those files with HEAD.
 
-A builder that reports BLOCKED goes to your human. The guard counts the builder runs since the checkout's last commit in `.orchestrator/work/breaker.json`: after `verify.maxBuilderRuns` (3 by default), it asks your human before each further launch or resume, and only a commit, or your human, resets the count. Inside a run, the same command failing `verify.maxSameFailure` times in a row with the same output (3 by default) makes the builder report BLOCKED. Never relaunch the same brief.
+A builder that reports BLOCKED goes to your human. The guard counts the builder runs since the checkout's last commit in `.orchestrator/work/breaker.json`: after `verify.maxBuilderRuns` (3 by default), it asks your human before each further launch or resume, and only a commit, or your human, resets the count. That question is your human's alone: before it and after it, give them one line per run, what it was for and what it returned, and never tell them how to answer it or that they can accept it. Inside a run, the same command failing `verify.maxSameFailure` times in a row with the same output (3 by default) makes the builder report BLOCKED. Never relaunch the same brief.
 
 ## Roles and names
 

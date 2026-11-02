@@ -112,13 +112,20 @@ function runsSinceCommit(b) {
   return b.branch === currentBranch(root) && b.head === headOf(root) ? b.runs ?? [] : [];
 }
 // One run of a builder, read from its transcript: it starts at the last message it was given (the brief, or the
-// orchestrator's resume), and its report is the last handback or text after that.
+// orchestrator's resume), and its report is the last handback or text after that. What the run was for is the
+// `Change:` line of the brief that message names, or else the message's first line.
 function lastRun(file) {
   let lines;
   try { lines = readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return {}; } }); }
-  catch { return { status: null, ms: null }; }
+  catch { return { status: null, ms: null, change: null, brief: null }; }
   const said = (l) => { const c = l.message?.content; return typeof c === "string" ? c : Array.isArray(c) && c.length && c.every((x) => x.type === "text") ? c.map((x) => x.text).join("") : null; };
   const start = lines.findLastIndex((l) => l.type === "user" && said(l) !== null && !said(l).startsWith("<system-reminder>"));
+  const message = start < 0 ? "" : said(lines[start]).replace(/^The coordinator sent a message while you were working:\s*/i, "");
+  const brief = message.match(/[^\s"'`(]*brief-[^\s"'`)]*\.md/i)?.[0] ?? null;
+  let change = null;
+  try { if (brief) change = readFileSync(path.resolve(root, brief), "utf8").match(/^Change:\s*(.+)$/m)?.[1].trim() ?? null; } catch { /* no brief: the message says it */ }
+  change ??= message.split(/\r?\n/).find((l) => l.trim())?.trim() ?? null;
+  if (change?.length > 60) change = `${change.slice(0, 59)}…`;
   let report = null;
   for (const l of lines.slice(Math.max(start, 0))) {
     if (l.type !== "assistant" || !Array.isArray(l.message?.content)) continue;
@@ -131,7 +138,7 @@ function lastRun(file) {
   const first = String(report ?? "").trim().split(/\r?\n/)[0];
   const status = (first.includes(":") ? first.split(":").pop().trim() : first).slice(0, 40) || null;
   const began = Date.parse(lines[start]?.timestamp ?? "");
-  return { status, ms: Number.isNaN(began) ? null : Date.now() - began };
+  return { status, ms: Number.isNaN(began) ? null : Date.now() - began, change, brief: brief && key(path.resolve(root, brief)) };
 }
 
 // A check pull request needs nobody (orchestrate skill, references/outside-stories.md): pushing chore/check-*
@@ -189,8 +196,8 @@ if (input.hook_event_name === "PreToolUse" && ["Agent", "SendMessage"].includes(
   const runs = runsSinceCommit(b);
   if (runs.length < maxRuns) process.exit(0);
   const minutes = Math.round(runs.reduce((s, r) => s + (r.ms ?? 0), 0) / 60000);
-  const reason = `easyone-orchestrator: ${role.split(":").pop()} lleva ${runs.length} ejecuciones sin commit en ${b.branch} `
-    + `(${runs.map((r) => r.status ?? "sin informe").join(" · ")}${minutes ? `; ${minutes} min` : ""}). ¿Lanzar otra?`;
+  const reason = `easyone-orchestrator: ${role.split(":").pop()} lleva ${runs.length} ejecuciones sin commit en ${b.branch}: `
+    + `${runs.map((r) => `${r.change ?? "?"} → ${r.status ?? "sin informe"}`).join(" · ")}${minutes ? ` (${minutes} min)` : ""}. ¿Lanzar otra?`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse",
     permissionDecision: "ask", permissionDecisionReason: reason } }));
   process.exit(0);
@@ -474,8 +481,12 @@ if (input.hook_event_name === "SubagentStop") {
     const runs = (b.runs ??= []);
     const last = runs.findLast((r) => r.agent === id);
     const now = lastRun(input.agent_transcript_path);
-    if (input.stop_hook_active && last) Object.assign(last, now);
-    else runs.push({ agent: id, role: agentType.split(":").pop(), ...now, at: new Date().toISOString() });
+    if (input.stop_hook_active && last) Object.assign(last, now, { change: last.change });
+    else {
+      // The same brief sent again is a second try at the same work, not new work.
+      if (now.brief && last?.brief === now.brief && now.change) now.change += " (de nuevo)";
+      runs.push({ agent: id, role: agentType.split(":").pop(), ...now, at: new Date().toISOString() });
+    }
     writeBreaker(b);
   }
   // Content, not command shape: whatever tool changed a locked file, the story files or the lock

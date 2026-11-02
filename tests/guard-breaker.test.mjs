@@ -28,12 +28,17 @@ function project() {
     guard: (event) => spawnSync("node", [GUARD], { input: JSON.stringify({ cwd: dir, ...event }), encoding: "utf8" }),
     breaker: () => JSON.parse(readFileSync(path.join(dir, ".orchestrator", "work", "breaker.json"), "utf8")),
     hasBreaker: () => existsSync(path.join(dir, ".orchestrator", "work", "breaker.json")),
-    // A builder's transcript: the brief, then its report through the handback.
-    transcript: (report, minutesAgo = 5) => {
+    // A brief in the project, with its Change line.
+    brief: (name, change) => {
+      mkdirSync(path.join(dir, ".orchestrator", "work", "PRU-1"), { recursive: true });
+      writeFileSync(path.join(dir, ".orchestrator", "work", "PRU-1", name), `You are backend-builder-PRU-1.\nChange: ${change}\n`);
+    },
+    // A builder's transcript: the message that starts the run, then its report through the handback.
+    transcript: (report, message = "Tu encargo: .orchestrator/work/PRU-1/brief-back-1.md", minutesAgo = 5) => {
       const file = path.join(transcripts, `${Math.random()}.jsonl`);
       const at = new Date(Date.now() - minutesAgo * 60000).toISOString();
       writeFileSync(file, [
-        { type: "user", timestamp: at, message: { role: "user", content: "Brief: .orchestrator/work/PRU-1/brief-back-1.md" } },
+        { type: "user", timestamp: at, message: { role: "user", content: message } },
         { type: "assistant", timestamp: at, message: { content: [{ type: "tool_use", name: "SubagentHandback", input: { message: report } }] } },
       ].map((l) => JSON.stringify(l)).join("\n"));
       return file;
@@ -41,8 +46,8 @@ function project() {
   };
 }
 
-const stop = (p, id, report, extra = {}) => p.guard({ hook_event_name: "SubagentStop", agent_id: id, agent_type: BUILDER,
-  stop_hook_active: false, agent_transcript_path: p.transcript(report), ...extra });
+const stop = (p, id, report, { message, ...extra } = {}) => p.guard({ hook_event_name: "SubagentStop", agent_id: id, agent_type: BUILDER,
+  stop_hook_active: false, agent_transcript_path: p.transcript(report, message), ...extra });
 const launch = (p, subagent_type = BUILDER) => p.guard({ hook_event_name: "PreToolUse", tool_name: "Agent",
   tool_input: { subagent_type, description: "backend-builder-PRU-1", prompt: "brief" } });
 const resume = (p, to) => p.guard({ hook_event_name: "PreToolUse", tool_name: "SendMessage", tool_input: { to, message: "sigue" } });
@@ -52,15 +57,25 @@ const fail = (p, id, command, error) => p.guard({ hook_event_name: "PostToolUseF
 const run = (p, id, command) => p.guard({ hook_event_name: "PreToolUse", tool_name: "Bash", agent_id: id,
   agent_type: BUILDER, tool_input: { command } });
 
-test("tres ejecuciones sin commit: la cuarta pregunta a la persona", () => {
+test("tres ejecuciones sin commit: la cuarta pregunta, con lo que se encargó en cada una", () => {
   const p = project();
-  stop(p, "a1", "backend-builder-PRU-1: DONE_WITH_CONCERNS");
-  stop(p, "a1", "backend-builder-PRU-1: DONE");
+  p.brief("brief-back-PRU-1.1.md", "PRU-1.1");
+  p.brief("brief-back-refactor-PRU-1.1.md", "refactor PRU-1.1");
+  stop(p, "a1", "backend-builder-PRU-1: DONE_WITH_CONCERNS", { message: "Eres backend-builder-PRU-1. Tu encargo está en .orchestrator/work/PRU-1/brief-back-PRU-1.1.md: léelo entero." });
+  stop(p, "a1", "backend-builder-PRU-1: DONE", { message: "The coordinator sent a message while you were working:\nNuevo encargo: .orchestrator/work/PRU-1/brief-back-refactor-PRU-1.1.md. Sin commit." });
   assert.ok(!asks(launch(p)), "con dos ejecuciones no pregunta");
-  stop(p, "a1", "backend-builder-PRU-1: BLOCKED");
+  stop(p, "a1", "backend-builder-PRU-1: BLOCKED", { message: "The coordinator sent a message while you were working:\nCorrección (mismo brief: .orchestrator/work/PRU-1/brief-back-refactor-PRU-1.1.md)." });
   const r = launch(p);
   assert.ok(asks(r), r.stdout + r.stderr);
-  assert.match(r.stdout, /backend-builder lleva 3 ejecuciones sin commit en story\/PRU-1 \(DONE_WITH_CONCERNS · DONE · BLOCKED; 15 min\)/);
+  assert.match(r.stdout, /backend-builder lleva 3 ejecuciones sin commit en story\/PRU-1: PRU-1\.1 → DONE_WITH_CONCERNS · refactor PRU-1\.1 → DONE · refactor PRU-1\.1 \(de nuevo\) → BLOCKED \(15 min\)\. ¿Lanzar otra\?/);
+});
+
+test("sin brief, cada ejecución se resume con la primera línea de su mensaje", () => {
+  const p = project();
+  for (const message of ["Arregla el nombre del test", "The coordinator sent a message while you were working:\nOtra vuelta al test", "Y una tercera"]) {
+    stop(p, "a1", "backend-builder-PRU-1: DONE", { message });
+  }
+  assert.match(launch(p).stdout, /Arregla el nombre del test → DONE · Otra vuelta al test → DONE · Y una tercera → DONE/);
 });
 
 test("reanudar el mismo builder con SendMessage también pregunta; otro agente no", () => {
