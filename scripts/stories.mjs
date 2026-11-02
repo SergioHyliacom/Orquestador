@@ -5,7 +5,8 @@
 //   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
 //   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release,
 //                                    on a story branch that touches a risk path (riskPaths) its story lacks the tag for,
-//                                    and on a riskPaths entry that matches no file
+//                                    on a riskPaths entry that matches no file, and on a path or pnpm script
+//                                    that a context doc (contextDocs) names and does not exist
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
 //   node stories.mjs --pr ID         print a PR checklist for one story; exit 1 when its branch lacks a risk tag
 //   node stories.mjs --json          print the computed state as JSON (for agents)
@@ -314,6 +315,42 @@ function staleRiskPaths() {
   }
   return stale;
 }
+// ---------- Context docs: what every session reads points to files and commands that exist
+
+// .orchestrator.json → contextDocs lists the texts sessions and agents read first ("CLAUDE.md", "README.md",
+// "docs/rules/*.md"). A path or a pnpm script one of them names in backticks must exist: a stale one sends every
+// agent the wrong way, and nobody notices until one reads both. Only paths inside the repository are checked (their
+// first folder exists), and never what git ignores (generated or personal files).
+const CONTEXT_DOCS = asList(orchestrator.contextDocs);
+const PNPM_BUILTIN = new Set(["install", "i", "add", "remove", "rm", "update", "up", "exec", "dlx", "why", "list", "ls", "outdated", "audit", "store", "init", "create", "publish", "pack", "link", "unlink", "rebuild", "prune", "fetch", "patch", "env", "setup", "config", "import", "deploy", "licenses"]);
+const PATHLIKE = /^\.?[\w@-][\w.@-]*(\/[\w.@-]+)*\/?$/;
+function staleContextRefs() {
+  if (!CONTEXT_DOCS.length) return [];
+  const tracked = (gitRun(["-c", "core.quotepath=off", "ls-files"]) ?? "").split(/\r?\n/).filter(Boolean);
+  const docs = tracked.filter((f) => CONTEXT_DOCS.some((g) => globRe(g).test(f)));
+  const pkgPath = path.join(ROOT, "package.json");
+  const scripts = existsSync(pkgPath) ? new Set(Object.keys(readJson(pkgPath).scripts ?? {})) : null;
+  const ignored = (p) => gitRun(["check-ignore", "-q", p]) !== null;
+  const stale = [];
+  for (const doc of docs) {
+    lf(readFileSync(path.join(ROOT, doc), "utf8")).split("\n").forEach((line, i) => {
+      for (const m of line.matchAll(/`([^`]+)`/g)) {
+        const tokens = m[1].trim().split(/\s+/);
+        const script = tokens[0] === "pnpm" ? (tokens[1] === "run" ? tokens[2] : tokens[1]) : null;
+        if (scripts && script && !/^[-<]/.test(script) && !PNPM_BUILTIN.has(script) && !scripts.has(script)) {
+          stale.push(`${doc}:${i + 1}: names \`pnpm ${script}\`, and package.json has no script ${script}. Fix the text, or remove it if the code already says it.`);
+        }
+        for (const token of tokens) {
+          const p = token.replace(/[,;:)]+$/, "");
+          if (!p.includes("/") || !PATHLIKE.test(p) || !existsSync(path.join(ROOT, p.split("/")[0]))) continue;
+          if (existsSync(path.join(ROOT, p)) || ignored(p)) continue;
+          stale.push(`${doc}:${i + 1}: names ${p}, which does not exist. Fix the text, or remove it if the code already says it.`);
+        }
+      }
+    });
+  }
+  return stale;
+}
 const riskMiss = (m) => `${m.story.file}: this branch changes ${m.file}, a ${m.tag} path (.orchestrator.json → riskPaths), and the story's tags lack ${m.tag}. Add it: the story then gets its risk review.`;
 
 // ---------- Test results
@@ -537,7 +574,7 @@ const md = out.join("\n");
 
 if (flag("--check")) {
   for (const m of riskMisses()) errors.push(riskMiss(m));
-  errors.push(...staleRiskPaths());
+  errors.push(...staleRiskPaths(), ...staleContextRefs());
   // The main release must be green: a failing, failing-test or skipped criterion fails the check.
   for (const s of main) for (const c of s.criteria) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);

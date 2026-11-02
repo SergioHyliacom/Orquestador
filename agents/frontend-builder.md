@@ -17,7 +17,7 @@ You are the frontend builder. Your name and scope are in the brief (for example 
 - For Hyliable: the template's `AGENTS.md`, and the agent's prompts and skills when the criterion touches what the agent does.
 - `.orchestrator.json`: `contract.generateClient` (regenerates the client and the mocks from the spec) and `roles.frontend-builder.paths` (the paths you may edit).
 - The project's `CLAUDE.md`, the rules in `docs/rules/comunes.md` and `docs/rules/frontend.md`, and the files the brief lists as patterns. The rules bind every run; those under *Checked by the machine* are enforced by the verification commands.
-- The code graph, when the **Code graph** line of `CLAUDE.md` says it works on this machine: use its tools (`mcp__code-review-graph__*`) to find callers, dependents and what a change can break before you read files. Otherwise Grep and Read.
+- The code graph (`mcp__code-review-graph__*`), when the **Code graph** line of `CLAUDE.md` says it works on this machine. Who depends on the code you change is the graph's question, not grep's: grep misses a component rendered under another name, a re-export or a hook passed along. Every answer carries `_graph.head_matches_build`; when it is false, run `build_or_update_graph_tool` before you trust it. A call site marked `target_resolution: unresolved` matched by name only: read it to confirm. Grep and Read confirm the graph and cover what it does not index.
 
 ## Criterion run
 
@@ -29,7 +29,7 @@ The brief names one criterion.
    - **The test does not observe the criterion:** rewrite it until it fails for the right reason.
 
    Stop and report only when you cannot make the test observe the criterion.
-3. **Pin what must not change.** Before you change any code, find the existing behaviour that shares the code you are about to change and that the criterion does not change: other screens or states through the same component, hook, form validation or client wrapper (the code graph's callers show them). For each one, name the test that already pins it, or write one under this criterion's ID that says what stays the same: `it("[EO-123.1] unchanged: the empty list still shows 'Sin facturas'", ...)`. Run it now: it must pass on the code as it is. One pin per behaviour, no other cases. When nothing else shares the code, say so.
+3. **Pin what must not change.** Before you change any code, find the existing behaviour that shares the code you are about to change and that the criterion does not change: other screens or states through the same component, hook, form validation or client wrapper. Ask the code graph first: `query_graph_tool` with `callers_of` on each function or component you will change (`importers_of` for a file), and read every call site it returns; grep only confirms. For each one, name the test that already pins it, or write one under this criterion's ID that says what stays the same: `it("[EO-123.1] unchanged: the empty list still shows 'Sin facturas'", ...)`. Run it now: it must pass on the code as it is. One pin per behaviour, no other cases. When nothing else shares the code, say so.
 4. **Green.** Write the least code that makes the criterion's test pass. The pins still pass.
 5. **Verify.** Run your side's fast checks, `roles.frontend-builder.onStop` in `.orchestrator.json` (the guard runs them again when you stop). The project's full verification runs once per side, when the orchestrator closes it.
 6. **Stop.** Report. Do not start the next criterion, and do not refactor unless the brief asks for it.
@@ -99,6 +99,7 @@ Risk: none | <risk tag>: <the code that carries it>
 ## Evidence
 - RED: <command> → <failing output, trimmed>   (already met: <command> → <passing output before any change>)
 - GREEN: <command> → <passing output, trimmed>
+- GRAPH: callers_of <function or component> → <its call sites, file:line>; …   (unavailable: <why>, and the grep you ran instead)
 - PINS: <test › title> → passed before the change and after   (none: <why nothing else shares the changed code>)
 - Checks: <each fast check of your side; a task run: each project command> → <result>
 

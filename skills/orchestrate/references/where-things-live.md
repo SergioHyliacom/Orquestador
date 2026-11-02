@@ -47,3 +47,7 @@ One line per rule, with an ID that is never reused: `- **R-07** <the rule>. — 
 There is no architecture document. You learn the project from what is built: the patterns in `docs/rules/`, the code the work touches, the rules, the stories and the decisions. Read only what the work needs. The why of the big architecture choices is in their `DEC` files: read one when the work touches it.
 
 When a description of how the code is written (a convention, a library, a command, an old decision) disagrees with the code, follow the code, list the inconsistencies, and offer your human a `chore/` pull request that fixes the text. The rules in `docs/rules/` and the stories' criteria are the exception: they say what must hold, so code that breaks one is a broken rule or a failing criterion, never something to copy.
+
+Part of that rot a machine catches. `.orchestrator.json` → `contextDocs` names the texts every session reads (`"CLAUDE.md"`, `"README.md"`, `"docs/rules/*.md"`), and `stories.mjs --check`, in the pipeline, fails when one of them names in backticks a path or a `pnpm` script that no longer exists: the branch that moved the code fixes the text too. A contradiction of meaning (a text that says one thing while the code does another) no check sees: that is the rule above and the delivery audit.
+
+Who depends on a piece of code is the code graph's question, not grep's (the **Code graph** line of `CLAUDE.md`). The builders cite its callers in their report, and the reviewer starts from what it says a commit reaches outside its diff.
