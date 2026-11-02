@@ -3,9 +3,10 @@
 //
 //   node stories.mjs                 generate the map with the last saved test results (map.md is never committed)
 //   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
-//   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release
+//   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release,
+//                                    and on a story branch that touches a risk path (riskPaths) its story lacks the tag for
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
-//   node stories.mjs --pr ID         print a PR checklist for one story
+//   node stories.mjs --pr ID         print a PR checklist for one story; exit 1 when its branch lacks a risk tag
 //   node stories.mjs --json          print the computed state as JSON (for agents)
 //   node stories.mjs --summary       print only what needs attention (for the start of a session)
 //
@@ -265,6 +266,44 @@ stories.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
 const storyIds = new Set(stories.map((s) => s.id));
 for (const s of stories) for (const d of s.dependsOn) if (!storyIds.has(d)) errors.push(`${s.file}: depends_on ${d} does not exist.`);
 
+// ---------- Risk paths: the machine raises a story's risk, it never lowers it
+
+// .orchestrator.json → riskPaths gives each risk tag the paths that carry it ("apps/api/internal/platform/authz/",
+// "apps/api/**/migrations/*.sql"). A story branch whose own changes touch one of them needs that tag, so the risk
+// review runs even when nobody remembered to add it. A path ending in / is a folder; * stays in one folder, ** crosses them.
+const RISK_PATHS = orchestrator.riskPaths ?? {};
+for (const tag of Object.keys(RISK_PATHS)) {
+  if (!asList(orchestrator.riskTags).includes(tag)) errors.push(`.orchestrator.json: riskPaths names ${tag}, which is not in riskTags.`);
+}
+function globRe(glob) {
+  const g = String(glob).replace(/\\/g, "/");
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    if (g[i] === "*" && g[i + 1] === "*") { i++; if (g[i + 1] === "/") { i++; re += "(?:.*/)?"; } else re += ".*"; }
+    else if (g[i] === "*") re += "[^/]*";
+    else if (g[i] === "?") re += "[^/]";
+    else re += escape(g[i]);
+  }
+  return new RegExp(`^${re}${g.endsWith("/") ? "" : "$"}`);
+}
+// The tags this branch's own changes need and its story lacks: [{ story, tag, file }]. Only a story branch has a story.
+function riskMisses() {
+  if (!AHEAD || !Object.keys(RISK_PATHS).length) return [];
+  const branch = process.env.BITBUCKET_BRANCH ?? gitRun(["symbolic-ref", "--short", "HEAD"])?.trim() ?? "";
+  const story = stories.find((s) => `story/${s.id}` === branch);
+  if (!story) return [];
+  const changed = (gitRun(["diff", "--name-only", MERGE_BASE, "HEAD"]) ?? "").split(/\r?\n/).filter(Boolean);
+  const misses = [];
+  for (const [tag, globs] of Object.entries(RISK_PATHS)) {
+    if (story.tags.includes(tag)) continue;
+    const res = asList(globs).map(globRe);
+    const file = changed.find((f) => res.some((re) => re.test(f)));
+    if (file) misses.push({ story, tag, file });
+  }
+  return misses;
+}
+const riskMiss = (m) => `${m.story.file}: this branch changes ${m.file}, a ${m.tag} path (.orchestrator.json → riskPaths), and the story's tags lack ${m.tag}. Add it: the story then gets its risk review.`;
+
 // ---------- Test results
 
 // A vertical story is tested on several sides: Go (JUnit, e.g. through gotestsum), Vitest (jest-json),
@@ -428,8 +467,11 @@ if (flag("--pr")) {
   const s = stories.find((x) => x.id === listAfter("--pr")[0]);
   if (!s) { console.error("Story not found."); process.exit(2); }
   const res = (c) => c.kind === "test" ? ({ pass: "✅", fail: "❌" }[c.result] ?? "⚠️") : c.kind === "manual" ? "✅" : c.kind === "failing" ? "❌" : "⚠️";
+  // No final pull request while the branch touches a risk path its story is not tagged for.
+  const misses = riskMisses().filter((m) => m.story.id === s.id);
+  for (const m of misses) console.error(riskMiss(m));
   finish([`## ${s.id} ${s.title}`, "", `${L.statuses[s.status]}, [${s.file}](${path.relative(ROOT, path.join(DIR, s.file)).split(path.sep).join("/")})`, "",
-    ...s.criteria.map((c) => `- ${res(c)} **${c.id}** ${c.head.replace(/^\*\*[^*]+\*\*\s*/, "")}`)].join("\n"), 0);
+    ...s.criteria.map((c) => `- ${res(c)} **${c.id}** ${c.head.replace(/^\*\*[^*]+\*\*\s*/, "")}`)].join("\n"), misses.length ? 1 : 0);
 }
 
 const active = stories.filter((s) => s.status !== "discarded");
@@ -482,6 +524,7 @@ out.push(`## ${X.legend}`, "", ...STATUS_ORDER.map((e) => `- ${L.statuses[e]}`),
 const md = out.join("\n");
 
 if (flag("--check")) {
+  for (const m of riskMisses()) errors.push(riskMiss(m));
   // The main release must be green: a failing, failing-test or skipped criterion fails the check.
   for (const s of main) for (const c of s.criteria) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);

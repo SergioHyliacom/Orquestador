@@ -35,9 +35,10 @@ The brief names one criterion.
    - **The test does not observe the criterion:** rewrite it until it fails for the right reason.
 
    Stop and report only when you cannot make the test observe the criterion.
-2. **Green.** Write the least code that makes it pass.
-3. **Verify.** Run your side's fast checks, `roles.backend-builder.onStop` in `.orchestrator.json` (the guard runs them again when you stop). The project's full verification runs once per side, when the orchestrator closes it.
-4. **Stop.** Report. Do not start the next criterion, and do not refactor unless the brief asks for it.
+2. **Pin what must not change.** Before you change any code, find the existing behaviour that shares the code you are about to change and that the criterion does not change: other operations through the same handler, validation, query or helper (the code graph's callers show them). For each one, name the test that already pins it, or write one under this criterion's ID that says what stays the same: `t.Run("[EO-123.1] unchanged: an empty NIF still returns 422", ...)`. Run it now: it must pass on the code as it is. One pin per behaviour, no other cases. When nothing else shares the code, say so.
+3. **Green.** Write the least code that makes the criterion's test pass. The pins still pass.
+4. **Verify.** Run your side's fast checks, `roles.backend-builder.onStop` in `.orchestrator.json` (the guard runs them again when you stop). The project's full verification runs once per side, when the orchestrator closes it.
+5. **Stop.** Report. Do not start the next criterion, and do not refactor unless the brief asks for it.
 
 ## Task run
 
@@ -62,6 +63,7 @@ The brief says `Change: task <slug>: <what changes>`: work outside a story, on a
 11. **The rules are not yours either.** Follow `docs/rules/` and never edit it. If a rule looks wrong for this case, say so under Concerns, with its ID.
 12. **When the text and the code disagree,** a description of how the code is written (a convention, a library, a command, a pattern's description, an old decision) loses to the existing code: follow the code, and list every inconsistency under Concerns. The rules in `docs/rules/` and a story's criteria are the exception: they say what must hold, so when the code breaks one, do not copy the code; report BLOCKED, naming the rule or the criterion.
 13. **A fault older than the story is not yours to fix.** If you find one outside the lines your criterion changes, leave it and report it under Concerns as pending work, with the file and line. Fix it only when the criterion's own lines carry it.
+14. **Name the risk.** Your report's `Risk:` line names each area of `.orchestrator.json` → `riskTags` your change touches, with the code that carries it, or says `none`. Before writing `none`, check whether the code you changed is also used by one of those areas (a shared query, a validation, an authorization helper).
 
 ## Stop and report BLOCKED instead of improvising when
 
@@ -82,6 +84,7 @@ Write the full report to the path in the brief (default `.orchestrator/work/<sco
 # <name>
 Status: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
 Run: contract | <criterion ID> | task <slug>
+Risk: none | <risk tag>: <the code that carries it>
 
 ## Result
 - ✅ <criterion ID> <test file › subtest name>   (contract run: ✅ <operation> in <spec path>; task run: ✅ <each Done-when command>)
@@ -91,6 +94,7 @@ Run: contract | <criterion ID> | task <slug>
 ## Evidence
 - RED: <command> → <failing output, trimmed>   (already met: <command> → <passing output before any change>)
 - GREEN: <command> → <passing output, trimmed>
+- PINS: <test › name> → passed before the change and after   (none: <why nothing else shares the changed code>)
 - Checks: <each fast check of your side; contract and task runs: each project command> → <result>
 
 ## Files changed
@@ -100,4 +104,4 @@ Run: contract | <criterion ID> | task <slug>
 - <anything the developer or the frontend must know>
 ```
 
-Reply to the orchestrator in at most 8 lines: the first line is `<name>: <Status>`, then the criterion or contract result, the RED and GREEN commands with one line of output each, and the report path. Bad news first.
+Reply to the orchestrator in at most 8 lines: the first line is `<name>: <Status>`, then the criterion or contract result, the RED and GREEN commands with one line of output each, the pins, the `Risk:` line, and the report path. Bad news first.

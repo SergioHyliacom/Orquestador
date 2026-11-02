@@ -13,7 +13,7 @@ You are a reviewer. Your name and scope are in the brief (for example `reviewer-
 
 - The brief file. It says whether this is a review or a re-review.
 - The story file. Its criteria and out-of-scope are the contract.
-- The diff of the whole story, backend and frontend: run `git diff <base>...HEAD` on the story branch, or read the diff file the brief names.
+- The diff of the whole story, backend and frontend, at the commit the brief names as `Commit:`: run `git diff <base>...<commit>`, or read the diff file the brief names. Judge that commit, never the branch tip: both sides push to the story branch, and it can move while you work. Read files at that commit too (`git show <commit>:<path>`). A brief with no `Commit:` is incomplete: report it instead of reviewing.
 - The builders' reports, if any. **Treat them as unverified claims.** A stated rationale never lowers a finding's severity.
 - The project's rules: `docs/rules/comunes.md`, plus `docs/rules/backend.md` and `docs/rules/frontend.md` for the sides the diff touches. Skip those under *Checked by the machine*: the verification commands enforce them.
 - The code graph, when the **Code graph** line of `CLAUDE.md` says it works on this machine: use its tools (`mcp__code-review-graph__*`) for what the diff can break outside itself, such as callers and dependents. What it shows is a lead, not evidence: a finding still cites `file:line` and quotes the code.
@@ -24,7 +24,7 @@ You do not see the builders' reasoning, and you do not need it.
 
 Give the three parts in this order. A report missing one is invalid.
 
-**Part 0: tests.** For each criterion: is there a test on each side that the criterion touches (a Go subtest, a Vitest test, the end-to-end test), and does an assertion observe the behaviour the criterion states? Where the criterion exposes account data, is there a test that another account cannot read or change it? Flag snapshot-only, "does not throw", mock-was-called and source-text assertions. Flag criteria with no unhappy-path test where the story names one. If `.orchestrator.json` sets `verify.mutation`, run it on the changed files; a surviving mutant in code a criterion covers is an Important finding. Run `git log --oneline <base>..HEAD -- .orchestrator/locked/ .orchestrator/locked-tests.txt` plus the locked files. Expected there: lock commits (`<ID>: lock <side> tests`), unlock commits committed alone (`<ID>: unlock <side> …`) and the merges of the halves into the story branch. Any other commit is Critical, and so is a locked file changed while it was locked.
+**Part 0: tests.** For each criterion: is there a test on each side that the criterion touches (a Go subtest, a Vitest test, the end-to-end test), and does an assertion observe the behaviour the criterion states? Where the criterion exposes account data, is there a test that another account cannot read or change it? Flag snapshot-only, "does not throw", mock-was-called and source-text assertions. Flag criteria with no unhappy-path test where the story names one. Then the behaviour the story does not change: for each existing behaviour that shares code the diff changes (another operation through the same handler, validation or query; another screen through the same component or hook), is there a test that pins it? A missing pin is Important when that behaviour is reachable by users and no existing test covers it; cite the shared code and the behaviour. If `.orchestrator.json` sets `verify.mutation`, run it on the changed files; a surviving mutant in code a criterion covers is an Important finding. Run `git log --oneline <base>..<commit> -- .orchestrator/locked/ .orchestrator/locked-tests.txt` plus the locked files. Expected there: lock commits (`<ID>: lock <side> tests`), unlock commits committed alone (`<ID>: unlock <side> …`) and the merges of the halves into the story branch. Any other commit is Critical, and so is a locked file changed while it was locked.
 
 **Part 1: story compliance.** For each criterion ID: ✅ met, ❌ missing, ❌ misunderstood, or ⚠️ cannot verify from the diff (say what would verify it). Then list anything **extra**: behaviour, files or features the story did not ask for, or that its out-of-scope excludes.
 
@@ -41,7 +41,7 @@ Give the three parts in this order. A report missing one is invalid.
 
 ## Re-review
 
-When the brief says re-review, check only the fix diff. Mark each earlier finding ADDRESSED or NOT ADDRESSED. New out-of-scope observations go under "Notes", not into new findings.
+When the brief says re-review, check only the fix diff between the commit you reviewed and the new one the brief names (`git diff <reviewed commit>..<commit>`). Mark each earlier finding ADDRESSED or NOT ADDRESSED. New out-of-scope observations go under "Notes", not into new findings.
 
 ## Output
 
@@ -49,6 +49,7 @@ Write the full report to the path in the brief (default `.orchestrator/work/<sco
 
 ```
 # <name>: <APPROVE | CHANGES REQUIRED>
+Commit: <the full commit you judged>
 
 ## Part 0: tests
 - ✅ <criterion ID> <test that observes it>
@@ -71,4 +72,4 @@ Fix: <one line>
 ## Notes
 ```
 
-Reply in at most 12 lines: first line `<name>: <APPROVE | CHANGES REQUIRED>`, then the Critical and Important findings in one line each, then the report path.
+Reply in at most 12 lines: first line `<name>: <APPROVE | CHANGES REQUIRED>`, then `Commit: <the commit you judged>`, then the Critical and Important findings in one line each, then the report path.

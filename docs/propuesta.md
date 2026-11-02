@@ -67,6 +67,11 @@ Además de lo que ya hacía el original (push forzado, `reset --hard`, commits e
 - **Los agentes de solo lectura solo leen**, también en git: no pueden borrar ramas ni tocar los remotos.
 - **Un builder que no avanza para.** Tras tres ejecuciones de builders sin un commit, la guardia te pregunta antes de cada ejecución más; solo un commit, o tú, ponen la cuenta a cero. Dentro de una ejecución, el mismo comando que falla tres veces seguidas con la misma salida no se deja repetir: el builder informa BLOCKED. La cuenta vive en `.orchestrator/work/breaker.json`, que ningún agente puede tocar; los límites, en `verify.maxBuilderRuns` y `verify.maxSameFailure` de `.orchestrator.json`.
 
+**La revisión de riesgo** (desde la 0.15.0, a partir de lo que hace gentle-ai):
+- **La máquina sube el riesgo, nunca lo baja.** `.orchestrator.json` → `riskPaths` da a cada etiqueta de riesgo las rutas que la llevan. Si la rama de una historia cambia una de ellas y la historia no tiene la etiqueta, `stories.mjs --check` (en el pipeline) y `--pr` fallan, y la revisión no se pierde porque nadie se acordó de la etiqueta. Cada builder cierra además su informe con una línea `Risk:`.
+- **Lo que no cambia, se fija.** Antes de tocar código, el builder escribe o nombra un test por cada comportamiento existente que comparte el código que va a cambiar; ese test pasa antes del cambio y después. El revisor lo comprueba en su parte 0.
+- **Se revisa un commit, no una rama.** El brief del revisor nombra el commit exacto. Antes de fusionar, si desde ese commit ha cambiado algo más que la historia y las listas de tests bloqueados, se revisa solo lo nuevo.
+
 ### F. Bitbucket
 
 Ramas, PR y pipeline en Bitbucket (sección 5).

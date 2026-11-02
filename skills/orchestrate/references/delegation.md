@@ -29,6 +29,7 @@ The agent does not see this conversation. Write the brief to `.orchestrator/work
 You are <role>-<scope>.
 Story: <absolute path of the story file>   (a task: "none", and the branch)
 Change: contract | <criterion ID> | refactor <criterion ID> | integration | task <slug>: <what changes>   (reviewers: "Judge: <what>")
+Commit: <the exact commit to judge — reviewers only; a re-review also names the commit already reviewed>
 Agreed contract: <operations, fields, types, status codes, errors — contract runs only>
 Read first: <the Patterns of docs/rules/<side>.md that apply, and the code the work touches>
 Constraints: <invariants, do-not-touch>

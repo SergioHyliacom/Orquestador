@@ -30,7 +30,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `skills/stories/` | Cómo se escriben y mantienen las historias |
 | `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto no guarda copia: las sesiones ejecutan los del plugin y el pipeline los descarga de este repositorio |
 | `hooks/guard.mjs` | La guardia |
-| `tests/` | Los tests de la guardia: `node --test "tests/*.test.mjs"` |
+| `tests/` | Los tests de la guardia y de las rutas de riesgo del validador: `node --test "tests/*.test.mjs"` |
 | `docs/` | El diagrama y la propuesta |
 
 ## Instalar el plugin
