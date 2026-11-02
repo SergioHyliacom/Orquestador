@@ -30,6 +30,7 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `skills/stories/` | Cómo se escriben y mantienen las historias |
 | `scripts/` | El validador de historias (`stories.mjs`) y la sincronización con Jira (`jira-sync.mjs`). El proyecto no guarda copia: las sesiones ejecutan los del plugin y el pipeline los descarga de este repositorio |
 | `hooks/guard.mjs` | La guardia |
+| `tests/` | Los tests de la guardia: `node --test "tests/*.test.mjs"` |
 | `docs/` | El diagrama y la propuesta |
 
 ## Instalar el plugin
@@ -137,7 +138,7 @@ Las skills y los agentes siguen en inglés, como en el original: los lee el mode
 
 ## Estado
 
-- **Probado:** la guardia (escenarios simulados de cada rol), el validador con resultados de Go y Vitest, y la sincronización con Jira de principio a fin contra un Jira simulado, también reabrir una historia hecha, descartar una y una build sin resultados de tests. `claude plugin validate` pasa.
+- **Probado:** la guardia (escenarios simulados de cada rol; el cortocircuito de los builders, con `node --test "tests/*.test.mjs"`), el validador con resultados de Go y Vitest, y la sincronización con Jira de principio a fin contra un Jira simulado, también reabrir una historia hecha, descartar una y una build sin resultados de tests. `claude plugin validate` pasa.
 - **Sin probar todavía:** las skills y la instalación en el repositorio real de EASY One, Jira real, el acceso a Jira desde Claude Code y el pipeline en Bitbucket. La primera historia sirve de piloto.
 
 ## Autores

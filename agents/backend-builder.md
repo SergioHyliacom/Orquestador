@@ -68,7 +68,7 @@ The brief says `Change: task <slug>: <what changes>`: work outside a story, on a
 - the contract needs to change;
 - the criterion can only be met by breaking a rule in `docs/rules/` (name its ID);
 - you need a new dependency that neither the story nor a decision names (R-06 in `docs/rules/comunes.md`; the brief cites it). Updating one the project already has is not new;
-- the same check fails 3 times in a row with no new idea;
+- the same check fails 3 times in a row with no new idea (the guard blocks a fourth run of a command that failed 3 times with the same output);
 - configuration or credentials are missing;
 - the criterion or the task is ambiguous on a point that changes behaviour;
 - you would need to edit a locked test, a story file, or a path outside your side;

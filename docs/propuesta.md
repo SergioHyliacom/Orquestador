@@ -65,6 +65,7 @@ Además de lo que ya hacía el original (push forzado, `reset --hard`, commits e
 - **Al empezar cada sesión** le dice a Claude dónde están los scripts del plugin.
 - **`main` y `develop` solo cambian por PR.** En local solo se actualizan con `git pull --ff-only`; cualquier otro merge, pull o rebase sobre ellas está bloqueado.
 - **Los agentes de solo lectura solo leen**, también en git: no pueden borrar ramas ni tocar los remotos.
+- **Un builder que no avanza para.** Tras tres ejecuciones de builders sin un commit, la guardia te pregunta antes de cada ejecución más; solo un commit, o tú, ponen la cuenta a cero. Dentro de una ejecución, el mismo comando que falla tres veces seguidas con la misma salida no se deja repetir: el builder informa BLOCKED. La cuenta vive en `.orchestrator/work/breaker.json`, que ningún agente puede tocar; los límites, en `verify.maxBuilderRuns` y `verify.maxSameFailure` de `.orchestrator.json`.
 
 ### F. Bitbucket
 

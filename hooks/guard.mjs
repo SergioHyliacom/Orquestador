@@ -5,7 +5,8 @@
 // stdout = Claude Code asks the human to confirm.
 
 import { execFileSync, execSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,6 +15,10 @@ const WIN = process.platform === "win32";
 const stripBom = (s) => s.replace(/^﻿/, "");
 const input = JSON.parse(stripBom(readFileSync(0, "utf8")) || "{}");
 const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
+// Every role that writes code ends in -builder: backend-builder, frontend-builder.
+const BUILDER = /(^|:)([a-z0-9]+-)*builder$/;
+// A failed command matters only inside a builder (the breaker below): every other session leaves at once.
+if (input.hook_event_name === "PostToolUseFailure" && !BUILDER.test(String(input.agent_type ?? ""))) process.exit(0);
 
 function block(reason) {
   process.stderr.write(`easyone-orchestrator: ${reason}\n`);
@@ -53,8 +58,7 @@ const inSubagent = Boolean(agentType);
 // Every role that only judges or reads ends in reviewer, researcher, auditor or designer, the project's
 // own too (security-reviewer).
 const readOnlyRole = /(^|[:-])(reviewer|researcher|auditor|designer)$/.test(agentType);
-// Every role that writes code ends in -builder: backend-builder, frontend-builder.
-const builderRole = /(^|:)([a-z0-9]+-)*builder$/.test(agentType);
+const builderRole = BUILDER.test(agentType);
 // Per-role settings live in .orchestrator.json → roles, keyed by the role name without the plugin prefix.
 const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
 
@@ -79,6 +83,55 @@ const mapRel = config.storiesDir ? key(path.join(config.storiesDir, "map.md")) :
 function currentBranch(dir) {
   try { return execFileSync("git", ["symbolic-ref", "--short", "HEAD"], { cwd: dir, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); }
   catch { return null; }
+}
+function headOf(dir) {
+  try { return execFileSync("git", ["rev-parse", "HEAD"], { cwd: dir, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); }
+  catch { return null; }
+}
+
+// ---------- The breaker: a builder that does not converge goes to the human
+// .orchestrator/work/breaker.json is the guard's own file, personal and never committed. It holds the builder runs
+// since the checkout's last commit, the role of each builder by its agent id, and, inside a run, how many times in
+// a row each command failed with the same output. No agent edits it: a commit, or the human, resets it.
+const BREAKER_REL = key(`${STATE}/work/breaker.json`);
+const breakerPath = path.join(root, STATE, "work", "breaker.json");
+const maxRuns = config.verify?.maxBuilderRuns ?? 3;
+const maxSameFailure = config.verify?.maxSameFailure ?? 3;
+const commandKey = (c) => String(c ?? "").replace(/\s+/g, " ").trim();
+function readBreaker() {
+  try { return JSON.parse(stripBom(readFileSync(breakerPath, "utf8"))); } catch { return {}; }
+}
+function writeBreaker(b) {
+  mkdirSync(path.dirname(breakerPath), { recursive: true });
+  const tmp = `${breakerPath}.${process.pid}`;
+  writeFileSync(tmp, JSON.stringify(b, null, 2));
+  renameSync(tmp, breakerPath);
+}
+// The runs count while the checkout stays on the same commit: a commit, a pull or a switch starts the count again.
+function runsSinceCommit(b) {
+  return b.branch === currentBranch(root) && b.head === headOf(root) ? b.runs ?? [] : [];
+}
+// One run of a builder, read from its transcript: it starts at the last message it was given (the brief, or the
+// orchestrator's resume), and its report is the last handback or text after that.
+function lastRun(file) {
+  let lines;
+  try { lines = readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return {}; } }); }
+  catch { return { status: null, ms: null }; }
+  const said = (l) => { const c = l.message?.content; return typeof c === "string" ? c : Array.isArray(c) && c.length && c.every((x) => x.type === "text") ? c.map((x) => x.text).join("") : null; };
+  const start = lines.findLastIndex((l) => l.type === "user" && said(l) !== null && !said(l).startsWith("<system-reminder>"));
+  let report = null;
+  for (const l of lines.slice(Math.max(start, 0))) {
+    if (l.type !== "assistant" || !Array.isArray(l.message?.content)) continue;
+    for (const c of l.message.content) {
+      if (c.type === "tool_use" && c.name === "SubagentHandback") report = String(c.input?.message ?? "");
+      else if (c.type === "text" && c.text?.trim()) report = c.text;
+    }
+  }
+  // The report's first line is `<name>: <status>`.
+  const first = String(report ?? "").trim().split(/\r?\n/)[0];
+  const status = (first.includes(":") ? first.split(":").pop().trim() : first).slice(0, 40) || null;
+  const began = Date.parse(lines[start]?.timestamp ?? "");
+  return { status, ms: Number.isNaN(began) ? null : Date.now() - began };
 }
 
 // A check pull request needs nobody (orchestrate skill, references/outside-stories.md): pushing chore/check-*
@@ -122,6 +175,42 @@ if (input.hook_event_name === "SessionStart") {
   process.exit(0);
 }
 
+// ---------- PreToolUse: launching or resuming a builder
+
+// After maxBuilderRuns runs without a commit, every further run needs the human's yes: the guard asks them, and
+// the model cannot answer for them. A resume starts a new run, so the builder's failures in a row start over.
+if (input.hook_event_name === "PreToolUse" && ["Agent", "SendMessage"].includes(input.tool_name)) {
+  const b = readBreaker();
+  const to = String(input.tool_input?.to ?? "");
+  const role = input.tool_name === "Agent" ? String(input.tool_input?.subagent_type ?? "") : b.agents?.[to] ?? "";
+  if (!BUILDER.test(role)) process.exit(0);
+  if (b.failures?.[to]) { delete b.failures[to]; writeBreaker(b); }
+  if (maxRuns <= 0) process.exit(0);
+  const runs = runsSinceCommit(b);
+  if (runs.length < maxRuns) process.exit(0);
+  const minutes = Math.round(runs.reduce((s, r) => s + (r.ms ?? 0), 0) / 60000);
+  const reason = `easyone-orchestrator: ${role.split(":").pop()} lleva ${runs.length} ejecuciones sin commit en ${b.branch} `
+    + `(${runs.map((r) => r.status ?? "sin informe").join(" · ")}${minutes ? `; ${minutes} min` : ""}). ¿Lanzar otra?`;
+  process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse",
+    permissionDecision: "ask", permissionDecisionReason: reason } }));
+  process.exit(0);
+}
+
+// ---------- PostToolUseFailure: the same failure in a row, inside a builder's run
+
+// Durations, counts and line numbers change from one attempt to the next; the failure itself does not.
+if (input.hook_event_name === "PostToolUseFailure") {
+  if (!["Bash", "PowerShell"].includes(input.tool_name) || input.is_interrupt || maxSameFailure <= 0) process.exit(0);
+  const id = String(input.agent_id ?? "");
+  const cmd = commandKey(input.tool_input?.command);
+  const signature = createHash("sha1").update(String(input.error ?? "").replace(/\d+/g, "#").replace(/\s+/g, " ").trim()).digest("hex").slice(0, 12);
+  const b = readBreaker();
+  const mine = ((b.failures ??= {})[id] ??= {});
+  mine[cmd] = { signature, times: mine[cmd]?.signature === signature ? mine[cmd].times + 1 : 1 };
+  writeBreaker(b);
+  process.exit(0);
+}
+
 // ---------- PreToolUse: file edits
 
 // A builder works in its own workspace. Outside it, it writes only its report (.orchestrator/work/) and
@@ -149,7 +238,10 @@ function checkRolePaths(rel) {
   }
 }
 
+const BREAKER_OWNED = `${BREAKER_REL} is the guard's own count of the builder runs. Do not change it: a commit resets it, and so can your human.`;
+
 function checkFileWrite(rel, absolute) {
+  if (rel === BREAKER_REL) block(BREAKER_OWNED);
   checkWorkspace(absolute);
   if (locked.has(rel)) block(`${rel} is a locked acceptance test. Report the problem instead of changing the test; only the orchestrator unlocks it, on the product owner's request.`);
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
@@ -294,6 +386,7 @@ function checkPaths(tokens, dir, removes = false) {
     const p = t.replace(/^[<>]+/, "").replace(/^(-\w+:)/, "");
     if (!p || p.startsWith("-")) continue;
     const rel = relTo(base, path.resolve(dir, p));
+    if (rel === BREAKER_REL || (removes && rel !== "" && BREAKER_REL.startsWith(rel + "/"))) block(BREAKER_OWNED);
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
     if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
     if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
@@ -303,6 +396,11 @@ function checkPaths(tokens, dir, removes = false) {
 }
 
 if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(input.tool_name)) {
+  if (builderRole && maxSameFailure > 0) {
+    const cmd = commandKey(input.tool_input?.command);
+    const failed = readBreaker().failures?.[String(input.agent_id ?? "")]?.[cmd];
+    if (failed?.times >= maxSameFailure) block(`\`${cmd.slice(0, 200)}\` failed ${failed.times} times in a row with the same output. Do not run it again: stop and report BLOCKED with that output and what you tried.`);
+  }
   const cmds = commands(String(input.tool_input?.command ?? "").replace(/\d*>&\d/g, " "));
   // The branch check reads HEAD before the command runs, so a switch and a commit must not share a command.
   const gitSubs = cmds.filter((c) => isGit(c[0]) || isGit(c[1] ?? "")).map((c) => c.join(" ").toLowerCase());
@@ -366,6 +464,20 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
 
 if (input.hook_event_name === "SubagentStop") {
   if (!builderRole) process.exit(0);
+  // Count the run before any check below can send the builder back: the stop after that retry is the same run.
+  {
+    const b = readBreaker();
+    const id = String(input.agent_id ?? "");
+    const branch = currentBranch(root), head = headOf(root);
+    if (b.branch !== branch || b.head !== head) Object.assign(b, { branch, head, runs: [] });
+    (b.agents ??= {})[id] = agentType;
+    const runs = (b.runs ??= []);
+    const last = runs.findLast((r) => r.agent === id);
+    const now = lastRun(input.agent_transcript_path);
+    if (input.stop_hook_active && last) Object.assign(last, now);
+    else runs.push({ agent: id, role: agentType.split(":").pop(), ...now, at: new Date().toISOString() });
+    writeBreaker(b);
+  }
   // Content, not command shape: whatever tool changed a locked file, the story files or the lock
   // list, the difference from HEAD shows it. The builder shares the orchestrator's checkout, so a change
   // there may be the orchestrator's own: the builder restores only what it changed, and says the rest.
