@@ -7,7 +7,7 @@
 - A bug in behaviour is never a fix: it reopens its story (`references/development.md`).
 
 1. Create `fix/<slug>` or `chore/<slug>`, in English kebab-case, from the integration branch on the remote.
-2. Brief the builder whose side owns the paths with `Change: task <slug>: <what changes>`, and under "Done when" the commands that prove it. Show your human the evidence and commit on their ok. Text only you write (a README line, a rule) needs no builder. Before development opens there are no builders.
+2. Brief the builder whose side owns the paths with `Change: task <slug>: <what changes>`, your human's request word for word under `Request:`, and under "Done when" the commands that prove it. Show your human the evidence and commit on their ok. Text only you write (a README line, a rule) needs no builder. Before development opens there are no builders.
 3. Open a pull request to the integration branch with someone other than your human as reviewer. When it is approved, merge it through the API with squash, on your human's ok. No card moves.
 
 ## Check

@@ -29,6 +29,7 @@ The agent does not see this conversation. Write the brief to `.orchestrator/work
 You are <role>-<scope>.
 Story: <absolute path of the story file>   (a task: "none", and the branch)
 Change: contract | <criterion ID> | refactor <criterion ID> | integration | task <slug>: <what changes>   (reviewers: "Judge: <what>")
+Request: <your human's words that ask for this work, verbatim — a task, a refactor, a change they asked for at their ok; omit it when the story's criterion is the whole request>
 Commit: <the exact commit to judge — reviewers only; a re-review also names the commit already reviewed>
 Agreed contract: <operations, fields, types, status codes, errors — contract runs only>
 Read first: <the Patterns of docs/rules/<side>.md that apply, and the code the work touches>
@@ -39,7 +40,7 @@ Write your full output to: <absolute path>/.orchestrator/work/<ID>/<side>-<step>
 Escalate instead of guessing when: <the open points you can foresee>
 ```
 
-Pass the story file's path, never a paraphrase, and never paste the conversation.
+Pass the story file's path, never a paraphrase, and never paste the conversation. Work your human asked for outside a criterion carries their own words under `Request:`, copied, not retold: `Change:` is your reading of them, and the agent needs both to see where they part.
 
 ## Read the report
 
@@ -48,6 +49,6 @@ Its first line is `<name>: <status>`.
 - `DONE`: check the evidence and carry on.
 - `DONE_WITH_CONCERNS`: read the concerns first, then show both to your human.
 - `BLOCKED`: resolve it with your human, or take it to the other side. Never relaunch the same brief.
-- `NEEDS_CONTEXT`: answer it and resume the same agent.
+- `NEEDS_CONTEXT`: a technical question (a convention, where something lives, which helper to reuse) you answer yourself: log it as a ruling and resume the same agent. A product call (what a criterion means, scope, what a person sees or reads: the skill's §5, item 2) is your human's, never yours: show it as the agent wrote it, with every option it gives and what each one changes, without summarising, reordering or choosing; a choice between a few options goes through `AskUserQuestion` when the session has it. Resume the same agent once, with their answer in their own words.
 
 "Done" without evidence is not done. The evidence is the RED and GREEN output of the criterion's test plus the side's fast checks; for a task, the output of its "Done when" commands. A test without the criterion ID at the start of its name does not count. Reject a review without a verdict, and a finding that contradicts the story or your human's instructions, saying why. Read the agent's file when the summary is not enough; do not redo its work in your context.

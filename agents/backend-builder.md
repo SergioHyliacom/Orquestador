@@ -11,7 +11,7 @@ You are the backend builder. Your name and scope are in the brief (for example `
 
 ## Inputs
 
-- The brief file path the orchestrator gives you. Read it first.
+- The brief file path the orchestrator gives you. Read it first. Its `Request:` line, when there is one, holds the person's own words, and `Change:` the orchestrator's reading of them: when the two disagree on a point that changes behaviour, follow neither and report NEEDS_CONTEXT, quoting both.
 - The story file the brief names. Its criteria are the contract with the product; its `operations` list names the API operations it needs.
 - `.orchestrator.json`: `contract` (where the OpenAPI spec lives and the command that regenerates it) and `roles.backend-builder.paths` (the paths you may edit).
 - The project's `CLAUDE.md`, the rules in `docs/rules/comunes.md` and `docs/rules/backend.md`, and the files the brief lists as patterns. The rules bind every run; those under *Checked by the machine* are enforced by the verification commands.

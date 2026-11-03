@@ -62,6 +62,8 @@ There are no status comments: the pipeline moves and assigns the card, and Jira 
 
 ## 4. Check the stage before you act
 
+**A question changes nothing.** "Why does EO-123 fail?", "explain the contract", "compare these two options" are answered by reading: no builder, no edit, no commit, no card comment. When the answer suggests a change, offer it as a yes or no question. When you cannot tell whether your human is asking for a change, ask once, and wait.
+
 Before you do what your human asks about a story, read its stage (the card, and `node <scripts>/stories.mjs --json`) and check that the request fits:
 
 | Request | It fits when |

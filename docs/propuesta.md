@@ -110,6 +110,8 @@ No hay comentarios de estado: el pipeline mueve y asigna la tarjeta, y Jira ense
 
 Nadie tiene que saberse el flujo. Al abrir Claude, y cada vez que preguntas «¿qué me toca?», «¿por dónde voy?» o como te salga, tu sesión mira tus tarjetas, las peticiones que te han hecho, tu rama, tus historias y tus PR, y te dice en pocas líneas en qué punto estás: primero lo que tiene parado a otros, después lo tuyo, y lo que te recomienda hacer. Respondes sí o no. Es la skill `que-hago`: no hace falta ningún comando.
 
+**Si solo preguntas**, por ejemplo por qué falla una historia o qué dice el contrato, tu sesión lee y te contesta, sin cambiar nada: ni agentes, ni commits, ni comentarios. Si de la respuesta sale un cambio, te lo ofrece con un sí o un no, y si no tiene claro si le pides un cambio, te lo pregunta una vez.
+
 **Si pides algo que aún no toca**, por ejemplo programar una historia que sigue en Diseño, tu sesión no lo hace: te dice en qué punto está la historia, qué falta y qué va antes, y te lo ofrece. Si insistes, solo lo hace cuando saltarse el orden no rompe nada. Hay cosas que no hace nunca, aunque insistas: programar sin la historia aprobada, construir sin arranque, cambiar el contrato sin el sí del otro lado, abrir el PR final con criterios sin verificar y fusionar sin la aprobación de otra persona.
 
 ### Cómo nace una historia de diseño
@@ -164,9 +166,9 @@ Los desarrolladores lo deciden en el arranque, leyendo la historia. El pipeline 
 
 **Los dos lados en la misma rama.** Backend y frontend hacen sus commits en `story/EO-123`, cada uno solo en sus rutas, así que no se pisan. Antes de cada push, la sesión trae lo del otro (`git pull --rebase`). Si hay un conflicto, es que los dos han tocado el mismo fichero: la sesión se para y te lo dice.
 
-Entre medias la sesión sigue sola. Se para y te pregunta si el agente se bloquea o tiene dudas, si una comprobación falla dos veces, si el mismo fallo se repite tres veces, si hay que cambiar el contrato o si el paso siguiente no tiene vuelta atrás (una migración en una base compartida). Si prefieres dar el ok en cada criterio, díselo. El agente nunca improvisa: si se bloquea porque al contrato le falta algo, tu sesión lo lleva al otro lado en un comentario de la tarjeta que apruebas tú.
+Entre medias la sesión sigue sola. Se para y te pregunta si el agente se bloquea o tiene una duda de producto (qué significa un criterio, qué se ve o se lee en pantalla), si una comprobación falla dos veces, si el mismo fallo se repite tres veces, si hay que cambiar el contrato o si el paso siguiente no tiene vuelta atrás (una migración en una base compartida). Si prefieres dar el ok en cada criterio, díselo. El agente nunca improvisa: si se bloquea porque al contrato le falta algo, tu sesión lo lleva al otro lado en un comentario de la tarjeta que apruebas tú. Una duda de producto te llega tal como la escribe el agente, con todas sus opciones, sin resumir y sin que la sesión elija por ti; tu respuesta vuelve al agente con tus palabras. Las dudas técnicas (una convención, dónde está algo) las resuelve la sesión y las apunta.
 
-Los arreglos y las tareas fuera de las historias (`fix/`, `chore/`) siguen el mismo bucle: el encargo dice qué cambia y qué comandos lo demuestran, y si cambia algo que un test puede mostrar, primero va el test en rojo.
+Los arreglos y las tareas fuera de las historias (`fix/`, `chore/`) siguen el mismo bucle: el encargo dice qué cambia, copia tu petición palabra por palabra y nombra los comandos que lo demuestran, y si cambia algo que un test puede mostrar, primero va el test en rojo.
 
 ### Cuando algo vuelve atrás
 
