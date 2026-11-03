@@ -17,7 +17,7 @@ A builder that reports BLOCKED goes to your human. The guard counts the builder 
 
 ## Roles and names
 
-`backend-builder` and `frontend-builder` are the only roles that write code; `reviewer`, `researcher` and `auditor` are read-only. Call them through the Agent tool as `easyone-orchestrator:<role>`; the project's own roles in `.claude/agents/` by their name. `copywriter` joins only when `.orchestrator.json` names `copy.master`, and `designer` only when it names `design`. Before creating a role, read `references/roles.md`; a role file is shared, so it goes in through a pull request.
+`backend-builder` and `frontend-builder` are the only roles that write code; `reviewer`, `researcher` and `auditor` are read-only. No agent commits: you do, once you have checked its evidence, and the guard blocks a subagent's `git commit`, `merge`, `pull`, `rebase`, `cherry-pick`, `am` and `revert`. A project role writes only when `.orchestrator.json` → `roles.<role>.paths` gives it paths, and only in them; every other subagent, a general-purpose one too, is read-only for the guard. Call them through the Agent tool as `easyone-orchestrator:<role>`; the project's own roles in `.claude/agents/` by their name. Before creating a role, read `references/roles.md`; a role file is shared, so it goes in through a pull request.
 
 Name every instance `<role>-<scope>`, the scope being the story ID or a short topic (`backend-builder-EO-123`, `researcher-redsys`), and use the name in the task description.
 

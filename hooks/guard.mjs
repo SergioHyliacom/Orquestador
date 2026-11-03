@@ -66,12 +66,17 @@ const broadAddBlocked = git.blockBroadAdd !== false;
 // session has none.
 const agentType = String(input.agent_type ?? "");
 const inSubagent = Boolean(agentType);
-// Every role that only judges or reads ends in reviewer, researcher, auditor or designer, the project's
-// own too (security-reviewer).
-const readOnlyRole = /(^|[:-])(reviewer|researcher|auditor|designer)$/.test(agentType);
-const builderRole = BUILDER.test(agentType);
 // Per-role settings live in .orchestrator.json → roles, keyed by the role name without the plugin prefix.
 const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
+const rolePaths = Array.isArray(roleConfig.paths) && roleConfig.paths.length ? roleConfig.paths : null;
+const builderRole = BUILDER.test(agentType);
+// Only builders and the roles .orchestrator.json gives paths to (a translator that owns locales/) write, and a
+// role only in its paths. Every other subagent only reads, whatever its name: the plugin's reviewer, researcher
+// and auditor, a project role with no paths, a general-purpose agent. A role named for judging (security-reviewer,
+// ui-designer) stays read-only even with paths.
+const judgeName = /(^|[:-])(reviewer|researcher|auditor|designer)$/.test(agentType);
+const writerRole = builderRole || (inSubagent && !judgeName && Boolean(rolePaths));
+const readOnlyRole = inSubagent && !writerRole;
 
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
@@ -231,13 +236,13 @@ if (input.hook_event_name === "PostToolUseFailure") {
 
 // ---------- PreToolUse: file edits
 
-// A builder works in its own workspace. Outside it, it writes only its report (.orchestrator/work/) and
-// scratch files in the temporary folder: anything else would land in another checkout, out of reach
-// of its stop checks.
+// A builder, or a role with paths, works in its own workspace. Outside it, it writes only its report
+// (.orchestrator/work/) and scratch files in the temporary folder: anything else would land in another
+// checkout, out of reach of its stop checks.
 const TMP = key(real(tmpdir()));
 const TMP_TOKEN = /^(\/tmp\/|\$\{?(TMPDIR|TMP|TEMP)\}?[\\/]|\$env:(TMP|TEMP)[\\/])/i;
 function checkWorkspace(absolute, token = "") {
-  if (!builderRole) return;
+  if (!writerRole) return;
   const resolved = real(absolute);
   const r = path.relative(real(root), resolved);
   if (r !== ".." && !r.startsWith(".." + path.sep) && !path.isAbsolute(r)) return;
@@ -246,17 +251,18 @@ function checkWorkspace(absolute, token = "") {
   block(`${agentType} works only in its own workspace, ${root}. ${absolute} is outside it: report what needs to change there instead.`);
 }
 
-// A builder stays on its side of the contract: it edits only the paths its role lists.
+// A builder stays on its side of the contract, and a role on its deliverable: each edits only the paths its
+// role lists.
 function checkRolePaths(rel) {
-  const allowed = roleConfig.paths;
-  if (!builderRole || !Array.isArray(allowed) || !allowed.length) return;
+  if (!writerRole || !rolePaths) return;
   // Outside the workspace, checkWorkspace has already decided.
   if (rel.startsWith("..") || rel.startsWith(`${key(STATE)}/work/`)) return;
-  if (!allowed.some((a) => rel === key(a).replace(/\/$/, "") || rel.startsWith(key(a).replace(/\/$/, "") + "/"))) {
-    block(`${agentType} edits only ${allowed.join(", ")}. ${rel} is outside its side of the contract: report what the other side needs to change.`);
+  if (!rolePaths.some((a) => rel === key(a).replace(/\/$/, "") || rel.startsWith(key(a).replace(/\/$/, "") + "/"))) {
+    block(`${agentType} edits only ${rolePaths.join(", ")}. ${rel} is outside them: report what needs to change there.`);
   }
 }
 
+const STORIES_OWNED = "role agents do not edit story files. Report what should change (a builder, the criterion status); the orchestrator updates them.";
 const BREAKER_OWNED = `${BREAKER_REL} is the guard's own count of the builder runs. Do not change it: a commit resets it, and so can your human.`;
 
 function checkFileWrite(rel, absolute) {
@@ -265,7 +271,7 @@ function checkFileWrite(rel, absolute) {
   if (locked.has(rel)) block(`${rel} is a locked acceptance test. Report the problem instead of changing the test; only the orchestrator unlocks it, on the product owner's request.`);
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
-  if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
+  if (writerRole && storiesRel && rel.startsWith(storiesRel)) block(STORIES_OWNED);
   checkRolePaths(rel);
   if (readOnlyRole && !key(absolute).includes(`/${STATE}/work/`)) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/.`);
 }
@@ -336,7 +342,12 @@ function checkGit(args, cwd) {
   const rest = args.slice(i + 1);
   const has = (re) => rest.some((a) => re.test(a));
   const dirArg = args.indexOf("-C") >= 0 ? path.resolve(cwd, args[args.indexOf("-C") + 1] ?? ".") : cwd;
-  if (builderRole && !readsOnly(args)) checkWorkspace(dirArg);
+  if (writerRole && !readsOnly(args)) checkWorkspace(dirArg);
+  // Only the orchestrator commits, after it checks the evidence. A subagent's commit would skip that check
+  // and start the breaker's count again, so no subagent runs a git command that makes or replays commits.
+  if (inSubagent && ["commit", "merge", "rebase", "cherry-pick", "pull", "am", "revert"].includes(sub)) {
+    block(`role agents never run git ${sub}: only the orchestrator commits, after it checks your evidence. Leave the change in the tree and report it.`);
+  }
 
   if (sub === "push") {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
@@ -349,14 +360,6 @@ function checkGit(args, cwd) {
     if (broadAddBlocked && (has(/^--all$/) || has(/^-[a-z]*a/i))) block("`git commit -a` stages everything. Stage the story's files by name.");
     const b = currentBranch(dirArg);
     if (b && protectedBranches.includes(b)) block(`commits on ${b} are blocked. Create the story branch first.`);
-    // A role must not commit a change to a locked file: the Stop check compares against HEAD.
-    if (inSubagent) {
-      let staged = [];
-      try { staged = execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: dirArg, stdio: ["ignore", "pipe", "ignore"] }).toString().split(/\r?\n/).filter(Boolean).map(key); }
-      catch { /* not a repository: nothing staged */ }
-      const hit = staged.find((f) => locked.has(f) || isLockList(f));
-      if (hit) block(`${hit} is locked. Unstage it; only the orchestrator commits changes to locked files.`);
-    }
   }
   if (["merge", "rebase", "cherry-pick", "pull", "am", "revert"].includes(sub)) {
     const b = currentBranch(dirArg);
@@ -409,7 +412,7 @@ function checkPaths(tokens, dir, removes = false) {
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
     if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
     if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
-    if (builderRole && storiesRel && rel.startsWith(storiesRel)) block("the builder does not edit story files. Report the criterion status; the orchestrator updates the markers.");
+    if (writerRole && storiesRel && rel.startsWith(storiesRel)) block(STORIES_OWNED);
     if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   }
 }
@@ -479,12 +482,12 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
   process.exit(0);
 }
 
-// ---------- SubagentStop: the builder does not stop on red
+// ---------- SubagentStop: the builder does not stop on red, and no writing agent leaves its paths
 
 if (input.hook_event_name === "SubagentStop") {
-  if (!builderRole) process.exit(0);
+  if (!writerRole) process.exit(0);
   // Count the run before any check below can send the builder back: the stop after that retry is the same run.
-  {
+  if (builderRole) {
     const b = readBreaker();
     const id = String(input.agent_id ?? "");
     const branch = currentBranch(root), head = headOf(root);
@@ -503,7 +506,7 @@ if (input.hook_event_name === "SubagentStop") {
   }
   // Content, not command shape: whatever tool changed a locked file, the story files or the lock
   // list, the difference from HEAD shows it. The builder shares the orchestrator's checkout, so a change
-  // there may be the orchestrator's own: the builder restores only what it changed, and says the rest.
+  // there may be the orchestrator's own: the agent restores only what it changed, and says the rest.
   const spec = (list) => list.map((p) => (WIN ? `:(icase)${p}` : p));
   const lockSet = spec([...lockedPaths, `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
   const run = (a) => { try { return execFileSync("git", a, { cwd: root, stdio: ["ignore", "pipe", "ignore"] }).toString().trim(); } catch { return ""; } };
@@ -512,22 +515,22 @@ if (input.hook_event_name === "SubagentStop") {
   if (changed.length && !input.stop_hook_active) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore the ones you changed with \`git restore <file>\` and report what you needed to change them for. Do not restore the ones you did not change: name them in your report.`);
   // A commit made through an interpreter leaves the tree equal to HEAD. The orchestrator commits each
   // lock, so the last commit that touched the lock list is the base the locked files must still match.
-  // Only this branch's own commits count: a change that came from the integration branch is not the builder's.
+  // Only this branch's own commits count: a change that came from the integration branch is not the agent's.
   const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
   const integration = `refs/remotes/origin/${git.integrationBranch ?? "develop"}`;
   const own = run(["rev-parse", "--verify", "--quiet", integration]) ? ["--not", integration] : [];
   const committed = base ? [...new Set(names(["log", "--no-merges", "--format=", "--name-only", `${base}..HEAD`, ...own, "--", ...lockSet]))] : [];
   if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
   // Files someone else changed would trap the builder, so this check gives one retry, then lets it report.
-  if (!input.stop_hook_active && Array.isArray(roleConfig.paths) && roleConfig.paths.length) {
-    const inside = (f) => roleConfig.paths.some((a) => { const d = key(a).replace(/\/$/, ""); return f === d || f.startsWith(d + "/"); });
+  if (!input.stop_hook_active && rolePaths) {
+    const inside = (f) => rolePaths.some((a) => { const d = key(a).replace(/\/$/, ""); return f === d || f.startsWith(d + "/"); });
     const touched = [...names(["diff", "--name-only", "HEAD"]), ...names(["ls-files", "--others", "--exclude-standard"])]
       .map(key).filter((f) => !f.startsWith(`${key(STATE)}/`) && !inside(f));
-    if (touched.length) block(`${agentType} edits only ${roleConfig.paths.join(", ")}, and these files outside them differ from HEAD: ${touched.join(", ")}. Restore the ones you changed with \`git restore <file>\` (or delete them if new) and report what the other side needs. If you did not change them, say so in your report.`);
+    if (touched.length) block(`${agentType} edits only ${rolePaths.join(", ")}, and these files outside them differ from HEAD: ${touched.join(", ")}. Restore the ones you changed with \`git restore <file>\` (or delete them if new) and report what needs to change there. If you did not change them, say so in your report.`);
   }
-  if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the builder reports honestly.
+  if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the agent reports honestly.
   const deadline = Date.now() + 1000 * 1000; // Stay inside the hook timeout in hooks.json.
-  for (const c of roleConfig.onStop ?? config.verify?.onBuilderStop ?? []) {
+  for (const c of roleConfig.onStop ?? (builderRole ? config.verify?.onBuilderStop : null) ?? []) {
     const left = deadline - Date.now();
     if (left <= 0) block("the verification checks ran out of time. Report the unchecked commands as ⚠️.");
     try { execSync(c, { cwd: root, stdio: ["ignore", "pipe", "pipe"], timeout: left, maxBuffer: 64 * 1024 * 1024 }); }

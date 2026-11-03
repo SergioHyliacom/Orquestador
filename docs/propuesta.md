@@ -26,8 +26,6 @@ Se trabaja por **historias verticales** y en **pareja con la IA**: la persona na
 | **Investigador** | `researcher`, solo lectura | Resuelve dudas sin tocar nada |
 | **Auditor** | `auditor`, solo lectura | Al cerrar cada entrega, revisa una muestra de historias buscando lo que los tests no ven |
 
-`copywriter` y `designer` (del plugin original) quedan inactivos: solo actúan si el proyecto los configura.
-
 ## 3. Qué se ha cambiado del plugin
 
 El plugin adaptado está en el fork local `Orquestador-EasyOne`, rama `easyone`.
@@ -64,7 +62,8 @@ Además de lo que ya hacía el original (push forzado, `reset --hard`, commits e
 - **Pide confirmación para cada push y cada merge en Bitbucket**, salvo los de las ramas de comprobación (`chore/check-`, sección 5).
 - **Al empezar cada sesión** le dice a Claude dónde están los scripts del plugin.
 - **`main` y `develop` solo cambian por PR.** En local solo se actualizan con `git pull --ff-only`; cualquier otro merge, pull o rebase sobre ellas está bloqueado.
-- **Los agentes de solo lectura solo leen**, también en git: no pueden borrar ramas ni tocar los remotos.
+- **Solo escriben los builders y los roles con rutas.** Un rol del proyecto escribe solo si `.orchestrator.json` le da rutas (`roles.<rol>.paths`), y solo en ellas. Cualquier otro agente es de solo lectura, se llame como se llame, también en git: no puede borrar ramas ni tocar los remotos.
+- **Ningún agente hace commit** (ni `merge`, `pull`, `rebase`, `cherry-pick`, `am` o `revert`). Los commits los hace tu sesión después de comprobar las pruebas, y así ningún agente pone a cero la cuenta del cortocircuito.
 - **Un builder que no avanza para.** Tras tres ejecuciones de builders sin un commit, la guardia te pregunta antes de cada ejecución más; solo un commit, o tú, ponen la cuenta a cero. Dentro de una ejecución, el mismo comando que falla tres veces seguidas con la misma salida no se deja repetir: el builder informa BLOCKED. La cuenta vive en `.orchestrator/work/breaker.json`, que ningún agente puede tocar; los límites, en `verify.maxBuilderRuns` y `verify.maxSameFailure` de `.orchestrator.json`.
 
 **La revisión de riesgo** (desde la 0.15.0, a partir de lo que hace gentle-ai):

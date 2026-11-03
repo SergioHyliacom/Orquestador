@@ -24,7 +24,6 @@ Diseño, backend y frontend trabajan sobre las mismas historias de usuario:
 | `agents/reviewer.md` | Revisión independiente al cerrar una historia, solo si lleva etiqueta de riesgo |
 | `agents/auditor.md` | Auditoría por muestreo al cerrar cada entrega: lo que los tests no ven, convertido en reglas |
 | `agents/researcher.md` | Investigación de solo lectura |
-| `agents/copywriter.md`, `agents/designer.md` | Del original. Inactivos salvo que `.orchestrator.json` los configure |
 | `skills/orchestrate/` | El día a día de cada sesión. Un núcleo corto que carga cada sesión (`SKILL.md`: el inicio, las etapas, cómo se habla con el otro lado, qué no se hace nunca, cuándo se pregunta a la persona y el cierre) y referencias que se leen solo cuando el trabajo las necesita (`references/`): diseño, desarrollo, encargos a los agentes, trabajo fuera de las historias, auditoría, dónde vive cada cosa, git y Bitbucket, y accesos. A la sesión de diseño le basta la de diseño |
 | `skills/que-hago/` | En qué punto está la persona y qué le toca: tarjetas, peticiones, rama, historias y PR. Claude la carga al empezar y cuando alguien pregunta qué le toca |
 | `skills/stories/` | Cómo se escriben y mantienen las historias |

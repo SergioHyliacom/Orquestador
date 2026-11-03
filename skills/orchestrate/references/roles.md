@@ -33,7 +33,7 @@ These are examples, not a list to pick from. Read the project and decide.
 
 1. Write `.claude/agents/<role>.md` in the project from `role-template.md` (next to this file). Project roles live in the project, not in the plugin.
 2. Fill every field. A role is a contract: purpose, inputs, output file, tools, model, turn limit, escalation rule, report shape.
-3. Read-only roles get `Write` only to write their report under `.orchestrator/work/`. They get no `Edit`. Only roles that own a deliverable edit project files, and only their deliverable.
+3. Read-only roles get `Write` only to write their report under `.orchestrator/work/`. They get no `Edit`. Only roles that own a deliverable edit project files, and only their deliverable: list its paths in `.orchestrator.json` → `roles.<role>.paths`. The guard holds the role to them when it edits and again on the diff when it stops. A role without paths there is read-only for the guard, whatever its name, and a role named for judging (`-reviewer`, `-researcher`, `-auditor`, `-designer`) stays read-only even with them. No role commits.
 4. State in the role's `description` which test it meets.
 5. Record the addition in `.orchestrator/state.md` as a ruling, and list it in the close report.
 
