@@ -6,7 +6,7 @@
 
 import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +37,17 @@ function toplevel(dir) {
   catch { return null; }
 }
 
+// One file can be reached by two paths: on macOS /var is /private/var, and a project folder can be opened
+// through a link. git names the real one, so every path is compared by its real path. A path that does not
+// exist yet resolves through its nearest folder that does.
+function real(p) {
+  let d = path.resolve(p);
+  const rest = [];
+  while (!existsSync(d) && path.dirname(d) !== d) { rest.unshift(path.basename(d)); d = path.dirname(d); }
+  try { return path.join(realpathSync.native(d), ...rest); }
+  catch { return path.resolve(p); }
+}
+
 // The checkout the session works in. A worktree has its own toplevel and its own branch.
 const root = toplevel(cwd) ?? path.resolve(process.env.CLAUDE_PROJECT_DIR || cwd);
 // Projects installed before the rename keep .orquestador.json and .orquestador/ until they migrate.
@@ -64,7 +75,7 @@ const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
 
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
-const relTo = (base, p) => key(path.relative(base, path.resolve(base, p)));
+const relTo = (base, p) => key(path.relative(real(base), real(path.resolve(base, p))));
 // Each side of a story locks its tests in its own list, .orchestrator/locked/<ID>-<side>.txt, so the
 // two sides never conflict on the story branch. locked-tests.txt is still read.
 const LOCK_REL = key(`${STATE}/locked-tests.txt`);
@@ -223,13 +234,14 @@ if (input.hook_event_name === "PostToolUseFailure") {
 // A builder works in its own workspace. Outside it, it writes only its report (.orchestrator/work/) and
 // scratch files in the temporary folder: anything else would land in another checkout, out of reach
 // of its stop checks.
-const TMP = key(path.resolve(tmpdir()));
+const TMP = key(real(tmpdir()));
 const TMP_TOKEN = /^(\/tmp\/|\$\{?(TMPDIR|TMP|TEMP)\}?[\\/]|\$env:(TMP|TEMP)[\\/])/i;
 function checkWorkspace(absolute, token = "") {
   if (!builderRole) return;
-  const r = path.relative(root, absolute);
+  const resolved = real(absolute);
+  const r = path.relative(real(root), resolved);
   if (r !== ".." && !r.startsWith(".." + path.sep) && !path.isAbsolute(r)) return;
-  const k = key(absolute);
+  const k = key(resolved);
   if (k.includes(`/${key(STATE)}/work/`) || k === TMP || k.startsWith(TMP + "/") || TMP_TOKEN.test(token)) return;
   block(`${agentType} works only in its own workspace, ${root}. ${absolute} is outside it: report what needs to change there instead.`);
 }
