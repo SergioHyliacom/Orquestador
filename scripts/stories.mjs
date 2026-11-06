@@ -43,7 +43,7 @@ const DEFAULTS = {
       story: "Story", criteria: "Acceptance criteria", outOfScope: "Out of scope",
       verification: "Verification", openQuestions: "Open questions", discardReason: "Discard reason",
     },
-    markers: { test: "test", manual: "manual", unverified: "unverified", unbuilt: "unbuilt", failing: "failing" },
+    markers: { test: "test", manual: "manual", unbuilt: "unbuilt", failing: "failing" },
     statuses: {
       works: "✅ Works", unverified: "⚠️ Unverified", partial: "🟡 Partial", failing: "❌ Failing",
       blocked: "🔒 Blocked", pending: "⬜ Pending", discarded: "⛔ Discarded",
@@ -74,7 +74,7 @@ const MAIN_RELEASE = config.mainRelease ?? RELEASES[0];
 const PERSONAS = config.personas ?? null;
 // One saved report per test source: .test-results, .test-results-1, ...
 const resultsFile = (i) => path.join(DIR, `.test-results${i ? `-${i}` : ""}`);
-// A story ID is its Jira key. idPrefix pins the Jira project; without it any Jira key is accepted.
+// A story ID is a prefix and a number (EO-123). idPrefix pins the prefix; without it any such ID is accepted.
 const ID_PREFIX = config.idPrefix ? escape(config.idPrefix) : "[A-Z][A-Z0-9]+";
 const STORY_ID = new RegExp(`^${ID_PREFIX}-\\d+$`);
 const MAP = path.join(DIR, "map.md");
@@ -127,7 +127,7 @@ function parseCriteria(text, file, storyId) {
   if (!text) return [];
   const criteria = [];
   const M = L.markers;
-  const known = new RegExp(`\\[((?:${[M.test, M.manual, M.unverified, M.unbuilt, M.failing].map(escape).join("|")})(?![\\p{L}\\p{N}]).*)\\]\\s*$`, "iu");
+  const known = new RegExp(`\\[((?:${[M.test, M.manual, M.unbuilt, M.failing].map(escape).join("|")})(?![\\p{L}\\p{N}]).*)\\]\\s*$`, "iu");
   for (const block of text.split(/^- /m).slice(1)) {
     const idMatch = block.match(new RegExp(`^\\*\\*(${ID_PREFIX}-\\d+\\.\\d+)\\*\\*`));
     if (!idMatch) { errors.push(`${file}: criterion "${block.split("\n")[0].slice(0, 40)}" has no valid ID (**${storyId}.N**).`); continue; }
@@ -144,7 +144,7 @@ function parseCriteria(text, file, storyId) {
 
 function escape(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
-// A marker the validator rejects counts as unverified in the map; invalid tells jira-sync it waits for no one.
+// A marker the validator rejects counts as unverified in the map.
 function classify(marker, file, id) {
   const M = L.markers;
   if (!marker) { errors.push(`${file}: criterion ${id} does not end with its verification marker in brackets.`); return { kind: "unverified", invalid: true }; }
@@ -166,7 +166,6 @@ function classify(marker, file, id) {
     }
     return { kind: "manual" };
   }
-  if (new RegExp(`^${escape(M.unverified)}$`, "i").test(marker)) return { kind: "unverified" };
   if (new RegExp(`^${escape(M.unbuilt)}$`, "i").test(marker)) return { kind: "unbuilt" };
   if (starts(M.failing)) return { kind: "failing", reason: marker.replace(new RegExp(`^${escape(M.failing)}:\\s*`, "i"), "") };
   errors.push(`${file}: criterion ${id} has an unknown marker: [${marker}].`);
@@ -184,17 +183,13 @@ function readDir(dir) {
 
 const rel = (p) => path.relative(DIR, p).split(path.sep).join("/");
 const activities = readJson(path.join(DIR, "activities.json"));
-// The contract the stories' operations must appear in: the OpenAPI spec generated from Go.
-const SPEC = config.contractSpec ? path.resolve(ROOT, config.contractSpec) : null;
-const specText = SPEC && existsSync(SPEC) ? readFileSync(SPEC, "utf8") : null;
-const inSpec = (op) => new RegExp(`["']?operationId["']?\\s*:\\s*["']?${escape(op)}["']?\\s*(,|$)`, "m").test(specText ?? "");
 
 // ---------- Git: what this branch adds to the integration branch
 const gitRun = (a) => { try { return execFileSync("git", a, { cwd: ROOT, stdio: ["ignore", "pipe", "ignore"] }).toString(); } catch { return null; } };
 const orchestrator = existsSync(path.join(ROOT, ".orchestrator.json")) ? readJson(path.join(ROOT, ".orchestrator.json")) : {};
 const INTEGRATION_BRANCH = orchestrator.git?.integrationBranch ?? "develop";
 const INTEGRATION = `refs/remotes/origin/${INTEGRATION_BRANCH}`;
-// A pipeline clones one branch: bring the integration branch's ref, as jira-sync does.
+// A pipeline clones one branch: bring the integration branch's ref.
 if (process.env.CI && gitRun(["rev-parse", "--verify", "--quiet", INTEGRATION]) === null) {
   gitRun(["fetch", "--quiet", "origin", `+refs/heads/${INTEGRATION_BRANCH}:${INTEGRATION}`]);
 }
@@ -202,24 +197,6 @@ const HEAD_SHA = gitRun(["rev-parse", "HEAD"])?.trim() ?? null;
 const MERGE_BASE = gitRun(["merge-base", "HEAD", INTEGRATION])?.trim() ?? null;
 // On a branch with work of its own; never on the integration branch itself, nor outside a repository.
 const AHEAD = Boolean(HEAD_SHA && MERGE_BASE && MERGE_BASE !== HEAD_SHA);
-// The spec as the integration branch had it when this branch left it.
-const baseSpec = AHEAD && SPEC ? gitRun(["show", `${MERGE_BASE}:${path.relative(ROOT, SPEC).split(path.sep).join("/")}`]) : null;
-// One operation's text in a spec (YAML or pretty-printed JSON): from its method's line to the next line indented no deeper.
-function opBlock(text, op) {
-  if (!text) return null;
-  const lines = lf(text).split("\n");
-  const re = new RegExp(`["']?operationId["']?\\s*:\\s*["']?${escape(op)}["']?\\s*(,|$)`);
-  const i = lines.findIndex((l) => re.test(l));
-  if (i < 0) return null;
-  const indent = (l) => l.match(/^\s*/)[0].length;
-  let start = i;
-  while (start > 0 && (!lines[start].trim() || indent(lines[start]) >= indent(lines[i]))) start--;
-  let end = i + 1;
-  while (end < lines.length && (!lines[end].trim() || indent(lines[end]) > indent(lines[start]))) end++;
-  return lines.slice(start, end).join("\n");
-}
-// An operation the story changes still waits for its contract while its text equals the integration branch's.
-const unchangedOp = (op) => baseSpec !== null && opBlock(baseSpec, op) !== null && opBlock(baseSpec, op) === opBlock(specText, op);
 
 const decisions = new Map();
 for (const file of readDir(path.join(DIR, "decisions"))) {
@@ -234,10 +211,10 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   const f = rel(file);
   const { data, body } = parseFrontmatter(readFileSync(file, "utf8"), f);
   const id = data.id;
-  if (!STORY_ID.test(id ?? "")) { errors.push(`${f}: invalid id "${id}". The id is the story's Jira key (${config.idPrefix ?? "PROJ"}-123).`); continue; }
+  if (!STORY_ID.test(id ?? "")) { errors.push(`${f}: invalid id "${id}". The id is a prefix and a number (${config.idPrefix ?? "PROJ"}-123).`); continue; }
   if (seen.has(id)) errors.push(`${f}: id ${id} is repeated.`);
   seen.add(id);
-  // The ID is a Jira key, so the activity comes from the frontmatter, not from the ID's prefix.
+  // The activity comes from the frontmatter, not from the ID's prefix.
   const act = activities.find((a) => a.name === data.activity);
   const code = act?.code;
   if (!act) errors.push(`${f}: activity "${data.activity ?? ""}" is not in activities.json.`);
@@ -248,20 +225,10 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   const blockedBy = asList(data.blocked_by);
   for (const d of blockedBy) if (!decisions.has(d)) errors.push(`${f}: decision ${d} does not exist.`);
   const secs = sections(body);
-  const operations = asList(data.operations);
-  if (operations.length && config.contractSpec && !specText) warnings.push(`${config.contractSpec} not found: contract not checked.`);
-  // The existing operations whose shape the story changes. The kickoff fills it when the API changes.
-  const changes = asList(data.changes);
-  for (const op of changes) if (!operations.includes(op)) errors.push(`${f}: changes lists ${op}, which is not in operations.`);
-  // The sides that build the story. A story that only uses the existing API is front only; one with no screen, back only.
-  const sides = asList(data.sides).length ? asList(data.sides) : ["back", "front"];
-  if (sides.some((h) => !["back", "front"].includes(h))) errors.push(`${f}: sides is [${sides.join(", ")}]. Use back, front or both.`);
   stories.push({
     id, title: data.title, code, release: data.release, persona: data.persona,
-    operations, changes, sides,
-    contractMissing: specText ? operations.filter((op) => !inSpec(op) || (changes.includes(op) && unchangedOp(op))) : operations,
     tags: asList(data.tags), blockedBy, dependsOn: asList(data.depends_on), discarded: data.discarded === true,
-    screens: asList(data.screens), secs, criteria: parseCriteria(section(secs, "criteria"), f, id), file: f,
+    secs, criteria: parseCriteria(section(secs, "criteria"), f, id), file: f,
   });
 }
 stories.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
@@ -445,7 +412,7 @@ const riskMiss = (m) => `${m.story.file}: this branch changes ${m.file}, a ${m.t
 
 // ---------- Test results
 
-// A vertical story is tested on several sides: Go (JUnit, e.g. through gotestsum), Vitest (jest-json),
+// A story is tested by several runners: Go (JUnit, e.g. through gotestsum), Vitest (jest-json),
 // the end-to-end runner. tests is one source or a list of them.
 const SOURCES = (Array.isArray(config.tests) ? config.tests : config.tests ? [config.tests] : []).filter(Boolean);
 let runnerCode = 0;
@@ -559,8 +526,7 @@ function readyProblems(s) {
 // ---------- Outputs
 
 const emoji = (e) => L.statuses[e].split(" ")[0];
-const screens = (s) => s.screens.map((u, i) => ` [🖼${s.screens.length > 1 ? i + 1 : ""}](${u})`).join("");
-const link = (s) => `${emoji(s.status)} [${s.id}](${s.file}) ${s.title}${screens(s)}`;
+const link = (s) => `${emoji(s.status)} [${s.id}](${s.file}) ${s.title}`;
 
 if (flag("--summary")) {
   // Compact state for the start of a session: only what needs attention.

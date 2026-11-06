@@ -8,7 +8,7 @@
     {
       "name": "easyone-orchestrator",
       "source": "./",
-      "description": "EASY One orchestrator, for the whole team: stories, OpenAPI contract, paired builders, Jira and Bitbucket"
+      "description": "EASY One orchestrator, for the whole team: stories, one criterion at a time, Bitbucket"
     }
   ]
 }

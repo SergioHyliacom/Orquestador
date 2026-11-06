@@ -4,27 +4,25 @@
 2. **What a machine can check is not written as prose.** It becomes a check, whose message cites the rule's ID.
 3. **No rule without an origin:** the seed the team agreed at the start, a decision, or a real failure or audit in this project. Never "just in case", never copied from another project.
 4. **Shared files change through a pull request.** Generated files are never edited by hand. Personal files never travel.
-5. **Jira is not documentation.** It shows who and when; git holds what. What two people agree in a card comment goes into the story, the contract or a decision.
+5. **A conversation is not documentation.** What two people agree, in a pull request comment or anywhere else, goes into the story or a decision.
 
 | What | Where |
 |---|---|
 | What the product does | `<storiesDir>/stories/` |
-| The design | Figma; the story links its frames in `screens` |
-| References from other apps | Mobbin collections named after the story, outside the repository |
-| Where each story stands | its Jira card; `<storiesDir>/map.md`, generated on each machine and never committed |
+| Where each story stands | `<storiesDir>/map.md`, generated on each machine and never committed; its branch and its lock list |
 | A choice of product or architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-001 |
-| The API contract and the generated client | `contract.spec`, and what `contract.generateClient` writes |
-| Rules for every side; one side's rules and patterns | `docs/rules/comunes.md`; `docs/rules/backend.md`, `docs/rules/frontend.md` |
+| The API spec and the generated client | `contract.spec`, and what `contract.generateClient` writes |
+| The rules and the patterns | `docs/rules/` |
 | Code style | the linters' configuration |
 | The code graph | its configuration in the repository (`.mcp.json`, server `code-review-graph`); the graph on each machine, never committed |
 | Audits | `docs/audits/<delivery>.md` |
 | What the product is, the folders, how to run it | `README.md` |
-| The context of every session | `CLAUDE.md`, which imports `README.md` and `docs/rules/comunes.md`; the rest is the code |
+| The context of every session | `CLAUDE.md`, which imports `README.md` and the rules every session needs; the rest is the code |
 | Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` |
 | What is risky and where it lives in the code | `.orchestrator.json` → `riskTags`, `riskPaths`; the reasons, in the body of the `chore/risk-map` pull request that set them (`references/risk-map.md`) |
 | Personal files | `.orchestrator/me.json`, `state.md`, `work/`, never committed |
 
-The method lives in this plugin and is never copied into the project. Jira cards carry the title, the sentence and the links, never the criteria. There is no `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/`, documentation site or lessons section in `CLAUDE.md`: do not create them.
+The method lives in this plugin and is never copied into the project. There is no `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/`, documentation site or lessons section in `CLAUDE.md`: do not create them.
 
 ## Where do I write this?
 
@@ -38,7 +36,7 @@ Ask in this order and stop at the first match:
 
 ## Rules
 
-Three levels, strongest first: a **machine check** (a linter setting, an architecture test, a pipeline step); a **written rule** in `docs/rules/`, only when no machine can check it; a **pattern**, reference code the briefs cite under "Read first", listed under *Patterns* in each side's file.
+Three levels, strongest first: a **machine check** (a linter setting, an architecture test, a pipeline step); a **written rule** in `docs/rules/`, only when no machine can check it; a **pattern**, reference code the briefs cite under "Read first", listed under *Patterns* in `docs/rules/`.
 
 One line per rule, with an ID that is never reused: `- **R-07** <the rule>. — <why it matters>. — <origin>.` At the end of each file, *Checked by the machine* lists `R-xx → <the command or setting>` for each rule a check now enforces; agents do not read those as rules. A new check must fail on the code that motivated it and pass once that code is fixed. Builders cannot edit `docs/rules/`; you edit it, through a pull request. A behaviour is never a rule: it is a criterion.
 

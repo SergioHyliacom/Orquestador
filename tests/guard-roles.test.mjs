@@ -11,14 +11,14 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const GUARD = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "hooks", "guard.mjs");
-const BUILDER = "easyone-orchestrator:backend-builder";
+const BUILDER = "easyone-orchestrator:builder";
 
 function project(roles = {}) {
   const dir = mkdtempSync(path.join(tmpdir(), "guard-roles-"));
   const git = (...a) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: dir, stdio: "ignore" });
   git("init", "-q", "-b", "story/PRU-1");
   writeFileSync(path.join(dir, ".orchestrator.json"), JSON.stringify({
-    roles: { "backend-builder": { paths: ["apps/api/"], onStop: [] }, ...roles },
+    roles: { "builder": { paths: ["apps/api/"], onStop: [] }, ...roles },
   }));
   mkdirSync(path.join(dir, "apps", "api"), { recursive: true });
   mkdirSync(path.join(dir, "locales"), { recursive: true });

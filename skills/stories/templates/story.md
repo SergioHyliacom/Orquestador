@@ -7,9 +7,6 @@ release: First release from stories.config.json
 blocked_by: []
 depends_on: []
 tags: []
-screens: []
-sides: [back, front]
-operations: []
 discarded: false
 ---
 

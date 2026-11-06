@@ -19,9 +19,6 @@ release: Entrega 1
 blocked_by: []
 depends_on: []
 tags: [${tags.join(", ")}]
-screens: []
-sides: [back]
-operations: []
 discarded: false
 ---
 

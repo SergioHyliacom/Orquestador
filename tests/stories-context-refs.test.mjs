@@ -18,7 +18,7 @@ const CLAUDE_MD = `# Proyecto
 - La API está en \`apps/api/\`, y su módulo de referencia en \`apps/api/internal/modules/notes/module.go\`.
 - El mapa, \`product/map.md\`, se genera y no se sube; lo personal va en \`.orchestrator/me.json\`.
 - Las ramas: \`origin/develop\`, \`story/<ID>\` y \`chore/check-*\`.
-- Los tests bloqueados: \`.orchestrator/locked/<ID>-<lado>.txt\`.
+- Los tests bloqueados: \`.orchestrator/locked/<ID>.txt\`.
 - Comandos: \`pnpm lint\`, \`pnpm install\`, \`pnpm --filter e2e exec playwright install\`, \`pnpm run build\` y \`pnpm gen:spec\`.
 `;
 
@@ -71,13 +71,13 @@ test("cuando el código se mueve, el texto que lo nombra caduca en esa misma ram
   const p = project({ contextDocs: ["docs/rules/*.md"] });
   assert.equal(p.run("--check").status, 0);
   p.remove("docs/rules/comunes.md");
-  writeFileSync(path.join(p.dir, "docs", "rules", "backend.md"), "- **R-02** El módulo de referencia: `apps/api/internal/modules/notes/module.go`.\n");
-  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "add", "docs/rules/backend.md"], { cwd: p.dir, stdio: "ignore" });
+  writeFileSync(path.join(p.dir, "docs", "rules", "api.md"), "- **R-02** El módulo de referencia: `apps/api/internal/modules/notes/module.go`.\n");
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "add", "docs/rules/api.md"], { cwd: p.dir, stdio: "ignore" });
   execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "regla"], { cwd: p.dir, stdio: "ignore" });
   p.remove("apps/api/internal/modules/notes/module.go");
   const r = p.run("--check");
   assert.equal(r.status, 1);
-  assert.match(r.stderr, /docs\/rules\/backend\.md:1: names apps\/api\/internal\/modules\/notes\/module\.go, which does not exist/);
+  assert.match(r.stderr, /docs\/rules\/api.md:1: names apps\/api\/internal\/modules\/notes\/module\.go, which does not exist/);
 });
 
 test("sin contextDocs no se revisa ningún texto, y --check lo dice", () => {
@@ -95,8 +95,8 @@ test("una entrada de contextDocs que no corresponde a ningún fichero falla --ch
 });
 
 test("un texto que git tiene y el disco no, no tumba el validador", () => {
-  const p = project({ contextDocs: ["docs/rules/*.md"], files: { "docs/rules/backend.md": "- **R-02** `apps/api/`\n" } });
-  rmSync(path.join(p.dir, "docs", "rules", "backend.md"));
+  const p = project({ contextDocs: ["docs/rules/*.md"], files: { "docs/rules/api.md": "- **R-02** `apps/api/`\n" } });
+  rmSync(path.join(p.dir, "docs", "rules", "api.md"));
   const r = p.run("--check");
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /map\.md written/);

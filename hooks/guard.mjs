@@ -15,7 +15,7 @@ const WIN = process.platform === "win32";
 const stripBom = (s) => s.replace(/^﻿/, "");
 const input = JSON.parse(stripBom(readFileSync(0, "utf8")) || "{}");
 const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
-// Every role that writes code ends in -builder: backend-builder, frontend-builder.
+// Every role that writes code ends in -builder.
 const BUILDER = /(^|:)([a-z0-9]+-)*builder$/;
 // A failed command matters only inside a builder (the breaker below): every other session leaves at once.
 if (input.hook_event_name === "PostToolUseFailure" && !BUILDER.test(String(input.agent_type ?? ""))) process.exit(0);
@@ -81,8 +81,7 @@ const readOnlyRole = inSubagent && !writerRole;
 // Paths are compared repo-relative, so a worktree copy of a locked file matches too.
 const key = (p) => { const k = p.split(path.sep).join("/").replace(/^\.\//, ""); return WIN ? k.toLowerCase() : k; };
 const relTo = (base, p) => key(path.relative(real(base), real(path.resolve(base, p))));
-// Each side of a story locks its tests in its own list, .orchestrator/locked/<ID>-<side>.txt, so the
-// two sides never conflict on the story branch. locked-tests.txt is still read.
+// Each story locks its tests in its own list, .orchestrator/locked/<ID>.txt. locked-tests.txt is still read.
 const LOCK_REL = key(`${STATE}/locked-tests.txt`);
 const LOCK_DIR_REL = key(`${STATE}/locked`);
 const isLockList = (rel) => rel === LOCK_REL || rel === LOCK_DIR_REL || rel.startsWith(LOCK_DIR_REL + "/");
@@ -251,8 +250,7 @@ function checkWorkspace(absolute, token = "") {
   block(`${agentType} works only in its own workspace, ${root}. ${absolute} is outside it: report what needs to change there instead.`);
 }
 
-// A builder stays on its side of the contract, and a role on its deliverable: each edits only the paths its
-// role lists.
+// When a builder's or a role's paths are set (.orchestrator.json → roles.<role>.paths), it edits only those.
 function checkRolePaths(rel) {
   if (!writerRole || !rolePaths) return;
   // Outside the workspace, checkWorkspace has already decided.

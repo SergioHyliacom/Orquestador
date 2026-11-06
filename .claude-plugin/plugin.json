@@ -1,12 +1,12 @@
 {
   "name": "easyone-orchestrator",
-  "version": "0.17.4",
-  "description": "Hyliacom's orchestrator for EASY One. Designers write the stories, backend and frontend agree on the OpenAPI contract, and each developer pairs with their own builder agent, one criterion at a time. Stories are synced with Jira; code lives on Bitbucket.",
+  "version": "0.18.0",
+  "description": "Hyliacom's orchestrator for EASY One. Each person runs their own session; stories with acceptance criteria, built one criterion at a time. Code lives on Bitbucket.",
   "author": {
     "name": "Hyliacom",
     "url": "https://github.com/SergioHyliacom/Orquestador"
   },
   "homepage": "https://github.com/SergioHyliacom/Orquestador",
   "license": "MIT",
-  "keywords": ["orchestration", "subagents", "user-stories", "workflow", "jira", "bitbucket", "easyone"]
+  "keywords": ["orchestration", "subagents", "user-stories", "workflow", "bitbucket", "easyone"]
 }

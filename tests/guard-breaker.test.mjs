@@ -9,14 +9,14 @@ import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
 const GUARD = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "hooks", "guard.mjs");
-const BUILDER = "easyone-orchestrator:backend-builder";
+const BUILDER = "easyone-orchestrator:builder";
 
 function project() {
   const dir = mkdtempSync(path.join(tmpdir(), "guard-breaker-"));
   const git = (...a) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...a], { cwd: dir, stdio: "ignore" });
   git("init", "-q", "-b", "story/PRU-1");
   writeFileSync(path.join(dir, ".orchestrator.json"), JSON.stringify({
-    roles: { "backend-builder": { paths: ["apps/api/"], onStop: [] } },
+    roles: { "builder": { paths: ["apps/api/"], onStop: [] } },
   }));
   writeFileSync(path.join(dir, ".gitignore"), ".orchestrator/work/\n");
   git("add", ".orchestrator.json", ".gitignore");
@@ -31,10 +31,10 @@ function project() {
     // A brief in the project, with its Change line.
     brief: (name, change) => {
       mkdirSync(path.join(dir, ".orchestrator", "work", "PRU-1"), { recursive: true });
-      writeFileSync(path.join(dir, ".orchestrator", "work", "PRU-1", name), `You are backend-builder-PRU-1.\nChange: ${change}\n`);
+      writeFileSync(path.join(dir, ".orchestrator", "work", "PRU-1", name), `You are builder-PRU-1.\nChange: ${change}\n`);
     },
     // A builder's transcript: the message that starts the run, then its report through the handback.
-    transcript: (report, message = "Tu encargo: .orchestrator/work/PRU-1/brief-back-1.md", minutesAgo = 5) => {
+    transcript: (report, message = "Tu encargo: .orchestrator/work/PRU-1/brief-1.md", minutesAgo = 5) => {
       const file = path.join(transcripts, `${Math.random()}.jsonl`);
       const at = new Date(Date.now() - minutesAgo * 60000).toISOString();
       writeFileSync(file, [
@@ -49,7 +49,7 @@ function project() {
 const stop = (p, id, report, { message, ...extra } = {}) => p.guard({ hook_event_name: "SubagentStop", agent_id: id, agent_type: BUILDER,
   stop_hook_active: false, agent_transcript_path: p.transcript(report, message), ...extra });
 const launch = (p, subagent_type = BUILDER) => p.guard({ hook_event_name: "PreToolUse", tool_name: "Agent",
-  tool_input: { subagent_type, description: "backend-builder-PRU-1", prompt: "brief" } });
+  tool_input: { subagent_type, description: "builder-PRU-1", prompt: "brief" } });
 const resume = (p, to) => p.guard({ hook_event_name: "PreToolUse", tool_name: "SendMessage", tool_input: { to, message: "sigue" } });
 const asks = (r) => r.status === 0 && r.stdout.includes('"permissionDecision":"ask"');
 const fail = (p, id, command, error) => p.guard({ hook_event_name: "PostToolUseFailure", tool_name: "Bash", agent_id: id,
@@ -59,28 +59,28 @@ const run = (p, id, command) => p.guard({ hook_event_name: "PreToolUse", tool_na
 
 test("tres ejecuciones sin commit: la cuarta pregunta, con lo que se encargó en cada una", () => {
   const p = project();
-  p.brief("brief-back-PRU-1.1.md", "PRU-1.1");
-  p.brief("brief-back-refactor-PRU-1.1.md", "refactor PRU-1.1");
-  stop(p, "a1", "backend-builder-PRU-1: DONE_WITH_CONCERNS", { message: "Eres backend-builder-PRU-1. Tu encargo está en .orchestrator/work/PRU-1/brief-back-PRU-1.1.md: léelo entero." });
-  stop(p, "a1", "backend-builder-PRU-1: DONE", { message: "The coordinator sent a message while you were working:\nNuevo encargo: .orchestrator/work/PRU-1/brief-back-refactor-PRU-1.1.md. Sin commit." });
+  p.brief("brief-PRU-1.1.md", "PRU-1.1");
+  p.brief("brief-refactor-PRU-1.1.md", "refactor PRU-1.1");
+  stop(p, "a1", "builder-PRU-1: DONE_WITH_CONCERNS", { message: "Eres builder-PRU-1. Tu encargo está en .orchestrator/work/PRU-1/brief-PRU-1.1.md: léelo entero." });
+  stop(p, "a1", "builder-PRU-1: DONE", { message: "The coordinator sent a message while you were working:\nNuevo encargo: .orchestrator/work/PRU-1/brief-refactor-PRU-1.1.md. Sin commit." });
   assert.ok(!asks(launch(p)), "con dos ejecuciones no pregunta");
-  stop(p, "a1", "backend-builder-PRU-1: BLOCKED", { message: "The coordinator sent a message while you were working:\nCorrección (mismo brief: .orchestrator/work/PRU-1/brief-back-refactor-PRU-1.1.md)." });
+  stop(p, "a1", "builder-PRU-1: BLOCKED", { message: "The coordinator sent a message while you were working:\nCorrección (mismo brief: .orchestrator/work/PRU-1/brief-refactor-PRU-1.1.md)." });
   const r = launch(p);
   assert.ok(asks(r), r.stdout + r.stderr);
-  assert.match(r.stdout, /backend-builder lleva 3 ejecuciones sin commit en story\/PRU-1: PRU-1\.1 → DONE_WITH_CONCERNS · refactor PRU-1\.1 → DONE · refactor PRU-1\.1 \(de nuevo\) → BLOCKED \(15 min\)\. ¿Lanzar otra\?/);
+  assert.match(r.stdout, /builder lleva 3 ejecuciones sin commit en story\/PRU-1: PRU-1\.1 → DONE_WITH_CONCERNS · refactor PRU-1\.1 → DONE · refactor PRU-1\.1 \(de nuevo\) → BLOCKED \(15 min\)\. ¿Lanzar otra\?/);
 });
 
 test("sin brief, cada ejecución se resume con la primera línea de su mensaje", () => {
   const p = project();
   for (const message of ["Arregla el nombre del test", "The coordinator sent a message while you were working:\nOtra vuelta al test", "Y una tercera"]) {
-    stop(p, "a1", "backend-builder-PRU-1: DONE", { message });
+    stop(p, "a1", "builder-PRU-1: DONE", { message });
   }
   assert.match(launch(p).stdout, /Arregla el nombre del test → DONE · Otra vuelta al test → DONE · Y una tercera → DONE/);
 });
 
 test("reanudar el mismo builder con SendMessage también pregunta; otro agente no", () => {
   const p = project();
-  for (let i = 0; i < 3; i++) stop(p, "a1", "backend-builder-PRU-1: DONE");
+  for (let i = 0; i < 3; i++) stop(p, "a1", "builder-PRU-1: DONE");
   assert.ok(asks(resume(p, "a1")));
   const other = resume(p, "researcher-x");
   assert.equal(other.status, 0);
@@ -89,17 +89,17 @@ test("reanudar el mismo builder con SendMessage también pregunta; otro agente n
 
 test("un commit pone la cuenta a cero", () => {
   const p = project();
-  for (let i = 0; i < 3; i++) stop(p, "a1", "backend-builder-PRU-1: DONE");
+  for (let i = 0; i < 3; i++) stop(p, "a1", "builder-PRU-1: DONE");
   p.commit();
   assert.ok(!asks(launch(p)));
-  stop(p, "a1", "backend-builder-PRU-1: DONE");
+  stop(p, "a1", "builder-PRU-1: DONE");
   assert.equal(p.breaker().runs.length, 1);
 });
 
 test("la vuelta que fuerza la guardia al parar es la misma ejecución", () => {
   const p = project();
-  stop(p, "a1", "backend-builder-PRU-1: DONE");
-  stop(p, "a1", "backend-builder-PRU-1: BLOCKED", { stop_hook_active: true });
+  stop(p, "a1", "builder-PRU-1: DONE");
+  stop(p, "a1", "builder-PRU-1: BLOCKED", { stop_hook_active: true });
   const runs = p.breaker().runs;
   assert.equal(runs.length, 1);
   assert.equal(runs[0].status, "BLOCKED");
@@ -109,14 +109,14 @@ test("los roles que no escriben código no cuentan ni se frenan", () => {
   const p = project();
   for (let i = 0; i < 3; i++) p.guard({ hook_event_name: "SubagentStop", agent_id: "r1", agent_type: "easyone-orchestrator:researcher", stop_hook_active: false });
   assert.ok(!p.hasBreaker());
-  for (let i = 0; i < 3; i++) stop(p, "a1", "backend-builder-PRU-1: DONE");
+  for (let i = 0; i < 3; i++) stop(p, "a1", "builder-PRU-1: DONE");
   assert.ok(!asks(launch(p, "easyone-orchestrator:researcher")));
 });
 
 test("maxBuilderRuns cambia el límite, y 0 lo apaga", () => {
   const p = project();
-  writeFileSync(path.join(p.dir, ".orchestrator.json"), JSON.stringify({ roles: { "backend-builder": { paths: ["apps/api/"], onStop: [] } }, verify: { maxBuilderRuns: 0 } }));
-  for (let i = 0; i < 5; i++) stop(p, "a1", "backend-builder-PRU-1: DONE");
+  writeFileSync(path.join(p.dir, ".orchestrator.json"), JSON.stringify({ roles: { "builder": { paths: ["apps/api/"], onStop: [] } }, verify: { maxBuilderRuns: 0 } }));
+  for (let i = 0; i < 5; i++) stop(p, "a1", "builder-PRU-1: DONE");
   assert.ok(!asks(launch(p)));
 });
 
@@ -148,7 +148,7 @@ test("reanudar el builder borra sus fallos seguidos", () => {
   const p = project();
   const cmd = "pnpm test:ts";
   for (let i = 0; i < 3; i++) fail(p, "a1", cmd, "Exit code 1\nexpected 2 results");
-  stop(p, "a1", "backend-builder-PRU-1: BLOCKED");
+  stop(p, "a1", "builder-PRU-1: BLOCKED");
   assert.ok(!asks(resume(p, "a1")));
   assert.equal(run(p, "a1", cmd).status, 0);
 });
@@ -162,7 +162,7 @@ test("fuera de un builder, un fallo no deja rastro", () => {
 
 test("nadie edita ni borra el fichero del cortocircuito", () => {
   const p = project();
-  stop(p, "a1", "backend-builder-PRU-1: DONE");
+  stop(p, "a1", "builder-PRU-1: DONE");
   const file = path.join(p.dir, ".orchestrator", "work", "breaker.json");
   const edit = p.guard({ hook_event_name: "PreToolUse", tool_name: "Write", tool_input: { file_path: file, content: "{}" } });
   assert.equal(edit.status, 2);
@@ -173,6 +173,6 @@ test("nadie edita ni borra el fichero del cortocircuito", () => {
   }
   mkdirSync(path.join(p.dir, ".orchestrator", "work", "PRU-1"), { recursive: true });
   const report = p.guard({ hook_event_name: "PreToolUse", tool_name: "Write", agent_type: BUILDER,
-    tool_input: { file_path: path.join(p.dir, ".orchestrator", "work", "PRU-1", "back-1.md"), content: "informe" } });
+    tool_input: { file_path: path.join(p.dir, ".orchestrator", "work", "PRU-1", "builder-1.md"), content: "informe" } });
   assert.equal(report.status, 0, "el informe del builder sigue permitido");
 });
