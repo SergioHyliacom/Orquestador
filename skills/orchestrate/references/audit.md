@@ -1,6 +1,6 @@
 # Delivery audit
 
-The tests prove that each story does what it says, not how the code is built. So, at the close of each delivery, a technical lead may ask for an audit, and every finding that can recur becomes something that stops it next time. It is never automatic, and only the person who asked for it sees it.
+The tests prove that each story does what it says, not how the code is built. So, at the close of each delivery, your human may ask for an audit, and every finding that can recur becomes something that stops it next time. It is never automatic, and only your human sees it.
 
 1. **Sample, with a fixed rule.** From the stories merged in the delivery, take `audit.sample` (default 5): every one with a risk tag, then the largest diffs. The auditor never chooses what to look at.
 2. **Audit.** Brief a fresh `auditor` with the sample, the rules in `docs/rules/`, the previous audits in `docs/audits/`, the risk map (`.orchestrator.json` → `riskTags`, `riskPaths`, and the path of `references/risk-map.md`) and the path of its report.

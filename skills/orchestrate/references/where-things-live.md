@@ -8,8 +8,10 @@
 
 | What | Where |
 |---|---|
-| What the product does | `<storiesDir>/stories/` |
+| What the product does | gg-ez, where the stories are written; here, `<storiesDir>/stories/`, generated from it |
 | Where each story stands | `<storiesDir>/map.md`, generated on each machine and never committed; its branch and its lock list |
+| What a screen looks like (the design) | the design repo, cloned on each machine and read with `design-source.mjs`; never copied or edited here |
+| Where that clone is, and which design each story was ported at | the Claude config folder of each machine (`easyone-design-source.json` and `.ledger.json`), never in the project |
 | A choice of product or architecture | `<storiesDir>/decisions/DEC-NNN-*.md`, from DEC-001 |
 | The API spec and the generated client | `contract.spec`, and what `contract.generateClient` writes |
 | The rules and the patterns | `docs/rules/` |
@@ -20,7 +22,7 @@
 | The context of every session | `CLAUDE.md`, which imports `README.md` and the rules every session needs; the rest is the code |
 | Plugs and locked tests | `.orchestrator.json`, `.orchestrator/locked/` |
 | What is risky and where it lives in the code | `.orchestrator.json` → `riskTags`, `riskPaths`; the reasons, in the body of the `chore/risk-map` pull request that set them (`references/risk-map.md`) |
-| Personal files | `.orchestrator/me.json`, `state.md`, `work/`, never committed |
+| Personal files | `.orchestrator/state.md`, `work/`, never committed |
 
 The method lives in this plugin and is never copied into the project. There is no `CONTRIBUTING.md`, `CODING_STANDARDS.md`, `docs/adr/`, documentation site or lessons section in `CLAUDE.md`: do not create them.
 

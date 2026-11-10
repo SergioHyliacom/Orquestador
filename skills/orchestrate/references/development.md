@@ -1,12 +1,12 @@
 # Development: from the kickoff to the merge
 
-Builders do the code; you brief them and check their evidence (`references/delegation.md`). The plugin ships no builder at the moment (`SKILL.md`, §5): until the team defines who writes the code, stop where a step needs one and tell your human.
+The `builder` does the code; you brief it and check its evidence (`references/delegation.md`).
 
 **One branch per story:** `story/<ID>`.
 
 ## Kickoff
 
-1. **Read the story with your human first.** When a criterion is ambiguous, contradicts another, lacks a state or an error, or cannot be built with what exists, write it under **Open questions**, one line per criterion ID, and resolve it with your human before anything is built.
+1. **Read the story with your human first.** When a criterion is ambiguous, contradicts another, lacks a state or an error, or cannot be built with what exists, write it under **Open questions**, one line per criterion ID, and take it to your human before anything is built: the story is written in gg-ez, and its author answers there.
 2. **Kickoff.** Create `story/<ID>` from the integration branch on the remote. If the story touches a risk area its `tags` do not name (`riskTags` in `.orchestrator.json`), add that tag. That is the only frontmatter edit at the kickoff, with one exception: a tag the machine asks for later. `stories.mjs --check` (in the pipeline) and `--pr` fail when the story branch changes a path that `.orchestrator.json` → `riskPaths` gives a tag the story lacks, and a builder's `Risk:` line can name one; add it in a commit of its own (`<ID>: risk tag <tag>`). A tag is never removed to make the check pass. A story that creates a module in a risk area also adds its `riskPaths` entry at the kickoff (`references/risk-map.md`). Commit `<ID>: kickoff` and push.
 
 ## Build: one criterion at a time

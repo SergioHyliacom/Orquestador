@@ -22,7 +22,7 @@ Stories have no priority field. The release sets the order. The first release in
 ## The story file
 
 - File: `stories/<activity folder>/<ID>-<short-title>.md`. Lowercase, no accents, hyphens.
-- ID: a prefix and a number, e.g. `EO-123` (`stories.config.json` → `idPrefix` pins the prefix). Who hands out the numbers is being redefined (`orchestrate` skill, §5): until then, ask the human. The same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
+- ID: a prefix and a number, e.g. `EO-123` (`stories.config.json` → `idPrefix` pins the prefix). It comes with the story from gg-ez, where the story is written (`orchestrate` skill, §5); until that link exists, the human gives it. The same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
 - Tags: `tags` holds the risk tags (`.orchestrator.json` → `riskTags`) of the areas the story touches. Whoever writes the story sets them; one is added at the kickoff when the story touches an area it does not name, and later when the machine asks for it: `stories.mjs --check` and `--pr` fail when the story branch changes a path that `.orchestrator.json` → `riskPaths` gives a tag the story lacks. A tag is never removed to make that check pass. A risk tag adds the reviewer at story close.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
@@ -93,7 +93,7 @@ A story names a decision in `blocked_by`. A story blocked by an open decision ca
 
 ## Discarding
 
-Never delete a story. Set `discarded: true` and add a **Discard reason** section with the date and the reason. How the discard reaches the integration branch is being redefined (`orchestrate` skill, §5).
+Never delete a story. Set `discarded: true` and add a **Discard reason** section with the date and the reason. The discard arrives from gg-ez (`orchestrate` skill, §5); until that link exists, the human says so and the discard goes in its own pull request.
 
 ## Splitting a story
 
@@ -113,6 +113,16 @@ Then try these patterns in order. Prefer the split that lets you drop or defer a
 
 Never split by layer ("API for…", "database for…", "front end of…"). A layer delivers nothing a person notices: the layers a story crosses are parts of the same story, not stories of their own.
 
+## Porting a story from the design repo
+
+When this machine has a design repo configured (`design-source.mjs --init`), a screen's story can start there (`orchestrate` skill, §5). Run `design-source.mjs --show <ID>` and rewrite it as a story of this project:
+
+- Keep what the person achieves and the states (loading, empty, error, success). Take the ID this project gives it; note the design repo's ID in Notes so the two can be matched.
+- Drop what belongs to its prototype: demo data, the control bar, `[test: src/data/…]` markers. Every criterion starts `[unbuilt]`.
+- Name in Notes the lock (`lock/<ID>-<screen>`) and the captures the builder must match, and which `@easyone/ui` components are likely to carry it. Design values (sizes, colours, copy) are read from the lock by the builder, never written into the story.
+- What the definition does not cover goes to Open questions.
+- Close with `design-source.mjs --record <ID>`.
+
 ## Turning a request into stories
 
 1. Find the activity. If none fits, propose a new one to the human; activities are product calls.
@@ -122,7 +132,7 @@ Never split by layer ("API for…", "database for…", "front end of…"). A lay
 5. Fill out-of-scope and verification.
 6. Run `node <scripts>/stories.mjs --ready <ID>`.
 
-How a story is approved before it is built is being redefined (`orchestrate` skill, §5).
+A story is approved where it is written, in gg-ez. The kickoff reads it again before anything is built (`orchestrate` skill, `references/development.md`).
 
 A story is a capability, not a screen. One screen can hold several stories (a list, its filter, its export); one story can cross several screens (a sign-up in three steps). Split by what a person achieves, with the patterns in *Splitting a story*.
 

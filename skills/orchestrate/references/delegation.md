@@ -7,7 +7,7 @@ Ask in this order and stop at the first match:
 1. **Trivial?** A one-line fix, a rename, a lookup → do it yourself.
 2. **Must someone other than the author judge it?** A review → a role with a clean context. It gets the diff and the story, never your reasoning.
 3. **Heavy reading that would flood your context?** Research, comparing sources → a `researcher`. Independent questions run in parallel.
-4. **Code?** → the builder, one run at a time. Never write a story's code yourself while a builder owns the criterion. The plugin ships no builder at the moment (`SKILL.md`, §5).
+4. **Code?** → the `builder`, one run at a time. Never write a story's code yourself while the builder owns the criterion.
 
 Code outside a story goes to the builder too, as a task (`references/outside-stories.md`). The stories and the rules belong to no builder: you edit them.
 
@@ -17,7 +17,7 @@ A builder that reports BLOCKED goes to your human. The guard counts the builder 
 
 ## Roles and names
 
-A role whose name ends in `-builder` writes code; the plugin ships none at the moment (`SKILL.md`, §5). `reviewer`, `researcher` and `auditor` are read-only. No agent commits: you do, once you have checked its evidence, and the guard blocks a subagent's `git commit`, `merge`, `pull`, `rebase`, `cherry-pick`, `am` and `revert`. A project role writes only when `.orchestrator.json` → `roles.<role>.paths` gives it paths, and only in them; every other subagent, a general-purpose one too, is read-only for the guard. Call them through the Agent tool as `easyone-orchestrator:<role>`; the project's own roles in `.claude/agents/` by their name. Before creating a role, read `references/roles.md`; a role file is shared, so it goes in through a pull request.
+`builder` is the only role that writes code; `reviewer`, `researcher` and `auditor` are read-only. No agent commits: you do, once you have checked its evidence, and the guard blocks a subagent's `git commit`, `merge`, `pull`, `rebase`, `cherry-pick`, `am` and `revert`. A project role writes only when `.orchestrator.json` → `roles.<role>.paths` gives it paths, and only in them; every other subagent, a general-purpose one too, is read-only for the guard. Call them through the Agent tool as `easyone-orchestrator:<role>`; the project's own roles in `.claude/agents/` by their name. Before creating a role, read `references/roles.md`; a role file is shared, so it goes in through a pull request.
 
 Name every instance `<role>-<scope>`, the scope being the story ID or a short topic (`reviewer-EO-123`, `researcher-redsys`), and use the name in the task description.
 

@@ -20,7 +20,7 @@ A category with no code yet keeps its tag and has no path: stories carry it by t
 
 ## Draw the map
 
-When a project is set up, or adopts the map, a technical lead's session:
+When a project is set up, or adopts the map, your session:
 
 1. **Briefs a `researcher`** (read-only) with this file's path, `.orchestrator.json`, `docs/rules/`, the decisions and the code graph when it works on this machine. It looks for each category in the code: package names and what they import (authentication, cryptography, a payment SDK), migration folders, what the decisions and the rules name as critical, the code most others depend on (the graph's hub nodes), and the path a request takes to reach the data.
 2. **Reads its proposal:** one line per entry, `tag → path or glob → why`, with `file:line` evidence; and the categories it found no code for. One entry per responsibility: the file that carries it, not a whole folder that also holds unrelated code. A path ending in `/` is a folder; `*` stays inside one folder, `**` crosses them.
