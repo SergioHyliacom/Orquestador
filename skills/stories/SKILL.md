@@ -1,6 +1,6 @@
 ---
 name: stories
-description: Write, split, review and maintain user stories in a project that uses easyone-orchestrator. Covers the story file format, acceptance criteria as rules plus key examples, verification markers, splitting patterns, decisions, and the anti-patterns the validator flags. Use when creating or editing a story, turning a request into stories, splitting a large story, checking if a story is ready, or recording that a criterion fails.
+description: Write, split, review and maintain user stories in a project that uses easyone-orchestrator. Covers the story file format, acceptance criteria as rules plus key examples, verification markers, splitting patterns, the ADRs a story waits for, and the anti-patterns the validator flags. Use when creating or editing a story, turning a request into stories, splitting a large story, checking if a story is ready, or recording that a criterion fails.
 ---
 
 # Stories
@@ -22,11 +22,12 @@ Stories have no priority field. The release sets the order. The first release in
 ## The story file
 
 - File: `stories/<activity folder>/<ID>-<short-title>.md`. Lowercase, no accents, hyphens.
-- ID: a prefix and a number, e.g. `EO-123` (`stories.config.json` → `idPrefix` pins the prefix). It comes with the story from gg-ez, where the story is written (`orchestrate` skill, §5); until that link exists, the human gives it. The same ID names the branches and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
+- ID: a prefix and a number, e.g. `EO-123` (`stories.config.json` → `idPrefix` pins the prefix). It comes with the story from gg-ez, where the story is written (`orchestrate` skill, §5); until that link exists, the human gives it. The same ID, in lowercase, starts the story's branch (`feature/eo-123-<slug>`) and tags the tests. Criterion ID: `<ID>.N`, e.g. `EO-123.1`. IDs are permanent. Never reuse or renumber them, even after discarding.
 - Activity: the `activity` field names it exactly as in `activities.json`. It decides the folder.
 - Tags: `tags` holds the risk tags (`.orchestrator.json` → `riskTags`) of the areas the story touches. Whoever writes the story sets them; one is added at the kickoff when the story touches an area it does not name, and later when the machine asks for it: `stories.mjs --check` and `--pr` fail when the story branch changes a path that `.orchestrator.json` → `riskPaths` gives a tag the story lacks. A tag is never removed to make that check pass. A risk tag adds the reviewer at story close.
 - Title: starts with a verb in the infinitive or imperative and names what the person achieves.
-- Status is never written by hand. The script computes it from the criteria and the decisions.
+- Status is never written by hand. The script computes it from the criteria and the ADRs it waits for.
+- Where it lives: on your machine, in `<storiesDir>/stories/` under `.orchestrator/`, never in the repository (`orchestrate` skill, `references/where-things-live.md`).
 
 Sections, in order (the project uses its translated headings):
 
@@ -35,7 +36,7 @@ Sections, in order (the project uses its translated headings):
 3. **Out of scope**: what this story does not do, with the story ID that does it if one exists. Agents add unrequested features when nothing excludes them.
 4. **Verification**: the exact command that checks this story.
 5. **Open questions**: must be empty before the story is built. The kickoff writes here what it cannot build, one line per criterion ID, until they are answered and the section is empty again.
-6. **Notes**: optional. Files to follow as patterns, context for the builder. Never restate the Definition of Done, the project conventions or the rules in `docs/rules/`.
+6. **Notes**: optional. Files to follow as patterns, context for the builder. Never restate the Definition of Done or the project's norms (`CONTRIBUTING.md`, `CODING_STANDARDS.md`, the ADRs).
 
 ## Acceptance criteria
 
@@ -79,16 +80,16 @@ A bug is not a new story. Mark the criterion it breaks as failing.
 
 A bug reopens the story it breaks (`orchestrate` skill, `references/development.md`); an urgent one in production is a hotfix first (`references/outside-stories.md`).
 
-1. Find the criterion the bug breaks. On the reopened `story/<ID>`, mark it failing, with the reason. If no criterion covers the behaviour, add one to the story it belongs to.
+1. Find the criterion the bug breaks. On the reopened story (its branch `fix/<id>-<slug>`), mark it failing, with the reason. If no criterion covers the behaviour, add one to the story it belongs to.
 2. Find the root cause before changing code. Check the project's seams first: a bug where nothing errors and the old behaviour keeps showing is usually one end of a seam that did not change.
 3. The builder writes a test, under the criterion's ID, that reproduces the bug, and watches it fail. Unlock that test file first if it is locked.
 4. The same builder fixes the code until the test passes, in the pair loop. The marker is set again at the markers step.
 
-## Decisions
+## Decisions: the ADRs
 
-A decision is a choice between options, of product or of architecture: a provider, a library, hosting, pricing. It is the only place for one; there is no separate folder of architecture records. File: `decisions/DEC-NNN-<title>.md`, numbered from `DEC-001`. IDs are never reused.
+A choice of architecture, and anything in the list of `CONTRIBUTING.md` «Cuándo hace falta un ADR», is an ADR of the project: `docs/adr/NNNN-<title>.md`, from its `README.md`, accepted by the technical lead. The decisions D1-D30 are in section 14 of `docs/definicion.md`. There are no decision files of the plugin's own: never write a `DEC-NNN`.
 
-A story names a decision in `blocked_by`. A story blocked by an open decision cannot be built. Decisions are human calls, and `decides` names who closes it: management for product and business, the technical lead for architecture. It closes through a pull request.
+A story that waits for an ADR names it in `blocked_by`: `blocked_by: [ADR-0023]`. `stories.mjs` reads its `Estado` line: while it says `propuesta`, the story is blocked and cannot be built; once `aceptada`, it is not. A product choice (a flow, a screen, a text) needs no ADR: it is the story's, and gg-ez's.
 
 
 ## Discarding
@@ -120,7 +121,8 @@ When this machine has a design repo configured (`design-source.mjs --init`), a s
 - Keep what the person achieves and the states (loading, empty, error, success). Take the ID this project gives it; note the design repo's ID in Notes so the two can be matched.
 - Drop what belongs to its prototype: demo data, the control bar, `[test: src/data/…]` markers. Every criterion starts `[unbuilt]`.
 - Name in Notes the lock (`lock/<ID>-<screen>`) and the captures the builder must match, and which `@easyone/ui` components are likely to carry it. Design values (sizes, colours, copy) are read from the lock by the builder, never written into the story.
-- What the definition does not cover goes to Open questions.
+- Name in Notes the API operations the story needs, and whether each is already in `packages/api-client/openapi.json`. One that is not is still to be agreed (`orchestrate` skill, §5): it goes to Open questions.
+- What contradicts what binds (`CLAUDE.md`, «Qué obliga y qué no») goes to Open questions. A flow, a step or a button that differs from the definition's description of the product does not: design and product decide those.
 - Close with `design-source.mjs --record <ID>`.
 
 ## Turning a request into stories
@@ -140,8 +142,8 @@ A story is a capability, not a screen. One screen can hold several stories (a li
 
 `stories.mjs` checks structure on every run and readiness with `--ready`:
 
-- Errors: an ID that is not a prefix and a number, repeated IDs, file in the wrong folder, activity name that does not match `activities.json`, unknown release or persona, missing marker, unknown marker, missing test, unknown decision or `depends_on`, discarded without reason.
-- Not ready: empty out-of-scope, empty verification, open questions, open blocking decision, hedged words in a rule.
+- Errors: an ID that is not a prefix and a number, repeated IDs, file in the wrong folder, activity name that does not match `activities.json`, unknown release or persona, missing marker, unknown marker, missing test, an ADR in `blocked_by` with no file in `docs/adr/`, unknown `depends_on`, discarded without reason.
+- Not ready: empty out-of-scope, empty verification, open questions, a proposed ADR in `blocked_by`, hedged words in a rule.
 - Warnings: story text not in the persona/want/benefit shape, vague words ("fast", "easy", "intuitive"…), more than 6 criteria, dependency not yet working.
 
 Things the validator cannot see. Check them yourself when you write or edit a story:

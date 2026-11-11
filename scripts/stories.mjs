@@ -68,7 +68,14 @@ const DEFAULTS = {
 const config = readJson(path.join(DIR, "stories.config.json"));
 const lab = config.labels ?? {};
 const L = { ...DEFAULTS, ...lab, sections: { ...DEFAULTS.sections, ...lab.sections }, markers: { ...DEFAULTS.markers, ...lab.markers }, statuses: { ...DEFAULTS.statuses, ...lab.statuses }, text: { ...DEFAULTS.text, ...lab.text } };
-const ROOT = path.resolve(DIR, config.root ?? "..");
+// The repository's root: stories.config.json → root when it says, else the checkout that holds the story folder
+// (which may sit deep inside it, as .orchestrator/historias does), else the folder above it.
+function repoRoot() {
+  if (config.root) return path.resolve(DIR, config.root);
+  try { return path.resolve(execFileSync("git", ["rev-parse", "--show-toplevel"], { cwd: DIR, stdio: ["ignore", "pipe", "ignore"] }).toString().trim()); }
+  catch { return path.resolve(DIR, ".."); }
+}
+const ROOT = repoRoot();
 const RELEASES = config.releases;
 const MAIN_RELEASE = config.mainRelease ?? RELEASES[0];
 const PERSONAS = config.personas ?? null;
@@ -198,12 +205,27 @@ const MERGE_BASE = gitRun(["merge-base", "HEAD", INTEGRATION])?.trim() ?? null;
 // On a branch with work of its own; never on the integration branch itself, nor outside a repository.
 const AHEAD = Boolean(HEAD_SHA && MERGE_BASE && MERGE_BASE !== HEAD_SHA);
 
+// A story names in blocked_by the decisions it waits for. The project's architecture decisions are its ADRs
+// (.orchestrator.json → adrDir, default docs/adr/NNNN-title.md), named ADR-NNNN; one is open while its
+// "Estado" (or "Status") line says it is a proposal. Older projects keep DEC-NNN files in <storiesDir>/decisions/.
 const decisions = new Map();
 for (const file of readDir(path.join(DIR, "decisions"))) {
   const { data } = parseFrontmatter(readFileSync(file, "utf8"), rel(file));
   if (!data.id) continue;
   decisions.set(data.id, { ...data, file: rel(file), open: !DECISION_CLOSED.test(String(data.status ?? "")) });
 }
+const ADR_DIR = path.join(ROOT, orchestrator.adrDir ?? "docs/adr");
+const adrId = (d) => { const m = String(d).trim().match(/^ADR[\s-]?(\d{1,4})$/i); return m ? `ADR-${m[1].padStart(4, "0")}` : String(d).trim(); };
+try {
+  for (const name of readdirSync(ADR_DIR)) {
+    const m = name.match(/^(\d{4})-.*\.md$/);
+    if (!m) continue;
+    const text = lf(readFileSync(path.join(ADR_DIR, name), "utf8"));
+    const status = text.match(/^\s*-?\s*\*\*(?:Estado|Status):?\*\*:?\s*(.+)$/im)?.[1].trim() ?? "";
+    const title = text.match(/^#\s+\d+\.?\s*(.+)$/m)?.[1].trim() ?? name;
+    decisions.set(`ADR-${m[1]}`, { id: `ADR-${m[1]}`, title, status, file: rel(path.join(ADR_DIR, name)), open: /^(propuesta|propuesto|proposed)\b/i.test(status) });
+  }
+} catch { /* no ADR folder */ }
 
 const stories = [];
 const seen = new Set();
@@ -222,8 +244,8 @@ for (const file of readDir(path.join(DIR, "stories"))) {
   if (!path.basename(file).startsWith(id + "-")) errors.push(`${f}: file name must start with ${id}-.`);
   if (!RELEASES.includes(data.release)) errors.push(`${f}: unknown release "${data.release}". Known: ${RELEASES.join(", ")}.`);
   if (PERSONAS && data.persona && !PERSONAS.includes(data.persona)) errors.push(`${f}: persona "${data.persona}" is not in stories.config.json personas.`);
-  const blockedBy = asList(data.blocked_by);
-  for (const d of blockedBy) if (!decisions.has(d)) errors.push(`${f}: decision ${d} does not exist.`);
+  const blockedBy = asList(data.blocked_by).map(adrId);
+  for (const d of blockedBy) if (!decisions.has(d)) errors.push(`${f}: decision ${d} does not exist${/^ADR-/.test(d) ? ` (no ${path.relative(ROOT, ADR_DIR).split(path.sep).join("/")}/${d.slice(4)}-*.md)` : ""}.`);
   const secs = sections(body);
   stories.push({
     id, title: data.title, code, release: data.release, persona: data.persona,
@@ -255,11 +277,19 @@ function globRe(glob) {
   }
   return new RegExp(`^${re}${g.endsWith("/") ? "" : "$"}`);
 }
+// A story's branch carries its ID in lowercase, then a short slug: feature/alt-001-email-signup (a change), or
+// fix/alt-001-duplicate-email (a bug that reopens it), hotfix/ too. story/<ID> is the older name.
+function storyIdOfBranch(branch) {
+  const m = String(branch ?? "").replace(/^refs\/heads\//, "").match(/^(?:feature|fix|hotfix)\/([a-z][a-z0-9]*-\d+)(?=-|$)/i)
+    ?? String(branch ?? "").match(/^story\/([A-Za-z][A-Za-z0-9]*-\d+)$/);
+  return m ? m[1].toUpperCase() : null;
+}
 // The tags this branch's own changes need and its story lacks: [{ story, tag, file }]. Only a story branch has a story.
 function riskMisses() {
   if (!AHEAD || !Object.keys(RISK_PATHS).length) return [];
   const branch = process.env.BITBUCKET_BRANCH ?? gitRun(["symbolic-ref", "--short", "HEAD"])?.trim() ?? "";
-  const story = stories.find((s) => `story/${s.id}` === branch);
+  const id = storyIdOfBranch(branch);
+  const story = stories.find((s) => s.id === id);
   if (!story) return [];
   const changed = (gitRun(["diff", "--name-only", MERGE_BASE, "HEAD"]) ?? "").split(/\r?\n/).filter(Boolean);
   const misses = [];
@@ -285,7 +315,7 @@ function staleRiskPaths() {
 // ---------- Context docs: what every session reads points to files and commands that exist
 
 // .orchestrator.json → contextDocs lists the texts sessions and agents read first ("CLAUDE.md", "README.md",
-// "docs/rules/*.md"). A path or a pnpm script one of them names must exist: a stale one sends every agent the wrong
+// "CONTRIBUTING.md", "CODING_STANDARDS.md", the modules' READMEs). A path or a pnpm script one of them names must exist: a stale one sends every agent the wrong
 // way, and nobody notices until one reads both. Read: what is in inline backticks, and the lines of a fenced block
 // whose language is a shell. A path is looked up next to the doc and from the repository's root, in what git tracks:
 // a disk on Windows or macOS ignores case and holds files nobody committed, the pipeline's does neither, and both
@@ -408,12 +438,12 @@ function staleContextRefs() {
   }
   return stale;
 }
-const riskMiss = (m) => `${m.story.file}: this branch changes ${m.file}, a ${m.tag} path (.orchestrator.json → riskPaths), and the story's tags lack ${m.tag}. Add it: the story then gets its risk review.`;
+const riskMiss = (m) => `${m.story.file}: this branch changes ${m.file}, a ${m.tag} path (.orchestrator.json → riskPaths), and the story's tags lack ${m.tag}. Add it: the reviewer then looks there first.`;
 
 // ---------- Test results
 
-// A story is tested by several runners: Go (JUnit, e.g. through gotestsum), Vitest (jest-json),
-// the end-to-end runner. tests is one source or a list of them.
+// A story is tested by several runners: Go (go-json, the output of `go test -json`, or JUnit through gotestsum),
+// Vitest (jest-json), the end-to-end runner (junit). tests is one source or a list of them.
 const SOURCES = (Array.isArray(config.tests) ? config.tests : config.tests ? [config.tests] : []).filter(Boolean);
 let runnerCode = 0;
 if (flag("--tests")) {
@@ -440,6 +470,19 @@ function loadSource(T, file) {
   const raw = lf(readFileSync(file, "utf8"));
   const cwd = path.resolve(ROOT, T?.cwd ?? ".");
   const norm = (p) => path.relative(cwd, path.resolve(cwd, p)).split(path.sep).join("/");
+  // `go test -json`: one event per line. A test's last pass, fail or skip is its result; lines that are not JSON
+  // (a build error printed by a wrapper) are skipped. The "file" is the package: Go names no file per test.
+  if (T?.format === "go-json") {
+    const last = new Map();
+    for (const line of raw.split("\n")) {
+      if (!line.startsWith("{")) continue;
+      let e;
+      try { e = JSON.parse(line); } catch { continue; }
+      if (!e.Test || !["pass", "fail", "skip"].includes(e.Action)) continue;
+      last.set(`${e.Package}\0${e.Test}`, { file: String(e.Package ?? ""), title: e.Test, status: { pass: "passed", fail: "failed", skip: "skipped" }[e.Action] });
+    }
+    return [...last.values()];
+  }
   if ((T?.format ?? "jest-json") === "junit") {
     const cases = [];
     // Attribute values may hold a raw '>' (Node's reporter does not escape it): skip quoted strings whole.
@@ -575,7 +618,10 @@ if (flag("--pr")) {
   // No final pull request while the branch touches a risk path its story is not tagged for.
   const misses = riskMisses().filter((m) => m.story.id === s.id);
   for (const m of misses) console.error(riskMiss(m));
-  finish([`## ${s.id} ${s.title}`, "", `${L.statuses[s.status]}, [${s.file}](${path.relative(ROOT, path.join(DIR, s.file)).split(path.sep).join("/")})`, "",
+  // A story folder outside git (one person's, excluded on their machine) has no file the reviewers can open.
+  const storyPath = path.relative(ROOT, path.join(DIR, s.file)).split(path.sep).join("/");
+  const shared = gitRun(["check-ignore", "-q", "--", storyPath]) === null;
+  finish([`## ${s.id} ${s.title}`, "", shared ? `${L.statuses[s.status]}, [${s.file}](${storyPath})` : L.statuses[s.status], "",
     ...s.criteria.map((c) => `- ${res(c)} **${c.id}** ${c.head.replace(/^\*\*[^*]+\*\*\s*/, "")}`)].join("\n"), misses.length ? 1 : 0);
 }
 
@@ -632,7 +678,7 @@ if (flag("--check")) {
   for (const m of riskMisses()) errors.push(riskMiss(m));
   errors.push(...staleRiskPaths(), ...staleContextRefs());
   // Opt-in, but never silent: a project without the list should know its texts go unchecked.
-  if (!CONTEXT_DOCS.length) console.log(`Note: .orchestrator.json has no contextDocs, so no text is checked for stale paths or pnpm scripts. Add the texts every session reads: ["CLAUDE.md", "README.md", "docs/rules/*.md"].`);
+  if (!CONTEXT_DOCS.length) console.log(`Note: .orchestrator.json has no contextDocs, so no text is checked for stale paths or pnpm scripts. Add the texts every session reads: ["CLAUDE.md", "README.md", "CONTRIBUTING.md", "CODING_STANDARDS.md", "modules/*/README.md", "apps/*/README.md"].`);
   // The main release must be green: a failing, failing-test or skipped criterion fails the check.
   for (const s of main) for (const c of s.criteria) {
     if (c.kind === "failing") errors.push(`${s.file}: ${c.id} is marked failing in ${MAIN_RELEASE}.`);
@@ -647,8 +693,12 @@ if (flag("--check")) {
   const own = gitRun(["rev-parse", "--verify", "--quiet", INTEGRATION]) !== null ? ["--not", INTEGRATION] : [];
   if (HEAD_SHA && (AHEAD || !own.length)) for (const list of lists) {
     const listRel = path.relative(ROOT, list).split(path.sep).join("/");
-    for (const p of lf(readFileSync(list, "utf8")).split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))) {
-      const lock = gitRun(["log", "-1", "--format=%H", "-S", p, "--", listRel])?.trim();
+    const text = lf(readFileSync(list, "utf8"));
+    // A list git does not track holds the commit it was locked at: `# commit <sha>`.
+    const header = text.match(/^#\s*commit\s+([0-9a-f]{7,40})\b/im)?.[1];
+    const headerLock = header ? gitRun(["rev-parse", "--verify", "--quiet", `${header}^{commit}`])?.trim() : null;
+    for (const p of text.split("\n").map((l) => l.trim()).filter((l) => l && !l.startsWith("#"))) {
+      const lock = headerLock || gitRun(["log", "-1", "--format=%H", "-S", p, "--", listRel])?.trim();
       if (!lock) continue;
       const after = gitRun(["log", "--no-merges", "--format=%h %s", `${lock}..HEAD`, ...own, "--", p])?.trim();
       if (after) errors.push(`${p} is locked in ${listRel} and changed after its lock (${lock.slice(0, 7)}) with no unlock commit: ${after.split("\n").join("; ")}.`);

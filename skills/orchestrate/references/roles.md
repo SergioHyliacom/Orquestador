@@ -10,7 +10,7 @@ Create a role when the work meets at least one test:
 2. **Different tools or permissions.** It needs tools others must not have, or must be denied tools others have. Examples: a data role with database access; a read-only auditor.
 3. **Its own deliverable with its own quality bar.** It owns a file or an output, and that output has a standard of its own. Examples: copy master document, translations, SEO metadata, release notes, data migrations.
 
-If none applies, do not create a role. Load the relevant skill into the builder, or, when a rule is what is missing, write it in `docs/rules/` (`references/where-things-live.md`, "Rules").
+If none applies, do not create a role. Load the relevant skill into the builder, or, when a norm is what is missing, propose it for the project's documents (`references/where-things-live.md`, "Where do I write this?").
 
 A finding that recurs across reviews also signals a missing role.
 
@@ -31,13 +31,13 @@ These are examples, not a list to pick from. Read the project and decide.
 
 ## Creating a role
 
-1. Write `.claude/agents/<role>.md` in the project from `role-template.md` (next to this file). Project roles live in the project, not in the plugin.
+1. Write `.claude/agents/<role>.md` in the project from `role-template.md` (next to this file), and exclude it on this machine (`/.claude/agents/<role>.md` in `.git/info/exclude`): it is yours, like the rest of the method. A role the whole team wants is a different thing: it goes in through a pull request another person approves.
 2. Fill every field. A role is a contract: purpose, inputs, output file, tools, model, turn limit, escalation rule, report shape.
 3. Read-only roles get `Write` only to write their report under `.orchestrator/work/`. They get no `Edit`. Only roles that own a deliverable edit project files, and only their deliverable: list its paths in `.orchestrator.json` → `roles.<role>.paths`. The guard holds the role to them when it edits and again on the diff when it stops. A role without paths there is read-only for the guard, whatever its name, and a role named for judging (`-reviewer`, `-researcher`, `-auditor`, `-designer`) stays read-only even with them. No role commits.
 4. State in the role's `description` which test it meets.
 5. Record the addition in `.orchestrator/state.md` as a ruling, and list it in the close report.
 
-Proposing to create, change or retire a role is the orchestrator's call. `.claude/agents/` is shared with the whole team, so the change goes in through a pull request, like any shared file (`references/where-things-live.md`).
+Proposing to create, change or retire a role is the orchestrator's call. `.claude/agents/` is a shared folder: never commit your roles to it.
 
 ## Retiring a role
 

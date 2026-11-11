@@ -11,13 +11,13 @@ Ask in this order and stop at the first match:
 
 Code outside a story goes to the builder too, as a task (`references/outside-stories.md`). The stories and the rules belong to no builder: you edit them.
 
-**The mechanism.** A builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. It shares your working tree: commit your own edits to stories and lock lists before you brief it, and touch nothing in the tree while it runs. When it stops, the guard compares those files with HEAD.
+**The mechanism.** A builder is an Agent-tool subagent in your checkout, on the branch of the work: only one writer runs at a time, so it needs no worktree. Resume the same builder with SendMessage for each next criterion, so it keeps its context. It shares your working tree: finish your own edits to the stories and the lock lists before you brief it, and touch nothing in the tree while it runs. When it stops, the guard compares the locked tests with HEAD, and the stories and lock lists with what they held when you briefed it.
 
 A builder that reports BLOCKED goes to your human. The guard counts the builder runs since the checkout's last commit in `.orchestrator/work/breaker.json`: after `verify.maxBuilderRuns` (3 by default), it asks your human before each further launch or resume, and only a commit, or your human, resets the count. That question is your human's alone: before it and after it, give them one line per run, what it was for and what it returned, and never tell them how to answer it or that they can accept it. Inside a run, the same command failing `verify.maxSameFailure` times in a row with the same output (3 by default) makes the builder report BLOCKED. Never relaunch the same brief.
 
 ## Roles and names
 
-`builder` is the only role that writes code; `reviewer`, `researcher` and `auditor` are read-only. No agent commits: you do, once you have checked its evidence, and the guard blocks a subagent's `git commit`, `merge`, `pull`, `rebase`, `cherry-pick`, `am` and `revert`. A project role writes only when `.orchestrator.json` → `roles.<role>.paths` gives it paths, and only in them; every other subagent, a general-purpose one too, is read-only for the guard. Call them through the Agent tool as `easyone-orchestrator:<role>`; the project's own roles in `.claude/agents/` by their name. Before creating a role, read `references/roles.md`; a role file is shared, so it goes in through a pull request.
+`builder` is the only role that writes code; `reviewer`, `researcher` and `auditor` are read-only. No agent commits: you do, once you have checked its evidence, and the guard blocks a subagent's `git commit`, `merge`, `pull`, `rebase`, `cherry-pick`, `am` and `revert`. A project role writes only when `.orchestrator.json` → `roles.<role>.paths` gives it paths, and only in them; every other subagent, a general-purpose one too, is read-only for the guard. Call them through the Agent tool as `easyone-orchestrator:<role>`; your own roles in `.claude/agents/` by their name. Before creating a role, read `references/roles.md`.
 
 Name every instance `<role>-<scope>`, the scope being the story ID or a short topic (`reviewer-EO-123`, `researcher-redsys`), and use the name in the task description.
 
@@ -31,7 +31,7 @@ Story: <absolute path of the story file>   (a task: "none", and the branch)
 Change: <criterion ID> | refactor <criterion ID> | task <slug>: <what changes>   (reviewers: "Judge: <what>")
 Request: <your human's words that ask for this work, verbatim — a task, a refactor, a change they asked for at their ok; omit it when the story's criterion is the whole request>
 Commit: <the exact commit to judge — reviewers only; a re-review also names the commit already reviewed>
-Read first: <the Patterns in docs/rules/ that apply, and the code the work touches>
+Read first: <the norms that apply, by document and section (CODING_STANDARDS.md, CONTRIBUTING.md, an ADR), the module's README and `modules/example` as the pattern, and the code the work touches>
 Constraints: <invariants, do-not-touch>
 You may edit: <roles.<role>.paths, or what the work touches>   (read-only roles: "nothing")
 Done when: <the check that proves it, with the exact command>

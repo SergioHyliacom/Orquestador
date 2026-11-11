@@ -16,8 +16,8 @@ Run `--list`.
 
 ## 2. Configure
 
-1. **Find the clone.** Look, in this order, for a folder `front-sydser` (or a repo whose `origin` is `sydneyhylia/easy-one`) in: the folder next to the current project, `D:\Escritorio\Hyliacom\easyone\`, and the user folder's `Escritorio`/`Desktop`. Use `git -C <folder> remote get-url origin` to confirm. If there is exactly one, use it.
-2. **Not found:** ask your human one question: where do they want it cloned, offering `<folder next to the current project>\front-sydser`. Then `git clone https://github.com/sydneyhylia/easy-one.git <path>`. If the clone asks for credentials or fails, report it as it is and stop; do not look for tokens.
+1. **Find the clone.** Look, in this order, for a folder `front-sydser` (or a repo whose `origin` is `sydneyhylia/easy-one`) in: the project itself (`<project>/front-sydser`), the folder next to the current project, `D:\Escritorio\Hyliacom\easyone\`, and the user folder's `Escritorio`/`Desktop`. A clone inside the project must be excluded on this machine: check `git check-ignore -q front-sydser`, and if it is not ignored, offer to add `/front-sydser/` to `.git/info/exclude`, never to the shared `.gitignore`. Use `git -C <folder> remote get-url origin` to confirm. If there is exactly one, use it.
+2. **Not found:** ask your human one question: where do they want it cloned, offering `<project>/front-sydser`, excluded as above. Then `git clone https://github.com/sydneyhylia/easy-one.git <path>`. If the clone asks for credentials or fails, report it as it is and stop; do not look for tokens.
 3. **Several found:** ask which one.
 4. Run `--init <path>`. It prints where it wrote the config: tell your human.
 

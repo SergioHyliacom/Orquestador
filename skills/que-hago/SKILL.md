@@ -15,28 +15,26 @@ Read all of this before you say anything. Run the independent reads in parallel.
    - Run `git fetch --prune` and `git status`, and note the current branch.
    - Note commits not pushed and changes not committed.
    - Note local branches whose remote is gone.
-   - Note the `story/<ID>` branches on the remote, and for each whether `.orchestrator/locked/<ID>.txt` is on it.
-2. **Stories.** Run `node <scripts>/stories.mjs --json` once (the guard names `<scripts>`). If `node` is missing, say so first and offer to install it (`orchestrate` skill, §1, step 1). For each story in progress: the criteria by marker, and what it waits for. The stories not started: no `story/<ID>` branch, not done and not discarded.
-3. **Pull requests.** With `BITBUCKET_USER` and `BITBUCKET_TOKEN` (`orchestrate` skill, `references/git.md`): their open pull requests, and for each: approved, changes requested, build green or red. Without a token, or when Bitbucket rejects it, skip this, say so once and offer to set it up (`orchestrate` skill, `references/access.md`).
+   - Note the stories' branches (`feature/<id>-…`, `fix/<id>-…`) here and on the remote, and for each whether `.orchestrator/locked/<ID>.txt` exists. Leave `deps/` and `spike/` branches out: they are Renovate's and the technical tests'.
+2. **Stories.** Run `node <scripts>/stories.mjs --json` once (the guard names `<scripts>`). If `node` is missing, say so first and offer to install it (`orchestrate` skill, §1, step 1). For each story in progress: the criteria by marker, and what it waits for (an open question, a proposed ADR). The stories not started: no branch, not done and not discarded.
+3. **Pull requests.** With `BITBUCKET_USER` and `BITBUCKET_TOKEN` (`orchestrate` skill, `references/git.md`): their open pull requests, and for each: approved by someone else, changes requested, open tasks, last pipeline green or red. Without a token, or when Bitbucket rejects it, skip this, say so once and offer to set it up (`orchestrate` skill, `references/access.md`).
 4. **The ledger.** `.orchestrator/state.md`: the stories in progress, and what this session left half done last time.
 
 ## 2. Decide what is next
-
-The check pull requests (`chore/check-`) are nobody's work: merge each one whose build is green, without asking (`orchestrate` skill, `references/outside-stories.md`), and leave the red ones for the close. They never become a line of your answer.
 
 Take the first rule that applies. The rest become the other lines of your answer.
 
 1. **Work left half done in this session.** Changes not committed, a criterion waiting for the ok, a finished build waiting for the ok, a commit not pushed. Finish it first.
 2. **Pull requests:**
-   - merge one that is approved (`references/development.md`, "Merge");
-   - fix one with changes requested or a red build.
+   - merge one that is approved, green and with no open task (`references/development.md`, "Merge");
+   - fix one with changes requested, an open task or a red build.
 3. **The stories in progress,** by where they are:
 
 | Where the story is | What is next |
 |---|---|
-| No `story/<ID>` yet | The kickoff (`references/development.md`) |
-| `story/<ID>` without its lock list | The next criterion, or the ok on the finished build (`references/development.md`) |
-| `story/<ID>` with its lock list | The markers, the risk review, or the final pull request (`references/development.md`) |
+| No branch yet | The kickoff (`references/development.md`), or the ADR it waits for |
+| Its branch, without its lock list | The next criterion, or the ok on the finished build (`references/development.md`) |
+| Its branch, with its lock list | The markers, the Claude review, or the final pull request (`references/development.md`) |
 
 4. **Nothing in progress.** Offer the first story not started, in the order of the releases. Before development opens (`.orchestrator.json` has no `roles`), there is nothing to build yet: say so in one line.
 5. **A delivery ready for its audit**, once (`orchestrate` skill, §1).

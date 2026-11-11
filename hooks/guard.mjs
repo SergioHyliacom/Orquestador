@@ -156,40 +156,47 @@ function lastRun(file) {
   return { status, ms: Number.isNaN(began) ? null : Date.now() - began, change, brief: brief && key(path.resolve(root, brief)) };
 }
 
-// A check pull request needs nobody (orchestrate skill, references/outside-stories.md): pushing chore/check-*
-// branches, and nothing else, and merging a pull request from one into the integration branch, need no confirmation.
-const CHECK_BRANCH = /^(refs\/heads\/)?chore\/check-[\w.-]+$/;
-function pushesOnlyChecks(rest, dir) {
-  if (rest.some((a) => a.startsWith("-") && !/^(-u|--set-upstream)$/.test(a))) return false;
-  const [, ...refspecs] = rest.filter((a) => !a.startsWith("-"));
-  const current = currentBranch(dir) ?? "";
-  const branch = (b) => (b === "HEAD" ? current : b);
-  if (!refspecs.length) return CHECK_BRANCH.test(current);
-  return refspecs.every((r) => { const [src, dst = src] = r.split(":"); return CHECK_BRANCH.test(branch(src)) && CHECK_BRANCH.test(branch(dst)); });
-}
-// Only Bitbucket knows a pull request's branches, so ask it. Any doubt (no token, a URL built from
-// variables, no answer in time) leaves the confirmation in place.
-// The API base is api.bitbucket.org, or BITBUCKET_API when the command reads it (a self-hosted or simulated one).
+// Every pull request needs another person's approval (the project's CONTRIBUTING.md), so no push or merge goes
+// through on its own: with git.allowPush false, each one asks the human. A merge is a POST to the pull request's
+// /merge endpoint, on whatever host or variable the URL is built from.
 const MERGE = /\/pullrequests\/[^/\s"']+\/merge\b/i;
-async function mergesCheck(command) {
-  const m = command.match(/(https?:\/\/[^\s"']+?|\$\{?BITBUCKET_API\}?)\/repositories\/([\w.-]+)\/([\w.-]+)\/pullrequests\/(\d+)\/merge/i);
-  const { BITBUCKET_USER: user, BITBUCKET_TOKEN: token, BITBUCKET_API: envApi } = process.env;
-  const api = m && (m[1].startsWith("$") ? envApi : m[1]);
-  if (!m || !api || !user || !token) return false;
-  try {
-    const res = await fetch(`${api.replace(/\/$/, "")}/repositories/${m[2]}/${m[3]}/pullrequests/${m[4]}`, {
-      headers: { Authorization: `Basic ${Buffer.from(`${user}:${token}`).toString("base64")}`, Accept: "application/json" },
-      signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return false;
-    const pr = await res.json();
-    return CHECK_BRANCH.test(pr.source?.branch?.name ?? "") && pr.destination?.branch?.name === (git.integrationBranch ?? "develop");
-  } catch { return false; }
+
+// ---------- Orchestrator-owned files that git may not see
+// The stories, the lock lists and the map can live outside git (.git/info/exclude): the plugin is one person's,
+// and the project's repository is shared. A diff against HEAD does not see them, so the guard fingerprints them
+// when it launches or resumes a writer, and compares at its stop.
+function ownedFiles() {
+  const dirs = [path.join(root, STATE, "locked"), ...(config.storiesDir ? [path.join(root, config.storiesDir, "stories")] : [])];
+  const files = [path.join(root, STATE, "locked-tests.txt"), ...(config.storiesDir ? [path.join(root, config.storiesDir, "map.md")] : [])];
+  const walk = (d) => { try { for (const e of readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else files.push(p); } } catch { /* missing */ } };
+  dirs.forEach(walk);
+  return files;
+}
+function fingerprint() {
+  const out = {};
+  for (const f of ownedFiles()) { try { out[key(path.relative(root, f))] = createHash("sha1").update(readFileSync(f)).digest("hex"); } catch { /* gone */ } }
+  return out;
+}
+function changedOwned(before) {
+  if (!before) return [];
+  const now = fingerprint();
+  return [...new Set([...Object.keys(before), ...Object.keys(now)])].filter((k) => before[k] !== now[k]);
+}
+// The commit each lock list was locked at: its `# commit <sha>` line, written when the build closes. A list that
+// git tracks also has the last commit that touched it.
+function lockBases() {
+  return lockFiles.filter((f) => existsSync(f)).map((f) => {
+    const text = stripBom(readFileSync(f, "utf8"));
+    const header = text.match(/^#\s*commit\s+([0-9a-f]{7,40})\b/im)?.[1] ?? null;
+    const paths = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#"));
+    return { file: f, header, paths };
+  });
 }
 
 // ---------- SessionStart: load the procedure
 
 if (input.hook_event_name === "SessionStart") {
-  // The project keeps no copy of the scripts: sessions run the plugin's, and the pipeline downloads them.
+  // The project keeps no copy of the scripts: sessions run the plugin's.
   const scripts = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "scripts");
   const where = ` The story scripts are this plugin's: \`<scripts>\` in the skills is ${scripts}; run them from inside the repository.`;
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart",
@@ -205,6 +212,13 @@ if (input.hook_event_name === "PreToolUse" && ["Agent", "SendMessage"].includes(
   const b = readBreaker();
   const to = String(input.tool_input?.to ?? "");
   const role = input.tool_name === "Agent" ? String(input.tool_input?.subagent_type ?? "") : b.agents?.[to] ?? "";
+  const short = role.split(":").pop();
+  const writes = BUILDER.test(role) || (Array.isArray(config.roles?.[short]?.paths) && config.roles[short].paths.length
+    && !/(^|[:-])(reviewer|researcher|auditor|designer)$/.test(role));
+  if (!writes) process.exit(0);
+  // What the orchestrator-owned files hold when the writer starts: its stop compares against it.
+  b.owned = fingerprint();
+  writeBreaker(b);
   if (!BUILDER.test(role)) process.exit(0);
   if (b.failures?.[to]) { delete b.failures[to]; writeBreaker(b); }
   if (maxRuns <= 0) process.exit(0);
@@ -351,7 +365,7 @@ function checkGit(args, cwd) {
     if (has(/^(--force|--force-with-lease|--force-if-includes)/) || has(/^-[a-z]*f/i) || has(/^\+/)) block("force push is blocked.");
     if (has(/^--no-verify$/)) block("--no-verify is blocked. Fix the failing hook instead.");
     if (inSubagent) block("role agents never push. Report DONE; the orchestrator pushes when the product owner asks.");
-    if (git.allowPush === false && !pushesOnlyChecks(rest, dirArg)) confirm("git.allowPush is false in this project, so every push needs the product owner's confirmation.");
+    if (git.allowPush === false) confirm("git.allowPush is false in this project, so every push needs the product owner's confirmation.");
   }
   if (sub === "commit") {
     if (has(/^--no-verify$/) || has(/^-[a-z]*n/i)) block("skipping commit hooks is blocked. Fix the failing hook instead.");
@@ -429,7 +443,6 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
   }
   // A cd earlier in the line moves where the later relative paths point: `cd apps/panel/src && echo x > a.ts`.
   let here = cwd;
-  const merges = [];
   for (const raw of cmds) {
     // Strip wrappers and VAR=value prefixes: `HUSKY=0 git commit` is still a git commit.
     let s = 0;
@@ -454,7 +467,7 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
     // host or variable the URL is built from. The id may come from a variable; then the merge is still a merge.
     if (tokens.some((t) => MERGE.test(t))) {
       if (inSubagent) block("role agents never merge. The product owner merges, or asks the orchestrator to.");
-      if (git.allowPush === false) merges.push(tokens.join(" "));
+      if (git.allowPush === false) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
     }
     // Redirections write too: split "x>file" and "> file" into their own tokens. Only the unquoted text is
     // read, so `node -e "a => a"` and `grep "a > b"` are not redirections; a quoted target comes back whole.
@@ -474,7 +487,6 @@ if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(in
       if (outside) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/ (not ${outside}).`);
     }
   }
-  for (const m of merges) if (!(await mergesCheck(m))) confirm("git.allowPush is false in this project, so every merge needs the product owner's confirmation.");
   if (confirmReason) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "PreToolUse",
     permissionDecision: "ask", permissionDecisionReason: confirmReason } }));
   process.exit(0);
@@ -511,14 +523,23 @@ if (input.hook_event_name === "SubagentStop") {
   const names = (a) => run(a).split(/\r?\n/).filter(Boolean);
   const changed = names(["diff", "--name-only", "HEAD", "--", ...lockSet, ...spec(storiesRel ? [storiesRel, mapRel] : [])]);
   if (changed.length && !input.stop_hook_active) block(`these locked or orchestrator-owned files differ from HEAD: ${changed.join(", ")}. Restore the ones you changed with \`git restore <file>\` and report what you needed to change them for. Do not restore the ones you did not change: name them in your report.`);
-  // A commit made through an interpreter leaves the tree equal to HEAD. The orchestrator commits each
-  // lock, so the last commit that touched the lock list is the base the locked files must still match.
-  // Only this branch's own commits count: a change that came from the integration branch is not the agent's.
-  const base = run(["log", "-1", "--format=%H", "--", `${STATE}/locked-tests.txt`, `${STATE}/locked`]);
+  // The same files when git does not track them: they must be as they were when this writer was launched.
+  const owned = changedOwned(readBreaker().owned).filter((f) => !changed.includes(f));
+  if (owned.length && !input.stop_hook_active) block(`these orchestrator-owned files changed while you ran: ${owned.join(", ")}. Role agents never change them. Report what you changed there and why, and do not try to undo it: the orchestrator restores them.`);
+  // A commit made through an interpreter leaves the tree equal to HEAD. Each lock list holds the commit it was
+  // locked at (`# commit <sha>`); a list git tracks also has the last commit that touched it. The locked files
+  // must still match that commit. Only this branch's own commits count: a change from the integration branch is not the agent's.
   const integration = `refs/remotes/origin/${git.integrationBranch ?? "develop"}`;
   const own = run(["rev-parse", "--verify", "--quiet", integration]) ? ["--not", integration] : [];
-  const committed = base ? [...new Set(names(["log", "--no-merges", "--format=", "--name-only", `${base}..HEAD`, ...own, "--", ...lockSet]))] : [];
-  if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${base.slice(0, 7)}): ${committed.join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
+  const committed = [];
+  let lockedAt = "";
+  for (const l of lockBases()) {
+    const base = run(["rev-parse", "--verify", "--quiet", `${l.header ?? ""}^{commit}`]) || run(["log", "-1", "--format=%H", "--", l.file]);
+    if (!base || !l.paths.length) continue;
+    const hit = names(["log", "--no-merges", "--format=", "--name-only", `${base}..HEAD`, ...own, "--", ...spec(l.paths)]);
+    if (hit.length) { committed.push(...hit); lockedAt ||= base; }
+  }
+  if (committed.length && !input.stop_hook_active) block(`locked files were committed after the lock (${lockedAt.slice(0, 7)}): ${[...new Set(committed)].join(", ")}. Do not undo it yourself. Report BLOCKED and name these files and the commit.`);
   // Files someone else changed would trap the builder, so this check gives one retry, then lets it report.
   if (!input.stop_hook_active && rolePaths) {
     const inside = (f) => rolePaths.some((a) => { const d = key(a).replace(/\/$/, ""); return f === d || f.startsWith(d + "/"); });
