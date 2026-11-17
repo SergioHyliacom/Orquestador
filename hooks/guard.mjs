@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // easyone-orchestrator guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
-// Inert unless the repository has .orchestrator.json at its root.
+// Inert unless the repository has .orchestrator.json at its root, or had it when the last agent was launched.
 // Exit 0 = allow. Exit 2 = block; stderr goes back to Claude. Exit 0 with permissionDecision "ask" on
 // stdout = Claude Code asks the human to confirm.
 
 import { execFileSync, execSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -50,22 +50,29 @@ function real(p) {
 
 // The checkout the session works in. A worktree has its own toplevel and its own branch.
 const root = toplevel(cwd) ?? path.resolve(process.env.CLAUDE_PROJECT_DIR || cwd);
+// The role of this session: a Claude Code subagent carries it in agent_type. The orchestrator's own
+// session has none.
+const agentType = String(input.agent_type ?? "");
+const inSubagent = Boolean(agentType);
 // Projects installed before the rename keep .orquestador.json and .orquestador/ until they migrate.
 const STATE = existsSync(path.join(root, ".orchestrator.json")) || !existsSync(path.join(root, ".orquestador.json")) ? ".orchestrator" : ".orquestador";
 const configPath = path.join(root, `${STATE}.json`);
-if (!existsSync(configPath)) process.exit(0);
+const breakerPath = path.join(root, STATE, "work", "breaker.json");
+
+// A subagent is held to .orchestrator.json as it was when the orchestrator launched it, kept in the breaker's file:
+// the copy in the tree is one it could edit (its own onStop checks, the breaker's limits, the gates), and git does
+// not keep it. Deleting the file does not switch the guard off either. The orchestrator's own session reads the tree.
+const inTree = existsSync(configPath);
+const snapshot = inSubagent || !inTree ? readBreaker().config ?? null : null;
+if (!inTree && snapshot === null) process.exit(0);
 
 let config;
-try { config = JSON.parse(stripBom(readFileSync(configPath, "utf8"))); }
+try { config = JSON.parse(stripBom(snapshot ?? readFileSync(configPath, "utf8"))); }
 catch (e) { block(`${STATE}.json is not valid JSON (${e.message}). Fix it before continuing.`); }
 
 const git = config.git ?? {};
 const protectedBranches = git.protectedBranches ?? ["main", git.integrationBranch ?? "develop"];
 const broadAddBlocked = git.blockBroadAdd !== false;
-// The role of this session: a Claude Code subagent carries it in agent_type. The orchestrator's own
-// session has none.
-const agentType = String(input.agent_type ?? "");
-const inSubagent = Boolean(agentType);
 // Per-role settings live in .orchestrator.json → roles, keyed by the role name without the plugin prefix.
 const roleConfig = config.roles?.[agentType.split(":").pop()] ?? {};
 const rolePaths = Array.isArray(roleConfig.paths) && roleConfig.paths.length ? roleConfig.paths : null;
@@ -104,12 +111,81 @@ function headOf(dir) {
   catch { return null; }
 }
 
+// ---------- Gates: what judges a change stays out of that change's reach
+// Each gate has a mode in .orchestrator.json → gates. observe (the default) blocks nothing and records what it would
+// have blocked in .orchestrator/work/gates.log, so its false positives show before anyone is stopped by them;
+// enforce blocks, and records it too; off does neither. This guard holds the protected gate; stories.mjs holds the
+// suppressions gate.
+const GATE_MODES = ["off", "observe", "enforce"];
+const gates = config.gates ?? {};
+if (gates.protected !== undefined && !GATE_MODES.includes(gates.protected)) block(`${STATE}.json → gates.protected is "${gates.protected}": it must be off, observe or enforce.`);
+const protectedMode = gates.protected ?? "observe";
+// A path ending in / is a folder; * stays inside one folder, ** crosses them (as riskPaths in stories.mjs).
+function globRe(glob) {
+  const g = key(String(glob));
+  let re = "";
+  for (let i = 0; i < g.length; i++) {
+    if (g[i] === "*" && g[i + 1] === "*") { i++; if (g[i + 1] === "/") { i++; re += "(?:.*/)?"; } else re += ".*"; }
+    else if (g[i] === "*") re += "[^/]*";
+    else if (g[i] === "?") re += "[^/]";
+    else re += g[i].replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  }
+  return new RegExp(`^${re}${g.endsWith("/") ? "" : "$"}`);
+}
+// The orchestrator's configuration and the project's norms: no role agent changes them, on any branch.
+const CORE_PROTECTED = [`${STATE}.json`, "CONTRIBUTING.md", "CODING_STANDARDS.md", "CLAUDE.md", "docs/definicion.md",
+  `${String(config.adrDir ?? "docs/adr").replace(/\/*$/, "")}/`];
+// The configuration of the checks: the pipeline, the git hooks, the linters, the test runners. No role agent changes
+// it on a story's branch; outside the stories (feature/<slug>, fix/<slug>) it can be the work itself.
+// gates.protectedPaths replaces this list.
+const CHECK_CONFIG = Array.isArray(gates.protectedPaths) ? gates.protectedPaths : [
+  "bitbucket-pipelines.yml", "lefthook.yml", ".lefthook.yml", ".husky/",
+  "**/.golangci.*", "**/biome.json", "**/biome.jsonc", "**/eslint.config.*", "**/.eslintrc*",
+  "**/playwright.config.*", "**/vitest.config.*", "**/vitest.workspace.*",
+];
+const coreRes = CORE_PROTECTED.map(globRe);
+const checkRes = CHECK_CONFIG.map(globRe);
+// A story's branch carries its ID in lowercase (feature/alt-001-email-signup, fix/alt-001-…, hotfix/alt-001-…), or
+// is the older story/<ID>, as stories.mjs reads it. Any other feature/ or fix/ branch is work outside the stories.
+const STORY_BRANCH = /^((feature|fix|hotfix)\/[a-z][a-z0-9]*-\d+(-|$)|story\/)/i;
+const outsideStories = (b) => /^(feature|fix)\//.test(b) && !STORY_BRANCH.test(b);
+let branchCache;
+const branchNow = () => (branchCache ??= currentBranch(root) ?? "");
+// "core", "check" or null: what a repo-relative path is, for a role agent on this branch.
+function protectedKind(rel) {
+  if (coreRes.some((re) => re.test(rel))) return "core";
+  if (!outsideStories(branchNow()) && checkRes.some((re) => re.test(rel))) return "check";
+  return null;
+}
+const GATES_REL = key(`${STATE}/work/gates.log`);
+const gatesPath = path.join(root, STATE, "work", "gates.log");
+const GATES_OWNED = `${GATES_REL} is the guard's record of its gates. Read it; do not change it.`;
+// One line per event, tab-separated: when, gate, observed | blocked, who, branch, what.
+function gateLog(gate, verdict, what) {
+  try {
+    mkdirSync(path.dirname(gatesPath), { recursive: true });
+    appendFileSync(gatesPath, `${new Date().toISOString()}\t${gate}\t${verdict}\t${agentType || "session"}\t${branchNow() || "-"}\t${what}\n`);
+  } catch { /* a record that cannot be written does not stop the work */ }
+}
+const protectedReason = (rel, kind) => kind === "core"
+  ? `${rel} is the orchestrator's configuration or one of the project's norms, and it judges your work: no role agent changes it. Report what should change there, and why.`
+  : `${rel} configures a check that judges this change, so no role agent changes it on a story's branch (${branchNow() || "this one"}). Report what should change there, and why: a check's configuration changes in work outside the stories.`;
+function checkProtected(rel, how) {
+  if (!writerRole || protectedMode === "off" || rel.startsWith("..")) return;
+  const kind = protectedKind(rel);
+  if (!kind) return;
+  if (protectedMode === "enforce") { gateLog("protected", "blocked", `${how} ${rel}`); block(protectedReason(rel, kind)); }
+  gateLog("protected", "observed", `${how} ${rel}`);
+}
+// The suppressions the orchestrator's human approved: only the orchestrator writes them.
+const SUPPRESSIONS_REL = key(`${STATE}/suppressions.json`);
+const SUPPRESSIONS_OWNED = `${SUPPRESSIONS_REL} records the suppressions your human approved: only the orchestrator writes it, on their ok. Report the suppression under Concerns instead.`;
+
 // ---------- The breaker: a builder that does not converge goes to the human
 // .orchestrator/work/breaker.json is the guard's own file, personal and never committed. It holds the builder runs
 // since the checkout's last commit, the role of each builder by its agent id, and, inside a run, how many times in
 // a row each command failed with the same output. No agent edits it: a commit, or the human, resets it.
 const BREAKER_REL = key(`${STATE}/work/breaker.json`);
-const breakerPath = path.join(root, STATE, "work", "breaker.json");
 const maxRuns = config.verify?.maxBuilderRuns ?? 3;
 const maxSameFailure = config.verify?.maxSameFailure ?? 3;
 const commandKey = (c) => String(c ?? "").replace(/\s+/g, " ").trim();
@@ -167,7 +243,7 @@ const MERGE = /\/pullrequests\/[^/\s"']+\/merge\b/i;
 // when it launches or resumes a writer, and compares at its stop.
 function ownedFiles() {
   const dirs = [path.join(root, STATE, "locked"), ...(config.storiesDir ? [path.join(root, config.storiesDir, "stories")] : [])];
-  const files = [path.join(root, STATE, "locked-tests.txt"), ...(config.storiesDir ? [path.join(root, config.storiesDir, "map.md")] : [])];
+  const files = [path.join(root, STATE, "locked-tests.txt"), path.join(root, STATE, "suppressions.json"), ...(config.storiesDir ? [path.join(root, config.storiesDir, "map.md")] : [])];
   const walk = (d) => { try { for (const e of readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else files.push(p); } } catch { /* missing */ } };
   dirs.forEach(walk);
   return files;
@@ -213,6 +289,9 @@ if (input.hook_event_name === "PreToolUse" && ["Agent", "SendMessage"].includes(
   const to = String(input.tool_input?.to ?? "");
   const role = input.tool_name === "Agent" ? String(input.tool_input?.subagent_type ?? "") : b.agents?.[to] ?? "";
   const short = role.split(":").pop();
+  // The configuration every agent's guard follows: .orchestrator.json as it is now, when the orchestrator launches
+  // or resumes it. Only the orchestrator's own session takes it, from the tree.
+  if (!inSubagent && inTree) { b.config = readFileSync(configPath, "utf8"); writeBreaker(b); }
   const writes = BUILDER.test(role) || (Array.isArray(config.roles?.[short]?.paths) && config.roles[short].paths.length
     && !/(^|[:-])(reviewer|researcher|auditor|designer)$/.test(role));
   if (!writes) process.exit(0);
@@ -279,12 +358,15 @@ const BREAKER_OWNED = `${BREAKER_REL} is the guard's own count of the builder ru
 
 function checkFileWrite(rel, absolute) {
   if (rel === BREAKER_REL) block(BREAKER_OWNED);
+  if (rel === GATES_REL) block(GATES_OWNED);
   checkWorkspace(absolute);
   if (locked.has(rel)) block(`${rel} is a locked acceptance test. Report the problem instead of changing the test; only the orchestrator unlocks it, on the product owner's request.`);
   if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
   if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
+  if (inSubagent && rel === SUPPRESSIONS_REL) block(SUPPRESSIONS_OWNED);
   if (writerRole && storiesRel && rel.startsWith(storiesRel)) block(STORIES_OWNED);
   checkRolePaths(rel);
+  checkProtected(rel, input.tool_name);
   if (readOnlyRole && !key(absolute).includes(`/${STATE}/work/`)) block(`${agentType} is read-only. It writes only its report under .orchestrator/work/.`);
 }
 
@@ -421,11 +503,16 @@ function checkPaths(tokens, dir, removes = false) {
     if (!p || p.startsWith("-")) continue;
     const rel = relTo(base, path.resolve(dir, p));
     if (rel === BREAKER_REL || (removes && rel !== "" && BREAKER_REL.startsWith(rel + "/"))) block(BREAKER_OWNED);
+    if (rel === GATES_REL || (removes && rel !== "" && GATES_REL.startsWith(rel + "/"))) block(GATES_OWNED);
     if (locked.has(rel)) block(`${rel} is a locked acceptance test. It cannot be changed, moved or deleted.`);
     if (removes && !rel.startsWith("..") && holdsLocked(rel)) block(`${rel || "."} holds locked acceptance tests. It cannot be moved or deleted.`);
     if (inSubagent && isLockList(rel)) block("subagents cannot change the locked-tests lists.");
+    if (inSubagent && (rel === SUPPRESSIONS_REL || (removes && rel !== "" && SUPPRESSIONS_REL.startsWith(rel + "/")))) block(SUPPRESSIONS_OWNED);
     if (writerRole && storiesRel && rel.startsWith(storiesRel)) block(STORIES_OWNED);
     if (rel === mapRel) block(`${rel} is generated. Change the stories and run stories.mjs instead.`);
+    // Removing a folder takes the configuration and the norms inside it.
+    const inside = removes && !rel.startsWith("..") ? CORE_PROTECTED.map(key).find((c) => rel === "" || c.startsWith(rel + "/")) : null;
+    checkProtected(inside ?? rel, input.tool_name);
   }
 }
 
@@ -546,6 +633,22 @@ if (input.hook_event_name === "SubagentStop") {
     const touched = [...names(["diff", "--name-only", "HEAD"]), ...names(["ls-files", "--others", "--exclude-standard"])]
       .map(key).filter((f) => !f.startsWith(`${key(STATE)}/`) && !inside(f));
     if (touched.length) block(`${agentType} edits only ${rolePaths.join(", ")}, and these files outside them differ from HEAD: ${touched.join(", ")}. Restore the ones you changed with \`git restore <file>\` (or delete them if new) and report what needs to change there. If you did not change them, say so in your report.`);
+  }
+  // What judges the change stays out of its reach, whatever tool changed it: an interpreter's write shows here too.
+  // The norms and the checks' configuration show in git; .orchestrator.json, which git does not keep, is compared
+  // with the copy taken at the launch. The orchestrator's own uncommitted edits show as well: the agent restores
+  // only what it changed.
+  if (!input.stop_hook_active && protectedMode !== "off") {
+    const touched = [...new Set([...names(["diff", "--name-only", "HEAD"]), ...names(["ls-files", "--others", "--exclude-standard"])].map(key))]
+      .filter((f) => protectedKind(f));
+    const now = existsSync(configPath) ? readFileSync(configPath, "utf8") : null;
+    const configRel = key(`${STATE}.json`);
+    if (snapshot !== null && now !== snapshot && !touched.includes(configRel)) touched.push(configRel);
+    if (touched.length && protectedMode === "enforce") {
+      gateLog("protected", "blocked", `stop ${touched.join(", ")}`);
+      block(`these files judge your work and changed: ${touched.join(", ")}. No role agent changes the orchestrator's configuration or the project's norms, nor a check's configuration on a story's branch. Restore the ones you changed (\`git restore <file>\`, or delete them if new; for ${configRel}, report it and the orchestrator restores it) and report what should change there, and why. Do not restore the ones you did not change: name them in your report.`);
+    }
+    if (touched.length) gateLog("protected", "observed", `stop ${touched.join(", ")}`);
   }
   if (input.stop_hook_active) process.exit(0); // One retry for the verification commands; then the agent reports honestly.
   const deadline = Date.now() + 1000 * 1000; // Stay inside the hook timeout in hooks.json.

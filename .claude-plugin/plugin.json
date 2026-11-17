@@ -1,6 +1,6 @@
 {
   "name": "easyone-orchestrator",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "Sergio's orchestrator for EASY One, kept to the project's CONTRIBUTING.md and CODING_STANDARDS.md. Stories written in gg-ez, built one criterion at a time with a builder agent. Code lives on Bitbucket.",
   "author": {
     "name": "Hyliacom",

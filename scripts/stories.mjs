@@ -5,10 +5,13 @@
 //   node stories.mjs --tests         run the test commands (Go, Vitest, end-to-end...), then generate the map
 //   node stories.mjs --check         also fail on a failing, failing-test or skipped criterion of the main release,
 //                                    on a story branch that touches a risk path (riskPaths) its story lacks the tag for,
-//                                    on a riskPaths or contextDocs entry that matches no file, and on a path or
-//                                    pnpm script that a context doc (contextDocs) names and does not exist
+//                                    on a riskPaths or contextDocs entry that matches no file, on a path or
+//                                    pnpm script that a context doc (contextDocs) names and does not exist, and,
+//                                    when gates.suppressions is enforce, on a suppression the branch adds
+//                                    (eslint-disable, //nolint, a skipped test...) that the human did not approve
 //   node stories.mjs --ready ID...   exit 1 if any named story is not ready to build
-//   node stories.mjs --pr ID         print a PR checklist for one story; exit 1 when its branch lacks a risk tag
+//   node stories.mjs --pr ID         print a PR checklist for one story; exit 1 when its branch lacks a risk tag,
+//                                    or adds a suppression the --check above would fail on
 //   node stories.mjs --json          print the computed state as JSON (for agents)
 //   node stories.mjs --summary       print only what needs attention (for the start of a session)
 //
@@ -312,6 +315,50 @@ function staleRiskPaths() {
   }
   return stale;
 }
+// ---------- Suppressions: a change does not switch off the checks that judge it
+
+// A line this branch adds that switches a check off (a linter or type-checker directive, a skipped or focused test)
+// is the change judging itself. It stands only when the orchestrator recorded it in .orchestrator/suppressions.json,
+// on its human's ok: [{ "file", "line" (the added line, as it reads), "reason" }]. That file is the orchestrator's
+// alone, like everything under .orchestrator/, and never enters the repository. .orchestrator.json →
+// gates.suppressions: observe (the default) lists them, enforce fails --check and --pr, off does neither.
+const GATE_MODES = ["off", "observe", "enforce"];
+const SUPPRESSIONS_MODE = orchestrator.gates?.suppressions ?? "observe";
+if (!GATE_MODES.includes(SUPPRESSIONS_MODE)) errors.push(`.orchestrator.json: gates.suppressions is "${SUPPRESSIONS_MODE}"; it must be off, observe or enforce.`);
+const SUPPRESSIONS_FILE = path.join(ROOT, ".orchestrator", "suppressions.json");
+const CODE_FILE = /\.(go|[cm]?[jt]sx?|vue|svelte|astro)$/i;
+const SUPPRESSION = [
+  /eslint-disable/, /biome-ignore/, /@ts-(ignore|expect-error|nocheck)\b/, /\/\/\s*nolint\b/,
+  /\.Skip(f|Now)?\(/,
+  /\b(it|test|describe|suite|bench)(\.\w+)*\.(skip|skipIf|only|fixme)\b/, /\b(xit|xtest|xdescribe|fit|fdescribe)\(/,
+];
+// The suppressions this branch adds and the human did not approve: [{ file, line, text }].
+function suppressions() {
+  if (!AHEAD || SUPPRESSIONS_MODE === "off") return [];
+  const diff = gitRun(["-c", "core.quotepath=off", "diff", "-U0", "--no-color", "--no-ext-diff", MERGE_BASE, "HEAD"]) ?? "";
+  const found = [];
+  let file = null, line = 0, header = false;
+  for (const l of diff.split("\n")) {
+    if (l.startsWith("diff --git ")) { header = true; file = null; continue; }
+    if (header && l.startsWith("+++ ")) { const n = l.slice(4).replace(/^"|"$/g, ""); file = n.startsWith("b/") ? n.slice(2) : null; continue; }
+    const hunk = l.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (hunk) { header = false; line = Number(hunk[1]); continue; }
+    if (header || !l.startsWith("+")) continue;
+    const text = l.slice(1).replace(/\r$/, "");
+    if (file && CODE_FILE.test(file) && SUPPRESSION.some((re) => re.test(text))) found.push({ file, line, text: text.trim() });
+    line++;
+  }
+  if (!found.length) return [];
+  let approved = [];
+  try { approved = readJson(SUPPRESSIONS_FILE); } catch { /* none yet */ }
+  if (!Array.isArray(approved)) { errors.push(".orchestrator/suppressions.json must be a list of { file, line, reason }."); approved = []; }
+  const ok = (s) => approved.some((a) => a?.file === s.file && String(a?.line ?? "").trim() === s.text && String(a?.reason ?? "").trim());
+  return found.filter((s) => !ok(s));
+}
+const suppressionLine = (s) => SUPPRESSIONS_MODE === "enforce"
+  ? `${s.file}:${s.line} adds a suppression: ${s.text.slice(0, 160)}. A change does not switch off its own checks: remove it, or, on your human's ok, record it in .orchestrator/suppressions.json with its reason.`
+  : `Note (gates.suppressions: observe): ${s.file}:${s.line} adds a suppression: ${s.text.slice(0, 160)}`;
+
 // ---------- Context docs: what every session reads points to files and commands that exist
 
 // .orchestrator.json → contextDocs lists the texts sessions and agents read first ("CLAUDE.md", "README.md",
@@ -618,11 +665,15 @@ if (flag("--pr")) {
   // No final pull request while the branch touches a risk path its story is not tagged for.
   const misses = riskMisses().filter((m) => m.story.id === s.id);
   for (const m of misses) console.error(riskMiss(m));
+  // Nor while it switches off a check its human did not approve, once that gate is enforced.
+  const silenced = suppressions();
+  for (const x of silenced) console.error(suppressionLine(x));
+  const stop = misses.length || (SUPPRESSIONS_MODE === "enforce" && silenced.length);
   // A story folder outside git (one person's, excluded on their machine) has no file the reviewers can open.
   const storyPath = path.relative(ROOT, path.join(DIR, s.file)).split(path.sep).join("/");
   const shared = gitRun(["check-ignore", "-q", "--", storyPath]) === null;
   finish([`## ${s.id} ${s.title}`, "", shared ? `${L.statuses[s.status]}, [${s.file}](${storyPath})` : L.statuses[s.status], "",
-    ...s.criteria.map((c) => `- ${res(c)} **${c.id}** ${c.head.replace(/^\*\*[^*]+\*\*\s*/, "")}`)].join("\n"), misses.length ? 1 : 0);
+    ...s.criteria.map((c) => `- ${res(c)} **${c.id}** ${c.head.replace(/^\*\*[^*]+\*\*\s*/, "")}`)].join("\n"), stop ? 1 : 0);
 }
 
 const active = stories.filter((s) => s.status !== "discarded");
@@ -676,6 +727,10 @@ const md = out.join("\n");
 
 if (flag("--check")) {
   for (const m of riskMisses()) errors.push(riskMiss(m));
+  for (const x of suppressions()) {
+    if (SUPPRESSIONS_MODE === "enforce") errors.push(suppressionLine(x));
+    else console.log(suppressionLine(x));
+  }
   errors.push(...staleRiskPaths(), ...staleContextRefs());
   // Opt-in, but never silent: a project without the list should know its texts go unchecked.
   if (!CONTEXT_DOCS.length) console.log(`Note: .orchestrator.json has no contextDocs, so no text is checked for stale paths or pnpm scripts. Add the texts every session reads: ["CLAUDE.md", "README.md", "CONTRIBUTING.md", "CODING_STANDARDS.md", "modules/*/README.md", "apps/*/README.md"].`);

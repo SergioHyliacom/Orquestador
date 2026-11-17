@@ -93,7 +93,8 @@ test("una historia fuera de git: el builder que la cambia lo cuenta al parar", (
   p.write(".orchestrator/historias/stories/notas/PRU-9-guardar-una-nota.md", STORY({ marker: "[test]" }));
   const stop = p.guard({ hook_event_name: "SubagentStop", agent_id: "a1", agent_type: BUILDER, stop_hook_active: false });
   assert.equal(stop.status, 2, stop.stderr);
-  assert.match(stop.stderr, /orchestrator-owned files changed while you ran: \.orchestrator\/historias\/stories\/notas\/PRU-9-guardar-una-nota\.md/);
+  // Windows compares paths in lowercase.
+  assert.match(stop.stderr, /orchestrator-owned files changed while you ran: \.orchestrator\/historias\/stories\/notas\/PRU-9-guardar-una-nota\.md/i);
 });
 
 test("una historia fuera de git que nadie toca deja parar al builder", () => {

@@ -20,6 +20,7 @@ This file is what every session needs. Read a reference only when the work in fr
 | A fix, a task, a machine check, a hotfix, going to production, a spike | `references/outside-stories.md` |
 | A delivery audit | `references/audit.md` |
 | What is risky and where it lives: draw the risk map, keep it current | `references/risk-map.md` |
+| What the gates block, their modes, a suppression that must stay | `references/gates.md` |
 | Where to write something down; the project's norms | `references/where-things-live.md` |
 | Branches, commits, pull requests, Bitbucket | `references/git.md` |
 | Your human's access to Bitbucket | `references/access.md` |
@@ -81,7 +82,7 @@ At the end of a block of work:
 1. Run `node <scripts>/stories.mjs` to refresh the map. It runs no tests.
 2. **Preventions.** A real failure that can happen again: offer your human the cheapest prevention, a machine check that enforces a norm the project already has (`references/outside-stories.md`, "Check"), or else a line for `CODING_STANDARDS.md` or `CONTRIBUTING.md` (`references/where-things-live.md`). A failure of behaviour is a failing criterion of its story, never a norm. Then offer the preventions the audits left pending (`references/audit.md`, "Pending preventions"). Nothing of this merges without another person's approval.
 3. Update the ledger.
-4. Tell your human, bad news first: what was committed and pushed, what waits for a review, your technical rulings, and any work that ran unsupervised.
+4. Tell your human, bad news first: what was committed and pushed, what waits for a review, what the gates blocked or would have blocked since the last close (`references/gates.md`), your technical rulings, and any work that ran unsupervised.
 5. Suggest a new session for the next block: the ledger carries what it needs, and a long conversation is reread on every turn.
 
 ## 5. The design repo, and the pending link with gg-ez

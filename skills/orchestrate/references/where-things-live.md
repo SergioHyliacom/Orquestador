@@ -19,7 +19,7 @@
 | What a screen looks like (the design) | Figma, linked from the module's or app's README, and the design repo, cloned on each machine and read with `design-source.mjs`; never copied or edited here |
 | Where that clone is, and which design each story was ported at | the Claude config folder of each machine (`easyone-design-source.json` and `.ledger.json`) |
 | Where each story stands | its branch, its lock list and `<storiesDir>/map.md`, generated |
-| Plugs, locked tests, the risk map and its reasons, audits | `.orchestrator.json`, `.orchestrator/locked/`, `.orchestrator/risk-map.md`, `.orchestrator/audits/` |
+| Plugs, locked tests, the risk map and its reasons, audits, the suppressions your human approved | `.orchestrator.json`, `.orchestrator/locked/`, `.orchestrator/risk-map.md`, `.orchestrator/audits/`, `.orchestrator/suppressions.json` (`references/gates.md`) |
 | Your ledger, briefs and reports | `.orchestrator/state.md`, `.orchestrator/work/` |
 
 Everything under `.orchestrator/` and `.orchestrator.json` is yours, on this machine, excluded with `.git/info/exclude`: the team does not see it, and nothing in the repository names it. `<storiesDir>` is `.orchestrator.json` → `storiesDir`, inside `.orchestrator/`.
