@@ -8,6 +8,7 @@ Plugin de Claude Code con el que Sergio desarrolla EASY One. Es una adaptación 
 - **Un criterio cada vez.** El agente `builder` escribe el test, lo ve fallar, lo hace pasar y se para; la sesión comprueba las pruebas y hace el commit. Tú das el ok en el primer criterio y en la construcción terminada.
 - **Cada PR lleva revisión con Claude** (el agente `reviewer`, que repasa también el checklist de `CODING_STANDARDS.md`) y la aprobación de otra persona. Se fusiona con Squash.
 - **Una guardia** (un hook) impide lo peligroso: ningún agente hace commit, cada uno escribe solo donde le toca, y nadie toca los tests bloqueados ni las historias.
+- **Un builder que da vueltas se para pronto.** La guardia lee la salida de cada test y cada check que lanza, también cuando la recorta con `| tail` o `| grep` y el código de salida se pierde. El mismo fallo tres veces en una ejecución, aunque haya otros entre medias, o diez checks fallidos, y el builder deja de probar y te dice qué intentó. Un check que se cuelga al parar se corta a los cinco minutos. Tras tres ejecuciones sin commit, te pregunta antes de lanzar otra.
 - **Lo que juzga un cambio queda fuera de su alcance.** Ningún agente toca `.orchestrator.json` ni las normas del proyecto, ni, en la rama de una historia, la configuración de los checks; y una rama no apaga un check en su código (`eslint-disable`, `//nolint`, un test saltado) sin tu ok. Cada compuerta empieza en modo `observe`: apunta lo que bloquearía y no bloquea nada hasta que la pases a `enforce`.
 - **Cada cosa tiene un solo sitio.** Está en la skill `orchestrate`, `references/where-things-live.md`.
 - **Al cerrar cada entrega, una auditoría por muestreo** contra las normas del proyecto. Lo que puede repetirse se propone como comprobación de la máquina o como línea de `CODING_STANDARDS.md`, siempre por PR.
@@ -53,6 +54,7 @@ Hasta entonces, las sesiones lo dicen en vez de improvisar (skill `orchestrate`,
 | `skills/diseno/` | Monta y refresca en cada equipo el enlace con el repo de diseño de Sydney |
 | `scripts/` | El validador de historias (`stories.mjs`) y la lectura del repo de diseño (`design-source.mjs`). El proyecto no guarda copia: la sesión ejecuta los del plugin, y nunca van al pipeline |
 | `hooks/guard.mjs` | La guardia |
+| `hooks/test-output.mjs` | La lectura de la salida de los tests y los checks (Go, Vitest, Playwright, `node --test`, tsc, Biome): si fallaron y qué falló |
 | `tests/` | Los tests de la guardia y de los scripts: `node --test "tests/*.test.mjs"` |
 
 ## Instalar el plugin
@@ -87,7 +89,7 @@ Todo esto es tuyo y vive en tu clon de EASY One, sin entrar en git. Se excluye c
 /.orchestrator.json
 ```
 
-- `.orchestrator.json`: `storiesDir` (por ejemplo `.orchestrator/historias`), `git` (con `allowPush: false`, para que cada push y cada fusión te pregunten), `verify` (las comprobaciones de «Comprobaciones» de `CONTRIBUTING.md`), `roles` (con las comprobaciones rápidas del builder en `roles.builder.onStop`), `contextDocs` y el mapa de riesgo (`riskTags`, `riskPaths`; skill `orchestrate`, `references/risk-map.md`). El desarrollo se abre cuando tiene `roles`. Las compuertas (`gates`; skill `orchestrate`, `references/gates.md`) funcionan sin configurarlas, en modo `observe`; `gates.protectedPaths` cambia qué configuración de checks se protege (por defecto, el pipeline, Lefthook, Husky, golangci-lint, Biome, ESLint, Playwright y Vitest).
+- `.orchestrator.json`: `storiesDir` (por ejemplo `.orchestrator/historias`), `git` (con `allowPush: false`, para que cada push y cada fusión te pregunten), `verify` (las comprobaciones de «Comprobaciones» de `CONTRIBUTING.md`, y los límites del builder: `maxBuilderRuns`, 3 ejecuciones sin commit; `maxSameFailure`, el mismo fallo 3 veces; `maxFailedChecks`, 10 checks fallidos por ejecución; `checkTimeout`, 300 segundos por check al parar; 0 apaga los tres primeros), `roles` (con las comprobaciones rápidas del builder en `roles.builder.onStop`), `contextDocs` y el mapa de riesgo (`riskTags`, `riskPaths`; skill `orchestrate`, `references/risk-map.md`). El desarrollo se abre cuando tiene `roles`. Las compuertas (`gates`; skill `orchestrate`, `references/gates.md`) funcionan sin configurarlas, en modo `observe`; `gates.protectedPaths` cambia qué configuración de checks se protege (por defecto, el pipeline, Lefthook, Husky, golangci-lint, Biome, ESLint, Playwright y Vitest).
 - `<storiesDir>/stories.config.json`: las entregas, los perfiles y las fuentes de tests. Los de Go se leen de `go test -json`, sin dependencias nuevas: `{ "command": "pnpm -s test:go -json ./... > {report}", "format": "go-json" }`. Los de Vitest, en `jest-json`.
 
 ## Requisitos
@@ -137,7 +139,7 @@ Las skills y los agentes siguen en inglés, como en el original: los lee el mode
 
 ## Estado
 
-- **Probado:** la guardia (escenarios simulados de cada rol, el cortocircuito del builder, las normas de easyone y las compuertas) y el validador con resultados de Go (`go test -json` y JUnit) y Vitest, con `node --test "tests/*.test.mjs"`. `claude plugin validate` pasa.
+- **Probado:** la guardia (escenarios simulados de cada rol, el cortocircuito del builder, las normas de easyone y las compuertas), la lectura de la salida de los tests (con salidas como las de Go, Vitest, Playwright, `node --test` y tsc, y calibrada con los 481 checks de 24 builders reales de octubre y noviembre) y el validador con resultados de Go (`go test -json` y JUnit) y Vitest, con `node --test "tests/*.test.mjs"`. `claude plugin validate` pasa.
 - **Sin probar todavía:** las skills y la instalación en el repositorio real de EASY One. La primera historia sirve de piloto.
 
 ## Autores

@@ -22,7 +22,7 @@ You are the builder. Your name and scope are in the brief (for example `builder-
 
 The brief names one criterion.
 
-1. **Red.** Write the test for that criterion only, in each layer the criterion touches, and run it. It must fail for the right reason. Record the command and the failing output. If it passes before your change, find out why:
+1. **Red.** Write the test for that criterion only, in each layer the criterion touches, and run it alone (rule 20). It must fail for the right reason. Record the command and the failing output. If it passes before your change, find out why:
    - **The behaviour already exists** (an earlier criterion built it): keep the test, write no code, and report the criterion as already met, with that passing output in place of RED.
    - **The test does not observe the criterion:** rewrite it until it fails for the right reason.
 
@@ -62,13 +62,14 @@ The brief says `Change: task <slug>: <what changes>`: work outside a story, on a
 
 18. **What only reads stays read-only.** `hyliacms` (EASY Client) is the business specification: read it, never copy its code or patterns, never write in it. A migration already in `origin/develop` is never edited: write a new one, backward compatible (`db/migrations/README.md`). The project's hooks block both.
 19. **The design repo is read-only.** When the story's Notes name a lock, read the design from there (`design-source.mjs --show <ID>`, or `git -C <the design repo> show <sha>:<file>`; the path is in the brief or in `--show`'s output) and match the captures. Its code is a reference, not a source to copy: build with `@easyone/ui`, text through `@easyone/i18n`, data through `@easyone/api-client` or the mock the brief names. Where the two stacks cannot give the same result, keep this project's rule and list the difference under Concerns. Never write in that repo.
+20. **Fast feedback, failures in sight.** While you work, run only the criterion's test and your pins, stopping at the first failure and with a time limit: `pnpm test:go -failfast -timeout 2m -run 'TestNotes/EO-123\.1' ./modules/notes`, `pnpm --filter <app> exec vitest run <file> -t "EO-123.1" --bail=1`, `pnpm --filter <app> exec playwright test <file> -g "EO-123.1" --max-failures=1`. Whole packages and suites are for your fast checks, at the end. Never start in the foreground what does not end on its own: watch mode, a dev server (`pnpm dev`, `vite`), Playwright's `--ui` or `show-report`; when the UI check needs a server, start it in the background. When you trim long output, keep the summary and the failures (`2>&1 | tail -40`), never a `grep` that can leave them out. The guard reads the output of every check you run, also through a pipe: the same failure 3 times in a run, even with others between, or 10 failed checks, and it stops your checks.
 
 ## Stop and report BLOCKED instead of improvising when
 
 - the criterion can only be met by breaking a norm (name the document and section, or the checklist ID), or by breaking an API operation others already use;
 - the change falls in the list of `CONTRIBUTING.md` «Cuándo hace falta un ADR» and no accepted ADR covers it: a new provider or external service, sign-in, sessions or permissions, payments or fiscal data, new personal data or data sent to a third party, the shared data model, account isolation or `/v1` changed incompatibly, the infrastructure;
 - you need a new dependency that neither the story nor an ADR names. Updating one the project already has is not new, and the project asks your human before either;
-- the same check fails 3 times in a row with no new idea (the guard blocks a fourth run of a command that failed 3 times with the same output);
+- the same failure comes back after two changes meant to fix it, or your checks keep failing with no new idea (at the third time, or at 10 failed checks in this run, the guard blocks every further check). Report each attempt in one line: what you changed and what failed;
 - configuration or credentials are missing;
 - the criterion or the task is ambiguous on a point that changes behaviour;
 - you would need to edit a locked test, a story file, a path outside yours, or a norm or a check's configuration (rule 14);

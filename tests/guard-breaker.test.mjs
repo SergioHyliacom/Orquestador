@@ -120,28 +120,33 @@ test("maxBuilderRuns cambia el límite, y 0 lo apaga", () => {
   assert.ok(!asks(launch(p)));
 });
 
-test("el mismo fallo tres veces seguidas bloquea el cuarto intento del builder", () => {
+test("el mismo fallo tres veces en la ejecución para los checks del builder", () => {
   const p = project();
   const cmd = "go -C apps/api test ./...";
-  fail(p, "a1", cmd, "Exit code 1\n--- FAIL: TestBuscar (0.53s)\nexpected 2 results");
-  fail(p, "a1", cmd, "Exit code 1\n--- FAIL: TestBuscar (0.61s)\nexpected 2 results");
+  fail(p, "a1", cmd, "Exit code 1\n--- FAIL: TestBuscar (0.53s)\n    buscar_test.go:12: expected 2 results");
+  fail(p, "a1", cmd, "Exit code 1\n--- FAIL: TestBuscar (0.61s)\n    buscar_test.go:12: expected 2 results");
   assert.equal(run(p, "a1", cmd).status, 0, "dos fallos no bloquean");
-  fail(p, "a1", `${cmd}  `, "Exit code 1\n--- FAIL: TestBuscar (0.48s)\nexpected 2 results");
+  fail(p, "a1", `${cmd}  `, "Exit code 1\n--- FAIL: TestBuscar (0.48s)\n    buscar_test.go:14: expected 2 results");
   const r = run(p, "a1", cmd);
   assert.equal(r.status, 2);
-  assert.match(r.stderr, /failed 3 times in a row with the same output.*report BLOCKED/);
-  assert.equal(run(p, "a1", "go -C apps/api test -run TestOtro ./...").status, 0, "otro comando sigue permitido");
+  assert.match(r.stderr, /came back 3 times in this run.*report BLOCKED/);
+  assert.equal(run(p, "a1", "go -C apps/api test -run TestOtro ./...").status, 2, "otro check tampoco: el fallo es el mismo");
+  assert.equal(run(p, "a1", "git status").status, 0, "lo que no es un check sigue permitido");
   assert.equal(run(p, "a2", cmd).status, 0, "otro builder no hereda los fallos");
 });
 
-test("un fallo distinto vuelve a empezar la cuenta", () => {
+test("un comando que no es un check se para solo con el mismo fallo seguido", () => {
   const p = project();
-  const cmd = "pnpm test:ts";
-  fail(p, "a1", cmd, "Exit code 1\nexpected 2 results");
-  fail(p, "a1", cmd, "Exit code 1\nexpected 2 results");
+  const cmd = "pnpm sqlc generate";
+  fail(p, "a1", cmd, "Exit code 1\nquery.sql:3:1: column \"nif\" does not exist");
+  fail(p, "a1", cmd, "Exit code 1\nquery.sql:3:1: column \"nif\" does not exist");
   fail(p, "a1", cmd, "Exit code 1\ncannot read property id");
   assert.equal(run(p, "a1", cmd).status, 0);
-  assert.equal(p.breaker().failures.a1[cmd].times, 1);
+  assert.equal(p.breaker().failures.a1.commands[cmd].times, 1);
+  for (let i = 0; i < 2; i++) fail(p, "a1", cmd, "Exit code 1\ncannot read property id");
+  const r = run(p, "a1", cmd);
+  assert.equal(r.status, 2);
+  assert.match(r.stderr, /failed 3 times in a row with the same output.*report BLOCKED/);
 });
 
 test("reanudar el builder borra sus fallos seguidos", () => {

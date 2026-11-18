@@ -1,15 +1,17 @@
 #!/usr/bin/env node
-// easyone-orchestrator guard. Claude Code hook for SessionStart, PreToolUse and SubagentStop.
+// easyone-orchestrator guard. Claude Code hook for SessionStart, PreToolUse, PostToolUse, PostToolUseFailure and
+// SubagentStop.
 // Inert unless the repository has .orchestrator.json at its root, or had it when the last agent was launched.
 // Exit 0 = allow. Exit 2 = block; stderr goes back to Claude. Exit 0 with permissionDecision "ask" on
 // stdout = Claude Code asks the human to confirm.
 
-import { execFileSync, execSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { blockedByHook, isCheckCommand, readFailure } from "./test-output.mjs";
 
 const WIN = process.platform === "win32";
 const stripBom = (s) => s.replace(/^﻿/, "");
@@ -17,8 +19,8 @@ const input = JSON.parse(stripBom(readFileSync(0, "utf8")) || "{}");
 const cwd = input.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd();
 // Every role that writes code ends in -builder.
 const BUILDER = /(^|:)([a-z0-9]+-)*builder$/;
-// A failed command matters only inside a builder (the breaker below): every other session leaves at once.
-if (input.hook_event_name === "PostToolUseFailure" && !BUILDER.test(String(input.agent_type ?? ""))) process.exit(0);
+// What a command printed matters only inside a builder (the breaker below): every other session leaves at once.
+if (["PostToolUse", "PostToolUseFailure"].includes(input.hook_event_name) && !BUILDER.test(String(input.agent_type ?? ""))) process.exit(0);
 
 function block(reason) {
   process.stderr.write(`easyone-orchestrator: ${reason}\n`);
@@ -183,11 +185,19 @@ const SUPPRESSIONS_OWNED = `${SUPPRESSIONS_REL} records the suppressions your hu
 
 // ---------- The breaker: a builder that does not converge goes to the human
 // .orchestrator/work/breaker.json is the guard's own file, personal and never committed. It holds the builder runs
-// since the checkout's last commit, the role of each builder by its agent id, and, inside a run, how many times in
-// a row each command failed with the same output. No agent edits it: a commit, or the human, resets it.
+// since the checkout's last commit, the role of each builder by its agent id, and, inside a run, the checks that
+// failed (each failure by what failed, whatever command showed it) and the other commands that failed in a row
+// with the same output. No agent edits it: a commit, or the human, resets it.
 const BREAKER_REL = key(`${STATE}/work/breaker.json`);
 const maxRuns = config.verify?.maxBuilderRuns ?? 3;
 const maxSameFailure = config.verify?.maxSameFailure ?? 3;
+// The failed checks a run may have: a criterion's red, a few compile errors and a few tries at green fit well
+// within it. In the builders' transcripts of October and November 2026, one criterion had 3 failed checks at the
+// median and 8 at most (a whole story, 8 and 18).
+const maxFailedChecks = config.verify?.maxFailedChecks ?? 10;
+// How long one check of onStop may run, in seconds: they are the fast checks, and in those transcripts 99 of every
+// 100 test commands ended within 100 seconds. A check that hangs (a server it waits for, a lock, watch mode) is cut.
+const checkTimeout = Math.max(1, Number(config.verify?.checkTimeout ?? 300));
 const commandKey = (c) => String(c ?? "").replace(/\s+/g, " ").trim();
 function readBreaker() {
   try { return JSON.parse(stripBom(readFileSync(breakerPath, "utf8"))); } catch { return {}; }
@@ -311,18 +321,43 @@ if (input.hook_event_name === "PreToolUse" && ["Agent", "SendMessage"].includes(
   process.exit(0);
 }
 
-// ---------- PostToolUseFailure: the same failure in a row, inside a builder's run
+// ---------- PostToolUse and PostToolUseFailure: what failed inside a builder's run
 
-// Durations, counts and line numbers change from one attempt to the next; the failure itself does not.
-if (input.hook_event_name === "PostToolUseFailure") {
-  if (!["Bash", "PowerShell"].includes(input.tool_name) || input.is_interrupt || maxSameFailure <= 0) process.exit(0);
-  const id = String(input.agent_id ?? "");
+// A check (a test runner, a type checker, a linter) is read from its output, because a pipe hides its exit code:
+// each failure counts by what failed, whatever command showed it, so `| tail -20` and `| tail -40` are not two
+// failures, nor are a duration or a line number that changed. Any other command counts only when it exits non-zero,
+// and only against itself, in a row.
+const said = (r) => (typeof r === "string" ? r
+  : [r?.stdout, r?.stderr, r?.output, r?.content].filter((x) => typeof x === "string").join("\n"));
+if (input.hook_event_name === "PostToolUse" || input.hook_event_name === "PostToolUseFailure") {
+  if (!["Bash", "PowerShell"].includes(input.tool_name) || input.is_interrupt || blockedByHook(input.error)) process.exit(0);
+  const exitFailed = input.hook_event_name === "PostToolUseFailure";
   const cmd = commandKey(input.tool_input?.command);
-  const signature = createHash("sha1").update(String(input.error ?? "").replace(/\d+/g, "#").replace(/\s+/g, " ").trim()).digest("hex").slice(0, 12);
+  const check = isCheckCommand(cmd);
+  if (!exitFailed && !check) process.exit(0);
+  const r = readFailure(exitFailed ? input.error : said(input.tool_response), { exitFailed });
+  if (!r.failed) process.exit(0);
+  const id = String(input.agent_id ?? "");
+  const signature = createHash("sha1").update(r.signature).digest("hex").slice(0, 12);
   const b = readBreaker();
   const mine = ((b.failures ??= {})[id] ??= {});
-  mine[cmd] = { signature, times: mine[cmd]?.signature === signature ? mine[cmd].times + 1 : 1 };
+  const notes = [];
+  if (check) {
+    const checks = (mine.checks ??= { failed: 0, seen: {} });
+    checks.failed += 1;
+    const what = r.summary;
+    const seen = (checks.seen[signature] ??= { times: 0, what });
+    seen.times += 1;
+    if (!exitFailed) notes.push(`This output shows a failure (${what}), though the command exited 0: the pipe hid its exit code. It is a failed check, not a green one.`);
+    if (maxSameFailure > 1 && seen.times === maxSameFailure - 1) notes.push(`This same failure has come back ${seen.times} times in this run: once more and the guard stops your checks, so change the approach or stop and report BLOCKED.`);
+    if (maxFailedChecks > 0 && checks.failed >= maxFailedChecks - 2) notes.push(`${checks.failed} of ${maxFailedChecks} failed checks in this run: at ${maxFailedChecks} the guard stops your checks.`);
+  } else {
+    const commands = (mine.commands ??= {});
+    commands[cmd] = { signature, times: commands[cmd]?.signature === signature ? commands[cmd].times + 1 : 1 };
+  }
   writeBreaker(b);
+  if (notes.length) process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: input.hook_event_name,
+    additionalContext: `easyone-orchestrator: ${notes.join(" ")}` } }));
   process.exit(0);
 }
 
@@ -517,10 +552,20 @@ function checkPaths(tokens, dir, removes = false) {
 }
 
 if (input.hook_event_name === "PreToolUse" && ["Bash", "PowerShell"].includes(input.tool_name)) {
-  if (builderRole && maxSameFailure > 0) {
+  // A run that goes round in circles ends here: the checks stop, and the builder reports what it tried.
+  if (builderRole) {
     const cmd = commandKey(input.tool_input?.command);
-    const failed = readBreaker().failures?.[String(input.agent_id ?? "")]?.[cmd];
-    if (failed?.times >= maxSameFailure) block(`\`${cmd.slice(0, 200)}\` failed ${failed.times} times in a row with the same output. Do not run it again: stop and report BLOCKED with that output and what you tried.`);
+    const mine = readBreaker().failures?.[String(input.agent_id ?? "")] ?? {};
+    const failed = mine.commands?.[cmd];
+    if (maxSameFailure > 0 && failed?.times >= maxSameFailure) block(`\`${cmd.slice(0, 200)}\` failed ${failed.times} times in a row with the same output. Do not run it again: stop and report BLOCKED with that output and what you tried.`);
+    if (mine.checks && isCheckCommand(cmd)) {
+      const same = maxSameFailure > 0 ? Object.values(mine.checks.seen ?? {}).find((s) => s.times >= maxSameFailure) : null;
+      if (same) block(`the same failure came back ${same.times} times in this run: ${same.what}. Run no more checks: stop and report BLOCKED with its output and what you changed each time.`);
+      if (maxFailedChecks > 0 && mine.checks.failed >= maxFailedChecks) {
+        const list = Object.values(mine.checks.seen ?? {}).map((s) => `${s.what}${s.times > 1 ? ` (×${s.times})` : ""}`).slice(0, 6).join("; ");
+        block(`${mine.checks.failed} checks failed in this run: ${list}. Run no more checks: stop and report BLOCKED with the last output and what you tried.`);
+      }
+    }
   }
   const cmds = commands(String(input.tool_input?.command ?? "").replace(/\d*>&\d/g, " "));
   // The branch check reads HEAD before the command runs, so a switch and a commit must not share a command.
@@ -655,13 +700,39 @@ if (input.hook_event_name === "SubagentStop") {
   for (const c of roleConfig.onStop ?? (builderRole ? config.verify?.onBuilderStop : null) ?? []) {
     const left = deadline - Date.now();
     if (left <= 0) block("the verification checks ran out of time. Report the unchecked commands as ⚠️.");
-    try { execSync(c, { cwd: root, stdio: ["ignore", "pipe", "pipe"], timeout: left, maxBuffer: 64 * 1024 * 1024 }); }
-    catch (e) {
-      const out = `${e.stdout ?? ""}${e.stderr ?? ""}`.split(/\r?\n/).slice(-40).join("\n");
-      block(`\`${c}\` failed. Fix it, or report it as ❌ with this output:\n${out}`);
-    }
+    const limit = Math.min(left, checkTimeout * 1000);
+    const r = await runCheck(c, limit);
+    const out = r.out.split(/\r?\n/).slice(-40).join("\n");
+    if (r.timedOut) block(`\`${c}\` did not finish in ${Math.round(limit / 1000)} s and was stopped. A check that hangs is waiting for something that never comes: a server, a database lock, a prompt, watch mode. Find what it waits for, or report it as ❌ with this output:\n${out}`);
+    if (r.code !== 0) block(`\`${c}\` failed. Fix it, or report it as ❌ with this output:\n${out}`);
   }
   process.exit(0);
+}
+
+// One check, in the shell, cut at its time limit with every process it started: a test runner that hangs keeps its
+// children (the browser, the dev server, the database client) and they would keep the output open.
+function runCheck(command, ms) {
+  return new Promise((resolve) => {
+    const child = spawn(command, { cwd: root, shell: true, stdio: ["ignore", "pipe", "pipe"], detached: !WIN, windowsHide: true });
+    let out = "";
+    let timedOut = false;
+    const keep = (d) => { out += d; if (out.length > 1 << 20) out = out.slice(-(1 << 19)); };
+    child.stdout.on("data", keep);
+    child.stderr.on("data", keep);
+    const done = (code) => { clearTimeout(timer); clearTimeout(grace); resolve({ code, out, timedOut }); };
+    let grace;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try {
+        if (WIN) execFileSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+        else process.kill(-child.pid, "SIGKILL");
+      } catch { /* already gone */ }
+      // A process outside the tree may still hold the output open: stop waiting for it.
+      grace = setTimeout(() => { child.stdout.destroy(); child.stderr.destroy(); done(null); }, 5000);
+    }, ms);
+    child.on("error", (e) => { out += String(e.message); done(1); });
+    child.on("close", (code) => done(code));
+  });
 }
 
 process.exit(0);
